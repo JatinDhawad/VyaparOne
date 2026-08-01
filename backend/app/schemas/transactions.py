@@ -43,7 +43,12 @@ class PurchaseInvoiceCreate(BaseModel):
     invoice_date: date
     billing_mode: str = "TAX_INVOICE"
     additional_expenses: Decimal = Decimal("0.00")
+    lr_charges: Decimal = Decimal("0.00")
+    local_freight: Decimal = Decimal("0.00")
+    salesman_expense: Decimal = Decimal("0.00")
+    scheme_money: Decimal = Decimal("0.00")
     unbilled_nongst_amount: Decimal = Decimal("0.00")
+    amount_paid: Decimal = Decimal("0.00")
     notes: Optional[str] = None
     items: List[PurchaseItemCreate]
 
@@ -57,9 +62,15 @@ class PurchaseInvoiceResponse(BaseModel):
     discount_amount: Decimal
     tax_amount: Decimal
     additional_expenses: Decimal
+    lr_charges: Decimal = Decimal("0.00")
+    local_freight: Decimal = Decimal("0.00")
+    salesman_expense: Decimal = Decimal("0.00")
+    scheme_money: Decimal = Decimal("0.00")
     grand_total: Decimal
     unbilled_nongst_amount: Decimal = Decimal("0.00")
     total_payable_amount: Decimal = Decimal("0.00")
+    amount_paid: Decimal = Decimal("0.00")
+    pending_amount: Decimal = Decimal("0.00")
     notes: Optional[str] = None
     created_by: Optional[uuid.UUID] = None
     created_at: datetime

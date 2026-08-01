@@ -22,9 +22,15 @@ class PurchaseInvoice(Base):
     discount_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     tax_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     additional_expenses: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # Billed logistics/freight
+    lr_charges: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    local_freight: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    salesman_expense: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    scheme_money: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     grand_total: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # Official GST Billed Invoice Total
     unbilled_nongst_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # Separate unbilled payment
     total_payable_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # grand_total + unbilled_nongst_amount
+    amount_paid: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # Money paid to supplier
+    pending_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # Remaining balance owed
     
     notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)

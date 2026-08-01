@@ -37,8 +37,14 @@ async def create_purchase_invoice(
     subtotal = Decimal("0.00")
     total_discount = Decimal("0.00")
     total_tax = Decimal("0.00")
-    freight_charges = Decimal(str(invoice_in.additional_expenses or 0))
+    lr_charges = Decimal(str(invoice_in.lr_charges or 0))
+    local_freight = Decimal(str(invoice_in.local_freight or 0))
+    salesman_expense = Decimal(str(invoice_in.salesman_expense or 0))
+    scheme_money = Decimal(str(invoice_in.scheme_money or 0))
     unbilled_nongst = Decimal(str(invoice_in.unbilled_nongst_amount or 0))
+    amt_paid = Decimal(str(invoice_in.amount_paid or 0))
+
+    billed_expenses = lr_charges + local_freight + salesman_expense - scheme_money
 
     db_items = []
 
@@ -120,8 +126,9 @@ async def create_purchase_invoice(
         db_items.append((db_item, product_id, total_qty, round(effective_unit_cost, 2)))
 
     net_subtotal = subtotal - total_discount
-    grand_total = net_subtotal + total_tax + freight_charges  # Billed Tax Invoice Total
+    grand_total = net_subtotal + total_tax + billed_expenses  # Billed Tax Invoice Total
     total_payable = grand_total + unbilled_nongst  # Total Payable = Billed Total + Unbilled Non-GST
+    pending_amount = total_payable - amt_paid
 
     # 2. Save Purchase Invoice
     db_invoice = PurchaseInvoice(
@@ -132,10 +139,16 @@ async def create_purchase_invoice(
         subtotal=round(subtotal, 2),
         discount_amount=round(total_discount, 2),
         tax_amount=round(total_tax, 2),
-        additional_expenses=round(freight_charges, 2),
+        additional_expenses=round(billed_expenses, 2),
+        lr_charges=round(lr_charges, 2),
+        local_freight=round(local_freight, 2),
+        salesman_expense=round(salesman_expense, 2),
+        scheme_money=round(scheme_money, 2),
         grand_total=round(grand_total, 2),
         unbilled_nongst_amount=round(unbilled_nongst, 2),
         total_payable_amount=round(total_payable, 2),
+        amount_paid=round(amt_paid, 2),
+        pending_amount=round(pending_amount, 2),
         notes=invoice_in.notes,
         created_by=created_by
     )
@@ -154,7 +167,7 @@ async def create_purchase_invoice(
         purchase_invoice_id=db_invoice.id,
         supplier_id=invoice_in.supplier_id,
         goods_amount=round(net_subtotal + total_tax, 2),
-        freight_amount=round(freight_charges + unbilled_nongst, 2),
+        freight_amount=round(billed_expenses + unbilled_nongst, 2),
         grand_total=round(total_payable, 2),
         invoice_date=invoice_in.invoice_date,
         created_by=created_by
