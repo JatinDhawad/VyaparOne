@@ -1,7 +1,14 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
-from app.api.v1.router import api_router
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        from app.scripts.init_db import init_db, seed_data
+        await init_db()
+        await seed_data()
+    except Exception as e:
+        print(f"Startup DB init log: {e}")
+    yield
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -9,6 +16,7 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Include v1 Router
@@ -18,6 +26,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
