@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShoppingCart, Plus, TrendingUp, AlertTriangle } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
@@ -116,7 +115,7 @@ export default function SalesPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#090d16]">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
@@ -127,33 +126,33 @@ export default function SalesPage() {
         />
 
         <main className="p-8 space-y-6 flex-1 overflow-y-auto">
-          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
-            <div className="p-4 border-b border-slate-800/80 font-bold text-white text-sm">Recent Sales Invoices</div>
+          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
+            <div className="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm">Recent Sales Invoices</div>
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900/80 text-slate-400 border-b border-slate-800 uppercase text-[10px]">
+              <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
                 <tr>
                   <th className="p-4">Invoice #</th>
                   <th className="p-4">Date</th>
-                  <th className="p-4">Customer</th>
+                  <th className="p-4">Customer ID</th>
                   <th className="p-4">COGS</th>
                   <th className="p-4">Net Profit</th>
                   <th className="p-4">Grand Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-200">
+              <tbody className="divide-y divide-slate-100 text-slate-700">
                 {isLoading ? (
-                  <tr><td colSpan={6} className="p-8 text-center text-slate-400">Loading sales invoices...</td></tr>
+                  <tr><td colSpan={6} className="p-8 text-center text-slate-500">Loading sales invoices...</td></tr>
                 ) : sales.length === 0 ? (
-                  <tr><td colSpan={6} className="p-8 text-center text-slate-400">No sales invoices billed yet.</td></tr>
+                  <tr><td colSpan={6} className="p-8 text-center text-slate-500">No sales invoices billed yet.</td></tr>
                 ) : (
                   sales.map((s: any) => (
-                    <tr key={s.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="p-4 font-mono font-bold text-indigo-400">{s.invoice_number}</td>
+                    <tr key={s.id} className="hover:bg-slate-100/50 transition-colors">
+                      <td className="p-4 font-mono font-bold text-indigo-700">{s.invoice_number}</td>
                       <td className="p-4">{s.invoice_date}</td>
-                      <td className="p-4 font-semibold text-white">{s.customer_id}</td>
-                      <td className="p-4 text-slate-400">₹{parseFloat(s.total_cost_of_goods || 0).toFixed(2)}</td>
-                      <td className="p-4 text-emerald-400 font-bold">₹{parseFloat(s.net_profit || 0).toFixed(2)}</td>
-                      <td className="p-4 font-bold text-white">₹{parseFloat(s.grand_total || 0).toFixed(2)}</td>
+                      <td className="p-4 font-semibold text-slate-900">{s.customer_id}</td>
+                      <td className="p-4 text-slate-500">₹{parseFloat(s.total_cost_of_goods || 0).toFixed(2)}</td>
+                      <td className="p-4 text-emerald-700 font-bold">₹{parseFloat(s.net_profit || 0).toFixed(2)}</td>
+                      <td className="p-4 font-bold text-slate-900">₹{parseFloat(s.grand_total || 0).toFixed(2)}</td>
                     </tr>
                   ))
                 )}
@@ -165,17 +164,17 @@ export default function SalesPage() {
 
       {/* POS Billing Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Generate Sales Tax Invoice (POS)">
-        {formError && <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">{formError}</div>}
+        {formError && <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">{formError}</div>}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Invoice Number *</label>
+              <label className="block font-bold text-slate-700 mb-1">Invoice Number *</label>
               <input required type="text" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="INV-2026-001" className="w-full glass-input p-2.5 rounded-xl font-mono" />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Select Customer *</label>
-              <select required value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-slate-900">
+              <label className="block font-bold text-slate-700 mb-1">Select Customer *</label>
+              <select required value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-white">
                 <option value="">-- Choose Buyer --</option>
                 {customers.map((c: any) => (
                   <option key={c.id} value={c.id}>{c.name} ({c.city || 'Customer'})</option>
@@ -185,11 +184,11 @@ export default function SalesPage() {
           </div>
 
           {/* Item Add Bar */}
-          <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
-            <span className="font-bold text-emerald-400 text-xs uppercase tracking-wider block">Add Items to Cart</span>
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+            <span className="font-bold text-emerald-700 text-xs uppercase tracking-wider block">Add Items to Cart</span>
             <div className="grid grid-cols-4 gap-2">
               <div className="col-span-2">
-                <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="w-full glass-input p-2 rounded-xl bg-slate-900">
+                <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="w-full glass-input p-2 rounded-xl bg-white">
                   <option value="">-- Select SKU --</option>
                   {products.map((p: any) => (
                     <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock?.current_stock || 0})</option>
@@ -202,11 +201,11 @@ export default function SalesPage() {
               </div>
 
               <div>
-                <input type="number" step="0.01" placeholder="Selling Price (₹)" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} className="w-full glass-input p-2 rounded-xl font-bold text-emerald-400" />
+                <input type="number" step="0.01" placeholder="Selling Price (₹)" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} className="w-full glass-input p-2 rounded-xl font-bold text-emerald-700" />
               </div>
             </div>
 
-            <button type="button" onClick={handleAddItem} className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20">
+            <button type="button" onClick={handleAddItem} className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-md shadow-emerald-600/15">
               + Add to Invoice Cart
             </button>
           </div>
@@ -214,14 +213,14 @@ export default function SalesPage() {
           {/* Cart Items */}
           {items.length > 0 && (
             <div className="space-y-2">
-              <span className="font-semibold text-slate-300 block">Cart Items ({items.length})</span>
+              <span className="font-bold text-slate-700 block">Cart Items ({items.length})</span>
               {items.map((it, idx) => (
-                <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
                   <div>
-                    <div className="font-bold text-white">{it.product_name}</div>
-                    <div className="text-[10px] text-slate-400">Qty: {it.quantity} | Rate: ₹{it.unit_selling_price}</div>
+                    <div className="font-bold text-slate-900">{it.product_name}</div>
+                    <div className="text-[10px] text-slate-500">Qty: {it.quantity} | Rate: ₹{it.unit_selling_price}</div>
                   </div>
-                  <div className="font-bold text-emerald-400">₹{(it.quantity * it.unit_selling_price).toFixed(2)}</div>
+                  <div className="font-bold text-emerald-700">₹{(it.quantity * it.unit_selling_price).toFixed(2)}</div>
                 </div>
               ))}
             </div>
@@ -230,7 +229,7 @@ export default function SalesPage() {
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
+            className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
           >
             {createMutation.isPending ? 'Billing Invoice...' : 'Complete POS Bill & Post Ledger'}
           </button>

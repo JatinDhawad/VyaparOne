@@ -19,12 +19,12 @@ export default function RootLayout({
   }));
 
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
         <title>VyaparOne ERP | Trading & Distribution Management</title>
         <meta name="description" content="Production-grade Enterprise Resource Planning system for FMCG wholesale distribution, trading economics, landed cost calculation, and financial ledger accounting." />
       </head>
-      <body className="antialiased min-h-screen bg-[#090d16] text-gray-100 selection:bg-indigo-500 selection:text-white">
+      <body className="antialiased min-h-screen bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white">
         <QueryClientProvider client={queryClient}>
           {children}
         </QueryClientProvider>

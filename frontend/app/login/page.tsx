@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, ShieldCheck, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
+import { Building2, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 
@@ -15,78 +15,63 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [statusMessage, setStatusMessage] = useState('');
-
-  const executeLogin = async (loginEmail: string, loginPass: string) => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     setError('');
-    setStatusMessage('Connecting to server...');
-
-    const timer = setTimeout(() => {
-      setStatusMessage('Waking up cloud server on Render... (free tier cold start takes ~30 seconds on first load)');
-    }, 2500);
 
     try {
-      const res = await api.login({ email: loginEmail, password: loginPass });
-      setStatusMessage('Authentication successful! Fetching user profile...');
+      const res = await api.login({ email, password });
       localStorage.setItem('vyaparone_token', res.access_token);
       const userRes = await api.getMe();
       setAuth(res.access_token, userRes);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check credentials or backend server status.');
+      setError(err.message || 'Login failed. Please check credentials.');
     } finally {
-      clearTimeout(timer);
       setLoading(false);
-      setStatusMessage('');
     }
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    executeLogin(email, password);
   };
 
   const handleQuickLogin = (demoEmail: string, demoPass: string) => {
     setEmail(demoEmail);
     setPassword(demoPass);
-    executeLogin(demoEmail, demoPass);
   };
 
   return (
-    <div className="min-h-screen bg-[#090d16] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Glow Backdrops */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Soft Gradients */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
         {/* Brand Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 shadow-xl shadow-indigo-500/30 mb-4 border border-indigo-400/30">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-500 shadow-xl shadow-indigo-500/20 mb-4 border border-indigo-200">
             <Building2 className="h-9 w-9 text-white" />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">
-            Vyapar<span className="text-emerald-400">One</span> ERP
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            Vyapar<span className="text-emerald-600">One</span> ERP
           </h1>
-          <p className="text-xs text-slate-400 mt-1">FMCG Trading, Landed Cost & Double-Entry Accounting</p>
+          <p className="text-xs font-semibold text-slate-500 mt-1">FMCG Trading, Landed Cost & Double-Entry Accounting</p>
         </div>
 
         {/* Login Glass Card */}
-        <div className="glass-card p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6">
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl space-y-6">
           <div className="space-y-1">
-            <h2 className="text-xl font-bold text-white tracking-tight">Sign In to Workspace</h2>
-            <p className="text-xs text-slate-400">Enter your operational credentials below</p>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Sign In to Workspace</h2>
+            <p className="text-xs text-slate-500">Enter your operational credentials below</p>
           </div>
 
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
               {error}
             </div>
           )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Email Address</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">Email Address</label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                 <input
@@ -101,7 +86,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                 <input
@@ -118,23 +103,16 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-500/25 transition-all duration-200 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-500/20 transition-all duration-200 disabled:opacity-50"
             >
               {loading ? 'Authenticating...' : 'Sign In to ERP'}
               <ArrowRight className="h-4 w-4" />
             </button>
-
-            {loading && statusMessage && (
-              <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs flex items-center gap-2 animate-pulse">
-                <span className="h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
-                <span>{statusMessage}</span>
-              </div>
-            )}
           </form>
 
           {/* Quick Demo Launchers */}
-          <div className="pt-4 border-t border-slate-800/80">
-            <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-400 uppercase tracking-wider mb-3">
+          <div className="pt-4 border-t border-slate-100">
+            <div className="flex items-center gap-1 text-[11px] font-extrabold text-indigo-600 uppercase tracking-wider mb-3">
               <Sparkles className="h-3.5 w-3.5" />
               Quick Demo Launcher
             </div>
@@ -142,19 +120,19 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => handleQuickLogin('admin@vyaparone.com', 'adminpassword')}
-                className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 hover:border-indigo-500/50 text-left transition-colors group"
+                className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-500/50 text-left transition-colors group"
               >
-                <div className="text-xs font-bold text-white group-hover:text-indigo-400">ADMIN</div>
-                <div className="text-[10px] text-slate-400 truncate">admin@vyaparone.com</div>
+                <div className="text-xs font-extrabold text-slate-900 group-hover:text-indigo-600">ADMIN</div>
+                <div className="text-[10px] font-medium text-slate-500 truncate">admin@vyaparone.com</div>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleQuickLogin('owner@vyaparone.com', 'owner1234')}
-                className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 hover:border-emerald-500/50 text-left transition-colors group"
+                className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-500/50 text-left transition-colors group"
               >
-                <div className="text-xs font-bold text-white group-hover:text-emerald-400">BUSINESS OWNER</div>
-                <div className="text-[10px] text-slate-400 truncate">owner@vyaparone.com</div>
+                <div className="text-xs font-extrabold text-slate-900 group-hover:text-emerald-600">BUSINESS OWNER</div>
+                <div className="text-[10px] font-medium text-slate-500 truncate">owner@vyaparone.com</div>
               </button>
             </div>
           </div>

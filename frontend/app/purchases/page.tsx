@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShoppingBag, Plus, Search, Calendar, Truck, FileText } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
@@ -107,7 +106,7 @@ export default function PurchasesPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#090d16]">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
@@ -119,33 +118,33 @@ export default function PurchasesPage() {
 
         <main className="p-8 space-y-6 flex-1 overflow-y-auto">
           {/* Purchase List Table */}
-          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
-            <div className="p-4 border-b border-slate-800/80 font-bold text-white text-sm">Recent Purchase Bills</div>
+          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
+            <div className="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm">Recent Purchase Bills</div>
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900/80 text-slate-400 border-b border-slate-800 uppercase text-[10px]">
+              <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
                 <tr>
                   <th className="p-4">Invoice #</th>
                   <th className="p-4">Date</th>
-                  <th className="p-4">Supplier</th>
+                  <th className="p-4">Supplier ID</th>
                   <th className="p-4">Subtotal</th>
                   <th className="p-4">Freight Charges</th>
                   <th className="p-4">Grand Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-200">
+              <tbody className="divide-y divide-slate-100 text-slate-700">
                 {isLoading ? (
-                  <tr><td colSpan={6} className="p-8 text-center text-slate-400">Loading purchase bills...</td></tr>
+                  <tr><td colSpan={6} className="p-8 text-center text-slate-500">Loading purchase bills...</td></tr>
                 ) : purchases.length === 0 ? (
-                  <tr><td colSpan={6} className="p-8 text-center text-slate-400">No purchase invoices recorded yet.</td></tr>
+                  <tr><td colSpan={6} className="p-8 text-center text-slate-500">No purchase invoices recorded yet.</td></tr>
                 ) : (
                   purchases.map((p: any) => (
-                    <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="p-4 font-mono font-bold text-indigo-400">{p.invoice_number}</td>
+                    <tr key={p.id} className="hover:bg-slate-100/50 transition-colors">
+                      <td className="p-4 font-mono font-bold text-indigo-700">{p.invoice_number}</td>
                       <td className="p-4">{p.invoice_date}</td>
-                      <td className="p-4 font-semibold text-white">{p.supplier_id}</td>
+                      <td className="p-4 font-semibold text-slate-900">{p.supplier_id}</td>
                       <td className="p-4">₹{parseFloat(p.subtotal || 0).toFixed(2)}</td>
-                      <td className="p-4 text-amber-400 font-semibold">₹{parseFloat(p.additional_expenses || 0).toFixed(2)}</td>
-                      <td className="p-4 font-bold text-emerald-400">₹{parseFloat(p.grand_total || 0).toFixed(2)}</td>
+                      <td className="p-4 text-amber-700 font-bold">₹{parseFloat(p.additional_expenses || 0).toFixed(2)}</td>
+                      <td className="p-4 font-bold text-emerald-700">₹{parseFloat(p.grand_total || 0).toFixed(2)}</td>
                     </tr>
                   ))
                 )}
@@ -157,17 +156,17 @@ export default function PurchasesPage() {
 
       {/* New Purchase Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record Vendor Purchase Bill">
-        {formError && <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">{formError}</div>}
+        {formError && <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">{formError}</div>}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Invoice / Bill Number *</label>
+              <label className="block font-bold text-slate-700 mb-1">Invoice / Bill Number *</label>
               <input required type="text" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="PUR-2026-001" className="w-full glass-input p-2.5 rounded-xl font-mono" />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Select Supplier *</label>
-              <select required value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-slate-900">
+              <label className="block font-bold text-slate-700 mb-1">Select Supplier *</label>
+              <select required value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-white">
                 <option value="">-- Choose Vendor --</option>
                 {suppliers.map((s: any) => (
                   <option key={s.id} value={s.id}>{s.name} ({s.city || 'Vendor'})</option>
@@ -177,11 +176,11 @@ export default function PurchasesPage() {
           </div>
 
           {/* Item Add Bar */}
-          <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
-            <span className="font-bold text-indigo-400 text-xs uppercase tracking-wider block">Add Product Line Item</span>
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+            <span className="font-bold text-indigo-700 text-xs uppercase tracking-wider block">Add Product Line Item</span>
             <div className="grid grid-cols-4 gap-2">
               <div className="col-span-2">
-                <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="w-full glass-input p-2 rounded-xl bg-slate-900">
+                <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="w-full glass-input p-2 rounded-xl bg-white">
                   <option value="">-- Select SKU --</option>
                   {products.map((p: any) => (
                     <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
@@ -198,7 +197,7 @@ export default function PurchasesPage() {
               </div>
             </div>
 
-            <button type="button" onClick={handleAddItem} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700">
+            <button type="button" onClick={handleAddItem} className="w-full py-2 bg-white hover:bg-slate-100 text-slate-800 font-bold rounded-xl border border-slate-300">
               + Add Item to Bill
             </button>
           </div>
@@ -206,30 +205,30 @@ export default function PurchasesPage() {
           {/* Added Line Items List */}
           {items.length > 0 && (
             <div className="space-y-2">
-              <span className="font-semibold text-slate-300 block">Bill Items ({items.length})</span>
+              <span className="font-bold text-slate-700 block">Bill Items ({items.length})</span>
               {items.map((it, idx) => (
-                <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
                   <div>
-                    <div className="font-bold text-white">{it.product_name}</div>
-                    <div className="text-[10px] text-slate-400">Qty: {it.billed_quantity} | Price: ₹{it.unit_purchase_price}</div>
+                    <div className="font-bold text-slate-900">{it.product_name}</div>
+                    <div className="text-[10px] text-slate-500">Qty: {it.billed_quantity} | Price: ₹{it.unit_purchase_price}</div>
                   </div>
-                  <div className="font-bold text-emerald-400">₹{(it.billed_quantity * it.unit_purchase_price).toFixed(2)}</div>
+                  <div className="font-bold text-emerald-700">₹{(it.billed_quantity * it.unit_purchase_price).toFixed(2)}</div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Freight Charges (User specific feature requirement) */}
-          <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-1.5">
-            <label className="block font-bold text-amber-400">Freight & Delivery Charges (₹)</label>
-            <p className="text-[10px] text-slate-400">Freight charges will be added to total invoice amount without inflating unit purchase cost.</p>
-            <input type="number" step="0.01" value={freightCharges} onChange={(e) => setFreightCharges(e.target.value)} className="w-full glass-input p-2.5 rounded-xl text-amber-400 font-bold" />
+          {/* Freight Charges */}
+          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-1.5">
+            <label className="block font-bold text-amber-800">Freight & Delivery Charges (₹)</label>
+            <p className="text-[10px] text-slate-500">Freight charges will be added to total invoice amount without inflating unit purchase cost.</p>
+            <input type="number" step="0.01" value={freightCharges} onChange={(e) => setFreightCharges(e.target.value)} className="w-full glass-input p-2.5 rounded-xl text-amber-800 font-bold" />
           </div>
 
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all"
+            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all"
           >
             {createMutation.isPending ? 'Processing...' : 'Save Purchase Bill & Post Ledger'}
           </button>

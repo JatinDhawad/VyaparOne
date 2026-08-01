@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Plus, Search, Phone, Mail, MapPin, CreditCard, Filter } from 'lucide-react';
+import { Users, Search, Phone, Mail, MapPin, Filter } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
@@ -81,7 +81,7 @@ export default function PartiesPage() {
   );
 
   return (
-    <div className="flex min-h-screen bg-[#090d16]">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
@@ -107,16 +107,16 @@ export default function PartiesPage() {
 
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
-              <span className="text-xs font-semibold text-slate-400">Filter Type:</span>
-              <div className="flex gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+              <span className="text-xs font-semibold text-slate-500">Filter Type:</span>
+              <div className="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                 {['', 'CUSTOMER', 'SUPPLIER', 'BOTH'].map((type) => (
                   <button
                     key={type}
                     onClick={() => setFilterType(type)}
                     className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${
                       filterType === type 
-                        ? 'bg-indigo-600 text-white shadow-md' 
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-indigo-600 text-white shadow-sm' 
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     {type === '' ? 'ALL' : type}
@@ -129,33 +129,33 @@ export default function PartiesPage() {
           {/* Party List Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {isLoading ? (
-              <div className="col-span-full py-12 text-center text-slate-400 text-sm">Loading parties...</div>
+              <div className="col-span-full py-12 text-center text-slate-500 text-sm">Loading parties...</div>
             ) : filteredParties.length === 0 ? (
-              <div className="col-span-full py-12 text-center text-slate-400 text-sm">No parties found matching criteria.</div>
+              <div className="col-span-full py-12 text-center text-slate-500 text-sm">No parties found matching criteria.</div>
             ) : (
               filteredParties.map((party: any) => (
-                <div key={party.id} className="glass-card p-5 rounded-2xl space-y-4 border-slate-800">
+                <div key={party.id} className="glass-card p-5 rounded-2xl space-y-4 border-slate-200">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-bold text-white text-base leading-snug">{party.name}</h3>
+                      <h3 className="font-bold text-slate-900 text-base leading-snug">{party.name}</h3>
                       <span className={`inline-block text-[10px] font-extrabold uppercase px-2 py-0.5 rounded mt-1 border ${
                         party.party_type === 'SUPPLIER' 
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
                           : party.party_type === 'CUSTOMER'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                          : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-indigo-50 text-indigo-700 border-indigo-200'
                       }`}>
                         {party.party_type}
                       </span>
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[10px] font-semibold text-slate-400 block">Credit Limit</span>
-                      <span className="text-sm font-bold text-white">₹{parseFloat(party.credit_limit || 0).toLocaleString('en-IN')}</span>
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase">Credit Limit</span>
+                      <span className="text-sm font-extrabold text-slate-900">₹{parseFloat(party.credit_limit || 0).toLocaleString('en-IN')}</span>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 pt-2 border-t border-slate-800/80 text-xs text-slate-300">
+                  <div className="space-y-1.5 pt-2 border-t border-slate-100 text-xs text-slate-600">
                     {party.phone && (
                       <div className="flex items-center gap-2">
                         <Phone className="h-3.5 w-3.5 text-slate-400" />
@@ -175,9 +175,9 @@ export default function PartiesPage() {
                       </div>
                     )}
                     {party.gstin && (
-                      <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
+                      <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
                         <span>GSTIN:</span>
-                        <span className="text-white font-semibold">{party.gstin}</span>
+                        <span className="text-slate-900 font-bold">{party.gstin}</span>
                       </div>
                     )}
                   </div>
@@ -190,17 +190,17 @@ export default function PartiesPage() {
 
       {/* Add Party Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Register New Party">
-        {formError && <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">{formError}</div>}
+        {formError && <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">{formError}</div>}
         <form onSubmit={handleCreate} className="space-y-4 text-xs">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Party Name *</label>
+              <label className="block font-bold text-slate-700 mb-1">Party Name *</label>
               <input required type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sharma Traders" className="w-full glass-input p-2.5 rounded-xl" />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Party Type *</label>
-              <select value={partyType} onChange={(e) => setPartyType(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-slate-900">
+              <label className="block font-bold text-slate-700 mb-1">Party Type *</label>
+              <select value={partyType} onChange={(e) => setPartyType(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-white">
                 <option value="CUSTOMER">CUSTOMER</option>
                 <option value="SUPPLIER">SUPPLIER</option>
                 <option value="BOTH">BOTH (Supplier & Customer)</option>
@@ -210,24 +210,24 @@ export default function PartiesPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Phone Number</label>
+              <label className="block font-bold text-slate-700 mb-1">Phone Number</label>
               <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210" className="w-full glass-input p-2.5 rounded-xl" />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">GSTIN</label>
+              <label className="block font-bold text-slate-700 mb-1">GSTIN</label>
               <input type="text" value={gstin} onChange={(e) => setGstin(e.target.value)} placeholder="29ABCDE1234F1Z5" className="w-full glass-input p-2.5 rounded-xl font-mono uppercase" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">City</label>
+              <label className="block font-bold text-slate-700 mb-1">City</label>
               <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Indore" className="w-full glass-input p-2.5 rounded-xl" />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Credit Limit (₹)</label>
+              <label className="block font-bold text-slate-700 mb-1">Credit Limit (₹)</label>
               <input type="number" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} className="w-full glass-input p-2.5 rounded-xl" />
             </div>
           </div>
@@ -235,7 +235,7 @@ export default function PartiesPage() {
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all"
+            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all"
           >
             {createMutation.isPending ? 'Saving...' : 'Save Party & Link Ledger'}
           </button>

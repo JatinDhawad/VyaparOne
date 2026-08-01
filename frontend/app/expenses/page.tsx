@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Receipt, Plus } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
@@ -55,7 +54,7 @@ export default function ExpensesPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#090d16]">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
@@ -66,10 +65,10 @@ export default function ExpensesPage() {
         />
 
         <main className="p-8 space-y-6 flex-1 overflow-y-auto">
-          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
-            <div className="p-4 border-b border-slate-800/80 font-bold text-white text-sm">Expense Log</div>
+          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
+            <div className="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm">Expense Log</div>
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900/80 text-slate-400 border-b border-slate-800 uppercase text-[10px]">
+              <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
                 <tr>
                   <th className="p-4">Date</th>
                   <th className="p-4">Category</th>
@@ -77,18 +76,18 @@ export default function ExpensesPage() {
                   <th className="p-4">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-200">
+              <tbody className="divide-y divide-slate-100 text-slate-700">
                 {isLoading ? (
-                  <tr><td colSpan={4} className="p-8 text-center text-slate-400">Loading expenses...</td></tr>
+                  <tr><td colSpan={4} className="p-8 text-center text-slate-500">Loading expenses...</td></tr>
                 ) : expenses.length === 0 ? (
-                  <tr><td colSpan={4} className="p-8 text-center text-slate-400">No operational expenses recorded.</td></tr>
+                  <tr><td colSpan={4} className="p-8 text-center text-slate-500">No operational expenses recorded.</td></tr>
                 ) : (
                   expenses.map((e: any) => (
-                    <tr key={e.id} className="hover:bg-slate-800/30 transition-colors">
+                    <tr key={e.id} className="hover:bg-slate-100/50 transition-colors">
                       <td className="p-4">{e.expense_date}</td>
-                      <td className="p-4 font-bold text-white">{e.category}</td>
-                      <td className="p-4 text-slate-300">{e.payment_mode}</td>
-                      <td className="p-4 font-bold text-rose-400">₹{parseFloat(e.amount || 0).toFixed(2)}</td>
+                      <td className="p-4 font-bold text-slate-900">{e.category}</td>
+                      <td className="p-4 text-slate-600">{e.payment_mode}</td>
+                      <td className="p-4 font-bold text-rose-700">₹{parseFloat(e.amount || 0).toFixed(2)}</td>
                     </tr>
                   ))
                 )}
@@ -99,22 +98,22 @@ export default function ExpensesPage() {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record Operational Expense">
-        {formError && <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold">{formError}</div>}
+        {formError && <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">{formError}</div>}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-slate-300 mb-1">Expense Category *</label>
+            <label className="block font-bold text-slate-700 mb-1">Expense Category *</label>
             <input required type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Vehicle Fuel, Rent, Maintenance" className="w-full glass-input p-2.5 rounded-xl" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Amount (₹) *</label>
-              <input required type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full glass-input p-2.5 rounded-xl text-rose-400 font-bold" />
+              <label className="block font-bold text-slate-700 mb-1">Amount (₹) *</label>
+              <input required type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full glass-input p-2.5 rounded-xl text-rose-700 font-bold" />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Payment Mode</label>
-              <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-slate-900">
+              <label className="block font-bold text-slate-700 mb-1">Payment Mode</label>
+              <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-white">
                 <option value="CASH">CASH</option>
                 <option value="UPI">UPI</option>
                 <option value="BANK">BANK</option>
