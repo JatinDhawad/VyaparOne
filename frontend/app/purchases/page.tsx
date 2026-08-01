@@ -14,8 +14,7 @@ import {
   Truck,
   Sparkles,
   CreditCard,
-  CheckCircle2,
-  AlertCircle
+  Pencil
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -37,8 +36,8 @@ export default function PurchasesPage() {
   // Itemized Expenses & Deductions
   const [lrCharges, setLrCharges] = useState('0.00');
   const [localFreight, setLocalFreight] = useState('0.00');
-  const [salesmanExpense, setSalesmanExpense] = useState('0.00');
-  const [schemeMoney, setSchemeMoney] = useState('0.00');
+  const [salesmanExpense, setSalesmanExpense] = useState('0.00'); // Deducted (reimbursed by supplier)
+  const [schemeMoney, setSchemeMoney] = useState('0.00'); // Deducted
 
   // Unbilled & Payment Given
   const [unbilledNonGst, setUnbilledNonGst] = useState('0.00');
@@ -170,6 +169,18 @@ export default function PurchasesPage() {
     setBilledQty('5');
   };
 
+  const handleEditItem = (index: number) => {
+    const itemToEdit = items[index];
+    setSelectedProduct(itemToEdit.product_id || '');
+    setProductName(itemToEdit.product_name || '');
+    setHsnCode(itemToEdit.hsn_code || '');
+    setUnit(itemToEdit.unit || 'BAG');
+    setBilledQty(itemToEdit.billed_quantity.toString());
+    setUnitPrice(itemToEdit.unit_purchase_price.toString());
+    setGstRate(itemToEdit.gst_rate.toString());
+    setItems(items.filter((_, i) => i !== index));
+  };
+
   const handleRemoveItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
   };
@@ -209,7 +220,7 @@ export default function PurchasesPage() {
     });
   };
 
-  // Calculations
+  // Calculations: Salesman Expense & Scheme Money are deducted
   const calculatedSubtotal = items.reduce((sum, i) => sum + i.taxable_amount, 0);
   const calculatedTaxAmount = items.reduce((sum, i) => sum + i.gst_amount, 0);
 
@@ -218,7 +229,7 @@ export default function PurchasesPage() {
   const numSalesExp = parseFloat(salesmanExpense) || 0;
   const numScheme = parseFloat(schemeMoney) || 0;
 
-  const totalBilledExpenses = numLr + numLocalFr + numSalesExp - numScheme;
+  const totalBilledExpenses = numLr + numLocalFr - numSalesExp - numScheme;
   const officialBilledTotal = calculatedSubtotal + calculatedTaxAmount + totalBilledExpenses;
 
   const unbilledPayable = parseFloat(unbilledNonGst) || 0;
@@ -486,7 +497,7 @@ export default function PurchasesPage() {
                         <th className="p-3.5">GST %</th>
                         <th className="p-3.5">Taxable Value</th>
                         <th className="p-3.5">Line Total</th>
-                        <th className="p-3.5 text-right">Action</th>
+                        <th className="p-3.5 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-800">
@@ -500,9 +511,14 @@ export default function PurchasesPage() {
                           <td className="p-3.5 font-semibold text-slate-800">₹{it.taxable_amount.toFixed(2)}</td>
                           <td className="p-3.5 font-extrabold text-indigo-900 text-sm">₹{it.line_total.toFixed(2)}</td>
                           <td className="p-3.5 text-right">
-                            <button type="button" onClick={() => handleRemoveItem(idx)} className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button type="button" onClick={() => handleEditItem(idx)} title="Edit Item" className="text-indigo-600 hover:text-indigo-800 p-1.5 rounded-lg hover:bg-indigo-50 transition-colors">
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button type="button" onClick={() => handleRemoveItem(idx)} title="Delete Item" className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 transition-colors">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -534,19 +550,19 @@ export default function PurchasesPage() {
 
               <div className="space-y-1.5 pt-1 border-t border-indigo-100">
                 <div className="flex justify-between items-center text-slate-700">
-                  <span>LR Charges (₹):</span>
+                  <span>LR Charges (+):</span>
                   <input type="number" step="0.01" value={lrCharges} onChange={(e) => setLrCharges(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
-                  <span>Local Freight (₹):</span>
+                  <span>Local Freight (+):</span>
                   <input type="number" step="0.01" value={localFreight} onChange={(e) => setLocalFreight(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
-                  <span>Salesman Expense (₹):</span>
-                  <input type="number" step="0.01" value={salesmanExpense} onChange={(e) => setSalesmanExpense(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs" />
+                  <span>Salesman Exp (-) (Deducted):</span>
+                  <input type="number" step="0.01" value={salesmanExpense} onChange={(e) => setSalesmanExpense(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
-                  <span>Scheme Credit (-) (₹):</span>
+                  <span>Scheme Credit (-) (Deducted):</span>
                   <input type="number" step="0.01" value={schemeMoney} onChange={(e) => setSchemeMoney(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
               </div>
