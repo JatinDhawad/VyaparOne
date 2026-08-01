@@ -53,7 +53,7 @@ export default function DashboardPage() {
             {/* Purchases Card */}
             <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-slate-200">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Total Purchases</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Total Amount to Pay</span>
                 <div className="h-10 w-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700">
                   <ShoppingBag className="h-5 w-5" />
                 </div>
@@ -62,7 +62,7 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
                   ₹{isLoading ? '...' : (summary?.total_purchases || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </h3>
-                <p className="text-[11px] font-medium text-slate-500 mt-1">Supplier inbound stock cost</p>
+                <p className="text-[11px] font-medium text-slate-500 mt-1">Total purchase payable to suppliers</p>
               </div>
             </div>
 
