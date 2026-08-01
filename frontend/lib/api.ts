@@ -21,7 +21,16 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
   const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout for cloud cold-starts
 
   try {
-    const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    let formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    if (formattedEndpoint.includes('?')) {
+      const [path, query] = formattedEndpoint.split('?');
+      if (!path.endsWith('/') && !path.split('/').pop()?.includes('-')) {
+        formattedEndpoint = `${path}/?${query}`;
+      }
+    } else if (!formattedEndpoint.endsWith('/') && !formattedEndpoint.split('/').pop()?.includes('-')) {
+      formattedEndpoint = `${formattedEndpoint}/`;
+    }
+
     const response = await fetch(`${API_BASE_URL}${formattedEndpoint}`, {
       ...options,
       headers,
