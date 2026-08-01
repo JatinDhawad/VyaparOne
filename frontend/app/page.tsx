@@ -17,8 +17,8 @@ export default function Home() {
   }, [token, router]);
 
   return (
-    <div className="min-h-screen bg-[#090d16] flex items-center justify-center">
-      <div className="flex items-center gap-3 text-indigo-400 font-semibold text-sm">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="flex items-center gap-3 text-indigo-600 font-semibold text-sm">
         <span className="h-3 w-3 rounded-full bg-indigo-500 animate-ping" />
         Redirecting to VyaparOne ERP...
       </div>
