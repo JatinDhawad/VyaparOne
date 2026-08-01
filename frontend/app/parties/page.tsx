@@ -306,9 +306,9 @@ export default function PartiesPage() {
             <div>
               <label className="block font-bold text-slate-700 mb-1.5">Party Type *</label>
               <select value={partyType} onChange={(e) => setPartyType(e.target.value)} className="w-full glass-input p-3 rounded-2xl bg-white font-bold">
-                <option value="CUSTOMER">CUSTOMER (Buyer)</option>
-                <option value="SUPPLIER">SUPPLIER (Vendor)</option>
-                <option value="BOTH">BOTH (Supplier & Customer)</option>
+                <option value="CUSTOMER">CUSTOMER</option>
+                <option value="SUPPLIER">SUPPLIER</option>
+                <option value="BOTH">BOTH</option>
               </select>
             </div>
           </div>
@@ -347,7 +347,7 @@ export default function PartiesPage() {
             disabled={createMutation.isPending}
             className="w-full py-4 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-500/20 transition-all text-xs uppercase tracking-wider mt-4"
           >
-            {createMutation.isPending ? 'Saving...' : 'Save Party & Auto-Link Ledger'}
+            {createMutation.isPending ? 'Saving...' : 'Save Party'}
           </button>
         </form>
       </Modal>
