@@ -81,7 +81,7 @@ export default function ProductsPage() {
           title="Product Catalog & Inventory" 
           subtitle="HSN/SAC catalog management, real-time Godown stock levels & landed cost" 
           onActionClick={isAdmin ? () => setIsModalOpen(true) : undefined}
-          actionLabel="Add New Product (HSN/SAC)"
+          actionLabel="Add New Product"
         />
 
         <main className="p-8 space-y-8 flex-1 overflow-y-auto">
@@ -162,7 +162,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Add Product Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Product (HSN/SAC Catalog)" maxWidth="max-w-3xl">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add New Product" maxWidth="max-w-3xl">
         {formError && <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold mb-4">{formError}</div>}
         <form onSubmit={handleCreate} className="space-y-6 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -209,7 +209,7 @@ export default function ProductsPage() {
             disabled={createMutation.isPending}
             className="w-full py-4 bg-gradient-to-r from-indigo-600 via-teal-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-500/20 transition-all text-xs uppercase tracking-wider mt-4"
           >
-            {createMutation.isPending ? 'Saving Product...' : 'Save Product & Initialize Stock Record'}
+            {createMutation.isPending ? 'Saving Product...' : 'Save Product'}
           </button>
         </form>
       </Modal>

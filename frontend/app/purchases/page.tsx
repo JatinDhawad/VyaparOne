@@ -36,8 +36,8 @@ export default function PurchasesPage() {
   // Itemized Expenses & Deductions
   const [lrCharges, setLrCharges] = useState('0.00');
   const [localFreight, setLocalFreight] = useState('0.00');
-  const [salesmanExpense, setSalesmanExpense] = useState('0.00'); // Deducted (reimbursed by supplier)
-  const [schemeMoney, setSchemeMoney] = useState('0.00'); // Deducted
+  const [salesmanExpense, setSalesmanExpense] = useState('0.00');
+  const [schemeMoney, setSchemeMoney] = useState('0.00');
 
   // Unbilled & Payment Given
   const [unbilledNonGst, setUnbilledNonGst] = useState('0.00');
@@ -77,7 +77,7 @@ export default function PurchasesPage() {
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setIsModalOpen(false);
-      setSuccessMessage(`Purchase bill #${invoiceNumber || res.invoice_number} saved! Stock levels updated.`);
+      setSuccessMessage(`Purchase invoice #${invoiceNumber || res.invoice_number} saved successfully.`);
       setTimeout(() => setSuccessMessage(''), 6000);
       resetForm();
     },
@@ -220,7 +220,7 @@ export default function PurchasesPage() {
     });
   };
 
-  // Calculations: LR Charges, Local Freight, Salesman Expense & Scheme Money are all deducted
+  // Calculations
   const calculatedSubtotal = items.reduce((sum, i) => sum + i.taxable_amount, 0);
   const calculatedTaxAmount = items.reduce((sum, i) => sum + i.gst_amount, 0);
 
@@ -252,8 +252,8 @@ export default function PurchasesPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
-          title="Purchase Bills & Inventory Stock" 
-          subtitle="Vendor Tax Invoices, LR/Freight expenses, partial payments & stock creation" 
+          title="Purchase Invoices" 
+          subtitle="Manage vendor bills, line items, payments, and stock records" 
           onActionClick={() => setIsModalOpen(true)}
           actionLabel="New Purchase Entry"
         />
@@ -270,7 +270,7 @@ export default function PurchasesPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-indigo-100 glow-indigo">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-700">Total Purchases Billed</span>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-700">Total Billed Purchases</span>
                 <div className="h-11 w-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
                   <ShoppingBag className="h-5 w-5" />
                 </div>
@@ -279,28 +279,28 @@ export default function PurchasesPage() {
                 <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
                   ₹{isLoading ? '...' : totalPurchasesValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </h3>
-                <p className="text-xs font-semibold text-slate-500 mt-1">Official GST Vendor Invoices</p>
+                <p className="text-xs font-semibold text-slate-500 mt-1">Total Vendor Invoices</p>
               </div>
             </div>
 
             <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-slate-200">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-600">Recorded Invoices</span>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-600">Total Invoices</span>
                 <div className="h-11 w-11 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shadow-sm">
                   <FileText className="h-5 w-5" />
                 </div>
               </div>
               <div className="mt-4">
                 <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {isLoading ? '...' : purchases.length} <span className="text-sm font-bold text-slate-500">Bills</span>
+                  {isLoading ? '...' : purchases.length} <span className="text-sm font-bold text-slate-500">Invoices</span>
                 </h3>
-                <p className="text-xs font-semibold text-slate-500 mt-1">Direct stock creation entries</p>
+                <p className="text-xs font-semibold text-slate-500 mt-1">Purchases Record</p>
               </div>
             </div>
 
             <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-rose-200 bg-gradient-to-br from-rose-50/40 to-white glow-amber">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-rose-800">Total Pending Owed</span>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-rose-800">Pending Amount</span>
                 <div className="h-11 w-11 rounded-2xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-700 shadow-sm">
                   <CreditCard className="h-5 w-5" />
                 </div>
@@ -309,7 +309,7 @@ export default function PurchasesPage() {
                 <h3 className="text-3xl font-extrabold text-rose-800 tracking-tight">
                   ₹{isLoading ? '...' : totalPendingOwed.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </h3>
-                <p className="text-xs font-semibold text-rose-700/80 mt-1">Supplier balance payable after payments</p>
+                <p className="text-xs font-semibold text-rose-700/80 mt-1">Outstanding Supplier Payable</p>
               </div>
             </div>
           </div>
@@ -345,7 +345,7 @@ export default function PurchasesPage() {
                     <th className="p-4">Invoice #</th>
                     <th className="p-4">Date</th>
                     <th className="p-4">Billed Total</th>
-                    <th className="p-4 text-amber-800">Unbilled</th>
+                    <th className="p-4 text-amber-800">Unbilled Amount</th>
                     <th className="p-4">Total Payable</th>
                     <th className="p-4 text-emerald-800">Amount Paid</th>
                     <th className="p-4 text-rose-800">Pending Balance</th>
@@ -378,7 +378,7 @@ export default function PurchasesPage() {
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                 : 'bg-rose-50 text-rose-700 border-rose-200'
                             }`}>
-                              {pending <= 0 ? 'Fully Paid' : `₹${pending.toFixed(2)} Owed`}
+                              {pending <= 0 ? 'Paid' : `₹${pending.toFixed(2)}`}
                             </span>
                           </td>
                         </tr>
@@ -392,8 +392,8 @@ export default function PurchasesPage() {
         </main>
       </div>
 
-      {/* New Purchase Modal (Wide max-w-5xl, Ultra-Spacious Layout) */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record Vendor Purchase Entry (Direct Stock Creation)" maxWidth="max-w-5xl">
+      {/* New Purchase Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record Purchase Invoice" maxWidth="max-w-5xl">
         {formError && <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-extrabold mb-4">{formError}</div>}
         <form onSubmit={handleSubmit} className="space-y-6 text-xs">
           
@@ -401,7 +401,7 @@ export default function PurchasesPage() {
           <div className="p-6 rounded-3xl bg-slate-50/80 border border-slate-200 space-y-4">
             <span className="font-extrabold text-slate-800 text-xs uppercase tracking-wider block flex items-center gap-2">
               <FileText className="h-4 w-4 text-indigo-600" />
-              1. Supplier & Invoice Header Details
+              1. Supplier & Invoice Details
             </span>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -411,7 +411,7 @@ export default function PurchasesPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1.5">Select Supplier Vendor *</label>
+                <label className="block font-bold text-slate-700 mb-1.5">Select Supplier *</label>
                 <select required value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="w-full glass-input p-3 rounded-2xl bg-white text-xs font-bold text-slate-900">
                   <option value="">-- Choose Vendor --</option>
                   {suppliers.map((s: any) => (
@@ -431,12 +431,12 @@ export default function PurchasesPage() {
           <div className="p-6 rounded-3xl bg-indigo-50/40 border border-indigo-100 space-y-5">
             <span className="font-extrabold text-indigo-900 text-xs uppercase tracking-wider block flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-indigo-600" />
-              2. Add Goods Item (Auto-Creates Missing Products & Updates Stock)
+              2. Add Goods & Items
             </span>
 
             <div className="grid grid-cols-12 gap-3 items-end">
               <div className="col-span-12 md:col-span-5 space-y-2">
-                <label className="block text-xs font-extrabold text-slate-700">Select Existing Product OR Type Description</label>
+                <label className="block text-xs font-extrabold text-slate-700">Select Product or Enter Item Description</label>
                 <select value={selectedProduct} onChange={(e) => handleProductSelect(e.target.value)} className="w-full glass-input p-3 rounded-2xl bg-white text-xs font-bold text-indigo-950 shadow-sm">
                   <option value="">-- Pick Existing SKU Catalog --</option>
                   {products.map((p: any) => (
@@ -529,13 +529,13 @@ export default function PurchasesPage() {
             )}
           </div>
 
-          {/* SECTION 3: Financial Breakdown, Payments & Pending Balance Cards */}
+          {/* SECTION 3: Financial Breakdown & Payments */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
             {/* Card A: Itemized Billed Expenses & Invoice Total */}
             <div className="p-5 rounded-3xl bg-indigo-50/70 border border-indigo-200 space-y-2.5 text-xs shadow-sm">
               <span className="font-extrabold text-indigo-950 text-xs uppercase tracking-wider block flex items-center gap-1.5">
                 <Receipt className="h-4 w-4 text-indigo-700" />
-                Billed Invoice & Expenses
+                Billed Invoice Summary
               </span>
 
               <div className="flex justify-between text-slate-700 py-0.5">
@@ -550,19 +550,19 @@ export default function PurchasesPage() {
 
               <div className="space-y-1.5 pt-1 border-t border-indigo-100">
                 <div className="flex justify-between items-center text-slate-700">
-                  <span>LR Charges (-) (Deducted):</span>
+                  <span>LR Charges:</span>
                   <input type="number" step="0.01" value={lrCharges} onChange={(e) => setLrCharges(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
-                  <span>Local Freight (-) (Deducted):</span>
+                  <span>Local Freight:</span>
                   <input type="number" step="0.01" value={localFreight} onChange={(e) => setLocalFreight(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
-                  <span>Salesman Exp (-) (Deducted):</span>
+                  <span>Salesman Expense:</span>
                   <input type="number" step="0.01" value={salesmanExpense} onChange={(e) => setSalesmanExpense(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
-                  <span>Scheme Credit (-) (Deducted):</span>
+                  <span>Scheme Money:</span>
                   <input type="number" step="0.01" value={schemeMoney} onChange={(e) => setSchemeMoney(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
               </div>
@@ -578,13 +578,13 @@ export default function PurchasesPage() {
               <div>
                 <span className="font-extrabold text-amber-950 text-xs uppercase tracking-wider block flex items-center gap-1.5 mb-2">
                   <DollarSign className="h-4 w-4 text-amber-700" />
-                  Unbilled Non-GST Payment
+                  Unbilled Non-GST Amount
                 </span>
 
-                <p className="text-[11px] text-amber-800 font-medium mb-3">Off-the-record unbilled payment amount to be paid (not written on official GST tax bill).</p>
+                <p className="text-[11px] text-amber-800 font-medium mb-3">Unbilled cash or off-tax invoice amount to pay.</p>
 
                 <div>
-                  <label className="block font-bold text-amber-950 mb-1">Unbilled Non-GST Amount (₹)</label>
+                  <label className="block font-bold text-amber-950 mb-1">Unbilled Amount (₹)</label>
                   <input type="number" step="0.01" value={unbilledNonGst} onChange={(e) => setUnbilledNonGst(e.target.value)} className="w-full glass-input p-2.5 rounded-xl text-amber-950 font-extrabold text-sm border-amber-300" />
                 </div>
               </div>
@@ -600,17 +600,17 @@ export default function PurchasesPage() {
               <div>
                 <span className="font-extrabold text-emerald-950 text-xs uppercase tracking-wider block flex items-center gap-1.5 mb-2">
                   <CreditCard className="h-4 w-4 text-emerald-700" />
-                  Supplier Payment & Balance
+                  Payment & Balance
                 </span>
 
                 <div>
-                  <label className="block font-bold text-slate-800 mb-1">Amount Paid / Money Given (₹)</label>
+                  <label className="block font-bold text-slate-800 mb-1">Amount Paid (₹)</label>
                   <input type="number" step="0.01" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="0.00" className="w-full glass-input p-2.5 rounded-xl text-emerald-800 font-extrabold text-sm border-emerald-300" />
                 </div>
               </div>
 
               <div className="space-y-1 border-t-2 border-emerald-200 pt-2">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block">Pending Balance Owed</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase block">Pending Balance</span>
                 <div className="flex items-center justify-between">
                   <span className={`text-base font-extrabold ${pendingBalanceOwed > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
                     ₹{pendingBalanceOwed.toFixed(2)}
@@ -618,7 +618,7 @@ export default function PurchasesPage() {
                   <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border ${
                     pendingBalanceOwed <= 0 ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-rose-100 text-rose-800 border-rose-200'
                   }`}>
-                    {pendingBalanceOwed <= 0 ? 'Fully Settled' : 'Pending Owed'}
+                    {pendingBalanceOwed <= 0 ? 'Paid' : 'Pending'}
                   </span>
                 </div>
               </div>
@@ -630,7 +630,7 @@ export default function PurchasesPage() {
             disabled={createPurchaseMutation.isPending}
             className="w-full py-4 bg-gradient-to-r from-indigo-600 via-teal-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-500/25 transition-all text-sm uppercase tracking-wider mt-4"
           >
-            {createPurchaseMutation.isPending ? 'Processing Purchase & Updating Stock...' : 'Save Purchase Entry & Directly Create/Update Product Stock'}
+            {createPurchaseMutation.isPending ? 'Saving Purchase Invoice...' : 'Save Purchase Invoice'}
           </button>
         </form>
       </Modal>
