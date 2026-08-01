@@ -78,6 +78,7 @@ export const api = {
   // Parties
   getParties: (type?: string) => fetchAPI<any[]>(`/parties/${type ? `?party_type=${type}` : ''}`),
   createParty: (data: any) => fetchAPI<any>('/parties/', { method: 'POST', body: JSON.stringify(data) }),
+  updateParty: (id: string, data: any) => fetchAPI<any>(`/parties/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteParty: (id: string) => fetchAPI<any>(`/parties/${id}`, { method: 'DELETE' }),
 
   // Ledger Accounts
