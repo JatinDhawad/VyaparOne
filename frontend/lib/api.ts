@@ -1,5 +1,9 @@
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8088/api/v1';
-const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
+let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8088/api/v1';
+rawApiUrl = rawApiUrl.trim().replace(/\/+$/, '');
+if (!rawApiUrl.includes('/api/v1')) {
+  rawApiUrl = `${rawApiUrl}/api/v1`;
+}
+const API_BASE_URL = rawApiUrl;
 
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('vyaparone_token') : null;
@@ -44,10 +48,10 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
     return data as T;
   } catch (err: any) {
     if (err.name === 'AbortError') {
-      throw new Error('Server response timed out (45s). The backend server may still be spinning up on Render. Please try again in a moment.');
+      throw new Error(`Server response timed out (45s) while connecting to ${API_BASE_URL}. The backend on Render may still be spinning up, or the backend URL configured on Vercel is incorrect.`);
     }
     if (err.message === 'Failed to fetch' || err instanceof TypeError) {
-      throw new Error(`Unable to connect to backend API (${API_BASE_URL}). If using Render free tier, the backend might be waking up or CORS/URL is misconfigured.`);
+      throw new Error(`Unable to connect to backend API (${API_BASE_URL}). Please verify your backend server status on Render or Vercel NEXT_PUBLIC_API_URL settings.`);
     }
     throw err;
   } finally {
