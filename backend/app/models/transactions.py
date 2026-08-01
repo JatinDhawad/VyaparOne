@@ -21,8 +21,10 @@ class PurchaseInvoice(Base):
     subtotal: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     discount_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     tax_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
-    additional_expenses: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
-    grand_total: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    additional_expenses: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # Billed logistics/freight
+    grand_total: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # Official GST Billed Invoice Total
+    unbilled_nongst_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # Separate unbilled payment
+    total_payable_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # grand_total + unbilled_nongst_amount
     
     notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)

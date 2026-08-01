@@ -8,7 +8,10 @@ from decimal import Decimal
 # ── Purchase Items ────────────────────────────────────────────────────────────
 
 class PurchaseItemCreate(BaseModel):
-    product_id: uuid.UUID
+    product_id: Optional[uuid.UUID] = None
+    product_name: Optional[str] = None
+    hsn_code: Optional[str] = None
+    unit: Optional[str] = "BAG"
     billed_quantity: Decimal = Field(..., gt=0)
     free_quantity: Decimal = Decimal("0.00")
     unit_purchase_price: Decimal = Field(..., ge=0)
@@ -40,6 +43,7 @@ class PurchaseInvoiceCreate(BaseModel):
     invoice_date: date
     billing_mode: str = "TAX_INVOICE"
     additional_expenses: Decimal = Decimal("0.00")
+    unbilled_nongst_amount: Decimal = Decimal("0.00")
     notes: Optional[str] = None
     items: List[PurchaseItemCreate]
 
@@ -54,6 +58,8 @@ class PurchaseInvoiceResponse(BaseModel):
     tax_amount: Decimal
     additional_expenses: Decimal
     grand_total: Decimal
+    unbilled_nongst_amount: Decimal = Decimal("0.00")
+    total_payable_amount: Decimal = Decimal("0.00")
     notes: Optional[str] = None
     created_by: Optional[uuid.UUID] = None
     created_at: datetime
