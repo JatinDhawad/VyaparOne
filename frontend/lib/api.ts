@@ -28,7 +28,9 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
       signal: controller.signal,
     });
 
-    if (response.status === 401) {
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 401 || (data && typeof data.detail === 'string' && (data.detail.includes('User not found') || data.detail.includes('session expired')))) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('vyaparone_token');
         localStorage.removeItem('vyaparone_user');
@@ -37,8 +39,6 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
         }
       }
     }
-
-    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       const errorMsg = data.detail || 'An error occurred while communicating with the server.';
