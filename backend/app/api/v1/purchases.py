@@ -7,6 +7,10 @@ import uuid
 
 from app.core.database import get_db
 from app.models.transactions import PurchaseInvoice, PurchaseItem
+from app.models.user import User
+from app.schemas.transactions import PurchaseInvoiceCreate, PurchaseInvoiceResponse
+from app.services.purchase_service import create_purchase_invoice
+from app.api.deps import get_current_active_user
 
 router = APIRouter(prefix="/purchases", tags=["Purchases"])
 
