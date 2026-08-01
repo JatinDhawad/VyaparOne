@@ -15,6 +15,7 @@ from app.api.deps import get_current_active_user
 router = APIRouter(prefix="/payments", tags=["Payments & Receipts"])
 
 
+@router.post("", response_model=PaymentResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=PaymentResponse, status_code=status.HTTP_201_CREATED)
 async def create_payment(
     payment_in: PaymentCreate,
@@ -63,6 +64,7 @@ async def create_payment(
     return db_payment
 
 
+@router.get("", response_model=List[PaymentResponse])
 @router.get("/", response_model=List[PaymentResponse])
 async def list_payments(
     skip: int = 0,

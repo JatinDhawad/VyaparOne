@@ -23,6 +23,7 @@ def _get_account_type_for_party(party_type: str) -> str:
     return "ASSET"  # Default for BOTH
 
 
+@router.post("", response_model=PartyResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=PartyResponse, status_code=status.HTTP_201_CREATED)
 async def create_party(
     party_in: PartyCreate,
@@ -52,6 +53,7 @@ async def create_party(
     return db_party
 
 
+@router.get("", response_model=List[PartyResponse])
 @router.get("/", response_model=List[PartyResponse])
 async def list_parties(
     skip: int = 0,

@@ -15,6 +15,7 @@ from app.api.deps import get_current_active_user
 router = APIRouter(prefix="/purchases", tags=["Purchases"])
 
 
+@router.post("", response_model=PurchaseInvoiceResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=PurchaseInvoiceResponse, status_code=status.HTTP_201_CREATED)
 async def create_purchase(
     invoice_in: PurchaseInvoiceCreate,
@@ -41,6 +42,7 @@ async def create_purchase(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
+@router.get("", response_model=List[PurchaseInvoiceResponse])
 @router.get("/", response_model=List[PurchaseInvoiceResponse])
 async def list_purchases(
     skip: int = 0,
