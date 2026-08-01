@@ -220,7 +220,7 @@ export default function PurchasesPage() {
     });
   };
 
-  // Calculations: Salesman Expense & Scheme Money are deducted
+  // Calculations: LR Charges, Local Freight, Salesman Expense & Scheme Money are all deducted
   const calculatedSubtotal = items.reduce((sum, i) => sum + i.taxable_amount, 0);
   const calculatedTaxAmount = items.reduce((sum, i) => sum + i.gst_amount, 0);
 
@@ -229,7 +229,7 @@ export default function PurchasesPage() {
   const numSalesExp = parseFloat(salesmanExpense) || 0;
   const numScheme = parseFloat(schemeMoney) || 0;
 
-  const totalBilledExpenses = numLr + numLocalFr - numSalesExp - numScheme;
+  const totalBilledExpenses = - (numLr + numLocalFr + numSalesExp + numScheme);
   const officialBilledTotal = calculatedSubtotal + calculatedTaxAmount + totalBilledExpenses;
 
   const unbilledPayable = parseFloat(unbilledNonGst) || 0;
@@ -550,12 +550,12 @@ export default function PurchasesPage() {
 
               <div className="space-y-1.5 pt-1 border-t border-indigo-100">
                 <div className="flex justify-between items-center text-slate-700">
-                  <span>LR Charges (+):</span>
-                  <input type="number" step="0.01" value={lrCharges} onChange={(e) => setLrCharges(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs" />
+                  <span>LR Charges (-) (Deducted):</span>
+                  <input type="number" step="0.01" value={lrCharges} onChange={(e) => setLrCharges(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
-                  <span>Local Freight (+):</span>
-                  <input type="number" step="0.01" value={localFreight} onChange={(e) => setLocalFreight(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs" />
+                  <span>Local Freight (-) (Deducted):</span>
+                  <input type="number" step="0.01" value={localFreight} onChange={(e) => setLocalFreight(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
                   <span>Salesman Exp (-) (Deducted):</span>
