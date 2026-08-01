@@ -15,28 +15,42 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const [statusMessage, setStatusMessage] = useState('');
+
+  const executeLogin = async (loginEmail: string, loginPass: string) => {
     setLoading(true);
     setError('');
+    setStatusMessage('Connecting to server...');
+
+    const timer = setTimeout(() => {
+      setStatusMessage('Waking up cloud server on Render... (free tier cold start takes ~30 seconds on first load)');
+    }, 2500);
 
     try {
-      const res = await api.login({ email, password });
-      // Fetch user profile
+      const res = await api.login({ email: loginEmail, password: loginPass });
+      setStatusMessage('Authentication successful! Fetching user profile...');
       localStorage.setItem('vyaparone_token', res.access_token);
       const userRes = await api.getMe();
       setAuth(res.access_token, userRes);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check credentials.');
+      setError(err.message || 'Login failed. Please check credentials or backend server status.');
     } finally {
+      clearTimeout(timer);
       setLoading(false);
+      setStatusMessage('');
     }
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeLogin(email, password);
   };
 
   const handleQuickLogin = (demoEmail: string, demoPass: string) => {
     setEmail(demoEmail);
     setPassword(demoPass);
+    executeLogin(demoEmail, demoPass);
   };
 
   return (
@@ -109,6 +123,13 @@ export default function LoginPage() {
               {loading ? 'Authenticating...' : 'Sign In to ERP'}
               <ArrowRight className="h-4 w-4" />
             </button>
+
+            {loading && statusMessage && (
+              <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs flex items-center gap-2 animate-pulse">
+                <span className="h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
+                <span>{statusMessage}</span>
+              </div>
+            )}
           </form>
 
           {/* Quick Demo Launchers */}

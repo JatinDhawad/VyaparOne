@@ -1,4 +1,5 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8088/api/v1';
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8088/api/v1';
+const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
 
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('vyaparone_token') : null;
@@ -12,29 +13,46 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout for cloud cold-starts
 
-  if (response.status === 401) {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('vyaparone_token');
-      localStorage.removeItem('vyaparone_user');
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+  try {
+    const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const response = await fetch(`${API_BASE_URL}${formattedEndpoint}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+
+    if (response.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('vyaparone_token');
+        localStorage.removeItem('vyaparone_user');
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
       }
     }
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const errorMsg = data.detail || 'An error occurred while communicating with the server.';
+      throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+    }
+
+    return data as T;
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      throw new Error('Server response timed out (45s). The backend server may still be spinning up on Render. Please try again in a moment.');
+    }
+    if (err.message === 'Failed to fetch' || err instanceof TypeError) {
+      throw new Error(`Unable to connect to backend API (${API_BASE_URL}). If using Render free tier, the backend might be waking up or CORS/URL is misconfigured.`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    const errorMsg = data.detail || 'An error occurred while communicating with the server.';
-    throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
-  }
-
-  return data as T;
 }
 
 export const api = {
