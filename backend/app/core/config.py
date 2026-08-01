@@ -13,6 +13,15 @@ class Settings(BaseSettings):
     
     # Database Configuration
     DATABASE_URL: str = "sqlite+aiosqlite:///./vyaparone.db" # Default fallback for local dev
+
+    @property
+    def ASYNC_DATABASE_URL(self) -> str:
+        url = self.DATABASE_URL.strip()
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
     
     # CORS Configuration
     CORS_ORIGINS: List[str] = [
