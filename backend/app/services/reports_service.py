@@ -400,10 +400,10 @@ async def get_dashboard_summary(db: AsyncSession) -> DashboardSummaryResponse:
     tot_net_profit = sum(Decimal(str(i.net_profit or 0)) for i in sales_invs)
     tot_gross_profit = sum((Decimal(str(i.subtotal or 0)) - Decimal(str(i.discount_amount or 0)) - Decimal(str(i.total_cost_of_goods or 0))) for i in sales_invs)
 
-    # 2. Purchases
+    # 2. Purchases (Total Amount to be Paid)
     p_res = await db.execute(select(PurchaseInvoice))
     pur_invs = p_res.scalars().all()
-    tot_purchases = sum(Decimal(str(i.grand_total or 0)) for i in pur_invs)
+    tot_purchases = sum(Decimal(str(i.total_payable_amount or i.grand_total or 0)) for i in pur_invs)
 
     # 3. Expenses
     e_res = await db.execute(select(Expense))
