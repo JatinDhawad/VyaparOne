@@ -6,11 +6,7 @@ from sqlalchemy.orm import selectinload
 import uuid
 
 from app.core.database import get_db
-from app.models.transactions import PurchaseInvoice
-from app.models.user import RoleName, User
-from app.schemas.transactions import PurchaseInvoiceCreate, PurchaseInvoiceResponse
-from app.services.purchase_service import create_purchase_invoice
-from app.api.deps import get_current_active_user, require_role
+from app.models.transactions import PurchaseInvoice, PurchaseItem
 
 router = APIRouter(prefix="/purchases", tags=["Purchases"])
 
@@ -27,7 +23,16 @@ async def create_purchase(
     """
     try:
         invoice = await create_purchase_invoice(db, invoice_in, created_by=current_user.id)
-        return invoice
+        # Fetch eagerly loaded invoice
+        res = await db.execute(
+            select(PurchaseInvoice)
+            .options(
+                selectinload(PurchaseInvoice.items).selectinload(PurchaseItem.product),
+                selectinload(PurchaseInvoice.supplier)
+            )
+            .where(PurchaseInvoice.id == invoice.id)
+        )
+        return res.scalars().first()
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -41,7 +46,10 @@ async def list_purchases(
     current_user: User = Depends(get_current_active_user),
 ):
     """List purchase invoices with optional supplier filter."""
-    query = select(PurchaseInvoice).options(selectinload(PurchaseInvoice.items))
+    query = select(PurchaseInvoice).options(
+        selectinload(PurchaseInvoice.items).selectinload(PurchaseItem.product),
+        selectinload(PurchaseInvoice.supplier)
+    )
     if supplier_id:
         query = query.where(PurchaseInvoice.supplier_id == supplier_id)
     result = await db.execute(query.order_by(PurchaseInvoice.created_at.desc()).offset(skip).limit(limit))
@@ -57,7 +65,10 @@ async def get_purchase(
     """Get a single purchase invoice with items."""
     result = await db.execute(
         select(PurchaseInvoice)
-        .options(selectinload(PurchaseInvoice.items))
+        .options(
+            selectinload(PurchaseInvoice.items).selectinload(PurchaseItem.product),
+            selectinload(PurchaseInvoice.supplier)
+        )
         .where(PurchaseInvoice.id == purchase_id)
     )
     invoice = result.scalars().first()

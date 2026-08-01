@@ -39,6 +39,7 @@ class PurchaseInvoice(Base):
     )
 
     items: Mapped[List["PurchaseItem"]] = relationship("PurchaseItem", back_populates="purchase_invoice", cascade="all, delete-orphan")
+    supplier: Mapped["Party"] = relationship("Party")
 
 
 class PurchaseItem(Base):
@@ -65,6 +66,7 @@ class PurchaseItem(Base):
     line_total: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
 
     purchase_invoice: Mapped["PurchaseInvoice"] = relationship("PurchaseInvoice", back_populates="items")
+    product: Mapped["Product"] = relationship("Product")
 
 
 class SalesInvoice(Base):

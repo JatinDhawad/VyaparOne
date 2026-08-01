@@ -3,6 +3,8 @@ from typing import Optional, List
 import uuid
 from datetime import datetime, date
 from decimal import Decimal
+from app.schemas.party import PartyResponse
+from app.schemas.company import ProductResponse
 
 
 # ── Purchase Items ────────────────────────────────────────────────────────────
@@ -30,6 +32,7 @@ class PurchaseItemResponse(BaseModel):
     allocated_additional_cost: Decimal
     effective_unit_landed_cost: Decimal
     line_total: Decimal
+    product: Optional[ProductResponse] = None
 
     class Config:
         from_attributes = True
@@ -75,6 +78,7 @@ class PurchaseInvoiceResponse(BaseModel):
     created_by: Optional[uuid.UUID] = None
     created_at: datetime
     items: List[PurchaseItemResponse] = []
+    supplier: Optional[PartyResponse] = None
 
     class Config:
         from_attributes = True
