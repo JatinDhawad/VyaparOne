@@ -13,6 +13,16 @@ from app.api.v1.expenses import router as expenses_router
 from app.api.v1.reports import router as reports_router
 
 api_router = APIRouter()
+
+@api_router.get("/")
+@api_router.get("")
+async def api_v1_root():
+    return {
+        "status": "online",
+        "message": "VyaparOne ERP API v1 Operational",
+        "docs": "/docs"
+    }
+
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
 api_router.include_router(companies_router)
