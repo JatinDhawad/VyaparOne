@@ -1,0 +1,34 @@
+'use client';
+
+import './globals.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: 1,
+      },
+    },
+  }));
+
+  return (
+    <html lang="en" className="dark">
+      <head>
+        <title>VyaparOne ERP | Trading & Distribution Management</title>
+        <meta name="description" content="Production-grade Enterprise Resource Planning system for FMCG wholesale distribution, trading economics, landed cost calculation, and financial ledger accounting." />
+      </head>
+      <body className="antialiased min-h-screen bg-[#090d16] text-gray-100 selection:bg-indigo-500 selection:text-white">
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      </body>
+    </html>
+  );
+}
