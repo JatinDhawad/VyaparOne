@@ -15,6 +15,7 @@ from app.api.deps import get_current_active_user
 router = APIRouter(prefix="/expenses", tags=["Operational Expenses"])
 
 
+@router.post("", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
 async def create_expense(
     expense_in: ExpenseCreate,
@@ -53,6 +54,7 @@ async def create_expense(
     return db_expense
 
 
+@router.get("", response_model=List[ExpenseResponse])
 @router.get("/", response_model=List[ExpenseResponse])
 async def list_expenses(
     skip: int = 0,

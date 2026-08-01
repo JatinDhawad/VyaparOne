@@ -14,6 +14,7 @@ from app.api.deps import get_current_active_user, require_role
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
+@router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     product_in: ProductCreate,
@@ -41,6 +42,7 @@ async def create_product(
     return result.scalars().first()
 
 
+@router.get("", response_model=List[ProductResponse])
 @router.get("/", response_model=List[ProductResponse])
 async def list_products(
     skip: int = 0,
