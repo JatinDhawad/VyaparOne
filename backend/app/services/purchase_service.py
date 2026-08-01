@@ -44,7 +44,7 @@ async def create_purchase_invoice(
     unbilled_nongst = Decimal(str(invoice_in.unbilled_nongst_amount or 0))
     amt_paid = Decimal(str(invoice_in.amount_paid or 0))
 
-    billed_expenses = lr_charges + local_freight + salesman_expense - scheme_money
+    billed_expenses = lr_charges + local_freight - salesman_expense - scheme_money
 
     db_items = []
 
