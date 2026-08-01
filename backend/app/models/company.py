@@ -53,15 +53,15 @@ class Product(Base):
     company_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("companies.id"), nullable=True)
     category_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("categories.id"), nullable=True)
     
-    sku: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    sku: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
-    hsn_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    hsn_code: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     gst_rate: Mapped[float] = mapped_column(Numeric(5, 2), default=0.00) # e.g. 5.00, 12.00, 18.00
-    unit: Mapped[str] = mapped_column(String(20), default="BOX") # BOX, KG, PKT, BAG
+    unit: Mapped[str] = mapped_column(String(20), default="BAG") # BAG, BOX, KG, PKT
     
     default_purchase_price: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     default_selling_price: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
-    min_stock_alert: Mapped[int] = mapped_column(Integer, default=10)
+    min_stock_alert: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

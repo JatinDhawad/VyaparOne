@@ -69,15 +69,15 @@ class GodownStockResponse(BaseModel):
 
 class ProductBase(BaseModel):
     name: str
-    sku: str
+    hsn_code: str
+    sku: Optional[str] = None
     company_id: Optional[int] = None
     category_id: Optional[int] = None
-    hsn_code: Optional[str] = None
     gst_rate: Decimal = Decimal("0.00")
-    unit: str = "BOX"
+    unit: str = "BAG"
     default_purchase_price: Decimal = Decimal("0.00")
     default_selling_price: Decimal = Decimal("0.00")
-    min_stock_alert: int = 10
+    min_stock_alert: int = 0
     is_active: bool = True
 
 class ProductCreate(ProductBase):
@@ -85,9 +85,10 @@ class ProductCreate(ProductBase):
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
+    hsn_code: Optional[str] = None
+    sku: Optional[str] = None
     company_id: Optional[int] = None
     category_id: Optional[int] = None
-    hsn_code: Optional[str] = None
     gst_rate: Optional[Decimal] = None
     unit: Optional[str] = None
     default_purchase_price: Optional[Decimal] = None

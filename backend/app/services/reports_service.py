@@ -416,11 +416,11 @@ async def get_dashboard_summary(db: AsyncSession) -> DashboardSummaryResponse:
     rec_rep = await get_receivables_report(db)
     pay_rep = await get_payables_report(db)
 
-    # 5. Low stock count
+    # 5. Out of stock count (min threshold feature disabled)
     stk_res = await db.execute(
         select(GodownStock, Product)
         .join(Product, Product.id == GodownStock.product_id)
-        .where(GodownStock.current_stock <= Product.min_stock_alert)
+        .where(GodownStock.current_stock <= 0)
     )
     low_stock_count = len(stk_res.all())
 

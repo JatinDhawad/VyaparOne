@@ -166,7 +166,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Low Stock Banner */}
+            {/* Out of Stock Banner */}
             <div className="glass-card p-6 rounded-2xl border-amber-200 bg-amber-50/50 space-y-4">
               <div className="flex items-center justify-between border-b border-amber-100 pb-3">
                 <span className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-2">
@@ -180,9 +180,9 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-extrabold text-amber-700">{isLoading ? '...' : summary?.low_stock_items_count || 0}</span>
-                  <span className="text-xs font-bold text-slate-700">Items below minimum stock threshold</span>
+                  <span className="text-xs font-bold text-slate-700">Out-of-Stock Items (0 stock balance)</span>
                 </div>
-                <p className="text-xs font-medium text-slate-500 mt-2">Reorder fast-moving FMCG stock to prevent out-of-stock billing delays.</p>
+                <p className="text-xs font-medium text-slate-500 mt-2">Record purchase bills to directly create and increment product stock.</p>
               </div>
             </div>
           </div>

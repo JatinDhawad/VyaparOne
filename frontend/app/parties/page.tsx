@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Search, Phone, Mail, MapPin, Filter } from 'lucide-react';
+import { Search, Phone, Mail, MapPin } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
@@ -26,7 +26,6 @@ export default function PartiesPage() {
   const [gstin, setGstin] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
-  const [creditLimit, setCreditLimit] = useState('50000');
   const [creditDays, setCreditDays] = useState('30');
   const [formError, setFormError] = useState('');
 
@@ -55,7 +54,6 @@ export default function PartiesPage() {
     setGstin('');
     setCity('');
     setState('');
-    setCreditLimit('50000');
     setCreditDays('30');
     setFormError('');
   };
@@ -70,7 +68,7 @@ export default function PartiesPage() {
       gstin: gstin || null,
       city: city || null,
       state: state || null,
-      credit_limit: parseFloat(creditLimit) || 0,
+      credit_limit: 0,
       credit_days: parseInt(creditDays) || 30,
     });
   };
@@ -86,7 +84,7 @@ export default function PartiesPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
           title="Parties Directory" 
-          subtitle="Suppliers & Customers database with credit limit tracking & auto-ledger account linkage" 
+          subtitle="Suppliers & Customers database with auto-ledger account linkage" 
           onActionClick={isAdmin ? () => setIsModalOpen(true) : undefined}
           actionLabel="Add New Party"
         />
@@ -98,15 +96,14 @@ export default function PartiesPage() {
               <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search party by name or city..."
+                placeholder="Search parties by name or city..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full glass-input pl-10 pr-4 py-2 rounded-xl text-xs"
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
+            <div className="flex items-center gap-3 w-full md:w-auto">
               <span className="text-xs font-semibold text-slate-500">Filter Type:</span>
               <div className="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                 {['', 'CUSTOMER', 'SUPPLIER', 'BOTH'].map((type) => (
@@ -150,8 +147,8 @@ export default function PartiesPage() {
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[10px] font-bold text-slate-400 block uppercase">Credit Limit</span>
-                      <span className="text-sm font-extrabold text-slate-900">₹{parseFloat(party.credit_limit || 0).toLocaleString('en-IN')}</span>
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase">Payment Terms</span>
+                      <span className="text-xs font-bold text-slate-800">{party.credit_days || 30} Days</span>
                     </div>
                   </div>
 
@@ -227,8 +224,8 @@ export default function PartiesPage() {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Credit Limit (₹)</label>
-              <input type="number" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} className="w-full glass-input p-2.5 rounded-xl" />
+              <label className="block font-bold text-slate-700 mb-1">Credit Terms (Days)</label>
+              <input type="number" value={creditDays} onChange={(e) => setCreditDays(e.target.value)} placeholder="30" className="w-full glass-input p-2.5 rounded-xl" />
             </div>
           </div>
 
