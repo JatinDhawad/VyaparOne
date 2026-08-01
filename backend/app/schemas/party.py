@@ -15,7 +15,7 @@ class PartyBase(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     credit_limit: Optional[Decimal] = Decimal("0.00")
-    credit_days: int = 30
+    credit_days: Optional[int] = 30
     is_active: bool = True
 
 class PartyCreate(PartyBase):
