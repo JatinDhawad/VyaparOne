@@ -2,7 +2,19 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, PackageCheck, Receipt, DollarSign } from 'lucide-react';
+import { 
+  Plus, 
+  Trash2, 
+  PackageCheck, 
+  Receipt, 
+  DollarSign, 
+  ShoppingBag, 
+  FileText, 
+  Search, 
+  TrendingUp,
+  Truck,
+  Sparkles
+} from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
@@ -11,6 +23,7 @@ import { api } from '@/lib/api';
 export default function PurchasesPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formError, setFormError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -55,7 +68,7 @@ export default function PurchasesPage() {
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setIsModalOpen(false);
-      setSuccessMessage(`Purchase invoice #${invoiceNumber || res.invoice_number} recorded successfully! Stock quantities created & updated.`);
+      setSuccessMessage(`Purchase bill #${invoiceNumber || res.invoice_number} saved successfully! Product stock levels updated.`);
       setTimeout(() => setSuccessMessage(''), 6000);
       resetForm();
     },
@@ -111,7 +124,7 @@ export default function PurchasesPage() {
     }
 
     if (!productName && !selectedProduct) {
-      setFormError('Please enter a product description / name.');
+      setFormError('Please select or enter a product description.');
       return;
     }
 
@@ -137,7 +150,7 @@ export default function PurchasesPage() {
       },
     ]);
 
-    // Reset item add row
+    // Reset item add inputs
     setSelectedProduct('');
     setProductName('');
     setHsnCode('');
@@ -155,7 +168,7 @@ export default function PurchasesPage() {
       return;
     }
     if (items.length === 0) {
-      setFormError('Please add at least one line item to the bill.');
+      setFormError('Please add at least one line item to the purchase bill.');
       return;
     }
 
@@ -179,7 +192,7 @@ export default function PurchasesPage() {
     });
   };
 
-  // Calculations
+  // Summary Calculations
   const calculatedSubtotal = items.reduce((sum, i) => sum + i.taxable_amount, 0);
   const calculatedTaxAmount = items.reduce((sum, i) => sum + i.gst_amount, 0);
   const billedFreight = parseFloat(freightCharges) || 0;
@@ -187,128 +200,224 @@ export default function PurchasesPage() {
   const unbilledPayable = parseFloat(unbilledNonGst) || 0;
   const totalPayableAmount = officialBilledTotal + unbilledPayable;
 
+  // Filtered List
+  const filteredPurchases = purchases.filter((p: any) =>
+    (p.invoice_number && p.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  // Overall Totals
+  const totalPurchasesValue = purchases.reduce((sum: number, p: any) => sum + parseFloat(p.grand_total || 0), 0);
+  const totalUnbilledValue = purchases.reduce((sum: number, p: any) => sum + parseFloat(p.unbilled_nongst_amount || 0), 0);
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
-          title="Purchase Bills & Inbound Stock" 
-          subtitle="Vendor bill entry, unbilled Non-GST tracking & direct product stock creation" 
+          title="Purchase Bills & Inventory Stock" 
+          subtitle="Vendor Tax Invoices, unbilled Non-GST tracking & real-time stock creation" 
           onActionClick={() => setIsModalOpen(true)}
           actionLabel="New Purchase Entry"
         />
 
-        <main className="p-8 space-y-6 flex-1 overflow-y-auto">
+        <main className="p-8 space-y-8 flex-1 overflow-y-auto">
           {successMessage && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-sm flex items-center gap-2">
-              <PackageCheck className="h-5 w-5 text-emerald-600" />
-              {successMessage}
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm font-bold shadow-sm flex items-center gap-3 animate-in fade-in duration-300">
+              <PackageCheck className="h-6 w-6 text-emerald-600 shrink-0" />
+              <span>{successMessage}</span>
             </div>
           )}
 
-          {/* Purchase List Table */}
-          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
-            <div className="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm flex items-center justify-between">
-              <span>Recent Purchase Bills</span>
-              <span className="text-xs text-slate-500 font-medium">Total Invoices: {purchases.length}</span>
+          {/* Top 3 Metric Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Total Purchases Card */}
+            <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-indigo-100 glow-indigo">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-700">Total Billed Invoices</span>
+                <div className="h-11 w-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                  <ShoppingBag className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                  ₹{isLoading ? '...' : totalPurchasesValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 mt-1">Official GST Vendor Invoices</p>
+              </div>
             </div>
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
-                <tr>
-                  <th className="p-4">Invoice #</th>
-                  <th className="p-4">Date</th>
-                  <th className="p-4">Supplier</th>
-                  <th className="p-4">Subtotal</th>
-                  <th className="p-4">GST Tax</th>
-                  <th className="p-4">Billed Total</th>
-                  <th className="p-4 text-amber-700">Unbilled (Non-GST)</th>
-                  <th className="p-4 text-emerald-700">Total Payable</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {isLoading ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-slate-500">Loading purchase bills...</td></tr>
-                ) : purchases.length === 0 ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-slate-500">No purchase invoices recorded yet.</td></tr>
-                ) : (
-                  purchases.map((p: any) => {
-                    const bTotal = parseFloat(p.grand_total || 0);
-                    const unbilled = parseFloat(p.unbilled_nongst_amount || 0);
-                    const payable = parseFloat(p.total_payable_amount || bTotal + unbilled);
 
-                    return (
-                      <tr key={p.id} className="hover:bg-slate-100/50 transition-colors">
-                        <td className="p-4 font-mono font-bold text-indigo-700">{p.invoice_number}</td>
-                        <td className="p-4">{p.invoice_date}</td>
-                        <td className="p-4 font-semibold text-slate-900">{p.supplier_id}</td>
-                        <td className="p-4">₹{parseFloat(p.subtotal || 0).toFixed(2)}</td>
-                        <td className="p-4 text-slate-600">₹{parseFloat(p.tax_amount || 0).toFixed(2)}</td>
-                        <td className="p-4 font-extrabold text-slate-900">₹{bTotal.toFixed(2)}</td>
-                        <td className="p-4 text-amber-700 font-bold">₹{unbilled.toFixed(2)}</td>
-                        <td className="p-4 font-extrabold text-emerald-700">₹{payable.toFixed(2)}</td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+            {/* Total Invoice Count */}
+            <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-slate-200">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-600">Recorded Bills</span>
+                <div className="h-11 w-11 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shadow-sm">
+                  <FileText className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                  {isLoading ? '...' : purchases.length} <span className="text-sm font-bold text-slate-500">Bills</span>
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 mt-1">Direct stock creation entries</p>
+              </div>
+            </div>
+
+            {/* Unbilled Payments Card */}
+            <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-amber-200 bg-gradient-to-br from-amber-50/40 to-white glow-amber">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-amber-800">Unbilled Non-GST Owed</span>
+                <div className="h-11 w-11 rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700 shadow-sm">
+                  <DollarSign className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <h3 className="text-3xl font-extrabold text-amber-800 tracking-tight">
+                  ₹{isLoading ? '...' : totalUnbilledValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </h3>
+                <p className="text-xs font-semibold text-amber-700/80 mt-1">Separate off-the-record payment liability</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Table Panel */}
+          <div className="glass-panel p-6 rounded-3xl space-y-6 border border-slate-200">
+            {/* Table Controls */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search by Invoice Number..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full glass-input pl-11 pr-4 py-2.5 rounded-2xl text-xs font-medium"
+                />
+              </div>
+
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                New Purchase Entry
+              </button>
+            </div>
+
+            {/* Purchase List Table */}
+            <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-100/90 text-slate-600 border-b border-slate-200 uppercase text-[10px] font-extrabold tracking-wider">
+                  <tr>
+                    <th className="p-4">Invoice #</th>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Subtotal</th>
+                    <th className="p-4">GST Tax</th>
+                    <th className="p-4">Official Billed Total</th>
+                    <th className="p-4 text-amber-800">Unbilled Non-GST</th>
+                    <th className="p-4 text-emerald-800">Total Payable</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                  {isLoading ? (
+                    <tr><td colSpan={7} className="p-8 text-center text-slate-500 text-sm">Loading purchase bills...</td></tr>
+                  ) : filteredPurchases.length === 0 ? (
+                    <tr><td colSpan={7} className="p-8 text-center text-slate-500 text-sm">No purchase invoices found.</td></tr>
+                  ) : (
+                    filteredPurchases.map((p: any) => {
+                      const bTotal = parseFloat(p.grand_total || 0);
+                      const unbilled = parseFloat(p.unbilled_nongst_amount || 0);
+                      const payable = parseFloat(p.total_payable_amount || bTotal + unbilled);
+
+                      return (
+                        <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="p-4 font-mono font-extrabold text-indigo-700 text-sm">{p.invoice_number}</td>
+                          <td className="p-4 font-medium text-slate-600">{p.invoice_date}</td>
+                          <td className="p-4 font-semibold text-slate-800">₹{parseFloat(p.subtotal || 0).toFixed(2)}</td>
+                          <td className="p-4 font-semibold text-slate-600">₹{parseFloat(p.tax_amount || 0).toFixed(2)}</td>
+                          <td className="p-4 font-extrabold text-slate-900 text-sm">₹{bTotal.toFixed(2)}</td>
+                          <td className="p-4 text-amber-800 font-extrabold">₹{unbilled.toFixed(2)}</td>
+                          <td className="p-4 font-extrabold text-emerald-700 text-sm">₹{payable.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </main>
       </div>
 
-      {/* New Purchase Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record Vendor Purchase Entry (Direct Stock Creation)">
-        {formError && <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold mb-3">{formError}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          {/* Header Row */}
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Invoice Number *</label>
-              <input required type="text" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="e.g. 43" className="w-full glass-input p-2.5 rounded-xl font-mono" />
-            </div>
+      {/* New Purchase Modal (Wide max-w-5xl, Ultra-Spacious Layout) */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record Purchase Entry (Direct Stock Upsert)" maxWidth="max-w-5xl">
+        {formError && <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-extrabold mb-4">{formError}</div>}
+        <form onSubmit={handleSubmit} className="space-y-6 text-xs">
+          
+          {/* SECTION 1: Supplier & Bill Metadata */}
+          <div className="p-6 rounded-3xl bg-slate-50/80 border border-slate-200 space-y-4">
+            <span className="font-extrabold text-slate-800 text-xs uppercase tracking-wider block flex items-center gap-2">
+              <FileText className="h-4 w-4 text-indigo-600" />
+              1. Supplier & Invoice Header Details
+            </span>
 
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Select Supplier *</label>
-              <select required value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-white font-medium">
-                <option value="">-- Choose Vendor --</option>
-                {suppliers.map((s: any) => (
-                  <option key={s.id} value={s.id}>{s.name} ({s.city || 'Vendor'})</option>
-                ))}
-              </select>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5">Invoice Number *</label>
+                <input required type="text" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="e.g. 43" className="w-full glass-input p-3 rounded-2xl font-mono text-sm font-bold" />
+              </div>
 
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Invoice Date *</label>
-              <input required type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} className="w-full glass-input p-2.5 rounded-xl" />
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5">Select Supplier Vendor *</label>
+                <select required value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="w-full glass-input p-3 rounded-2xl bg-white text-xs font-bold text-slate-900">
+                  <option value="">-- Choose Vendor --</option>
+                  {suppliers.map((s: any) => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.city || 'Vendor'})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5">Invoice Date *</label>
+                <input required type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} className="w-full glass-input p-3 rounded-2xl font-semibold" />
+              </div>
             </div>
           </div>
 
-          {/* Item Add Section */}
-          <div className="p-4 rounded-2xl bg-slate-100/70 border border-slate-200 space-y-3">
-            <span className="font-bold text-indigo-900 text-xs uppercase tracking-wider block">Add Goods Item (Auto-Creates Product & Updates Stock)</span>
-            
-            <div className="grid grid-cols-12 gap-2">
-              <div className="col-span-5">
-                <label className="block text-[10px] font-bold text-slate-600 mb-1">Select Existing or Type Name</label>
-                <select value={selectedProduct} onChange={(e) => handleProductSelect(e.target.value)} className="w-full glass-input p-2 rounded-xl bg-white text-xs mb-1.5">
-                  <option value="">-- Or Pick Existing Product --</option>
+          {/* SECTION 2: Goods & Stock Items Builder */}
+          <div className="p-6 rounded-3xl bg-indigo-50/40 border border-indigo-100 space-y-5">
+            <span className="font-extrabold text-indigo-900 text-xs uppercase tracking-wider block flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-indigo-600" />
+              2. Add Goods Item (Auto-Creates Missing Products & Updates Stock)
+            </span>
+
+            <div className="grid grid-cols-12 gap-3 items-end">
+              <div className="col-span-12 md:col-span-5 space-y-2">
+                <label className="block text-xs font-extrabold text-slate-700">Select Existing Product OR Type Description</label>
+                <select value={selectedProduct} onChange={(e) => handleProductSelect(e.target.value)} className="w-full glass-input p-3 rounded-2xl bg-white text-xs font-bold text-indigo-950 shadow-sm">
+                  <option value="">-- Pick Existing SKU Catalog --</option>
                   {products.map((p: any) => (
                     <option key={p.id} value={p.id}>{p.name} (HSN: {p.hsn_code || p.sku})</option>
                   ))}
                 </select>
-                <input type="text" placeholder="Description of Goods (e.g. MOUTH FRESHNER @ 1/-)" value={productName} onChange={(e) => setProductName(e.target.value)} className="w-full glass-input p-2 rounded-xl text-xs font-semibold" />
+                <input 
+                  type="text" 
+                  placeholder="Item Description (e.g. MOUTH FRESHNER @ 1/-)" 
+                  value={productName} 
+                  onChange={(e) => setProductName(e.target.value)} 
+                  className="w-full glass-input p-3 rounded-2xl text-xs font-extrabold text-slate-900" 
+                />
               </div>
 
-              <div className="col-span-2">
-                <label className="block text-[10px] font-bold text-slate-600 mb-1">HSN/SAC Code</label>
-                <input type="text" placeholder="21069030" value={hsnCode} onChange={(e) => setHsnCode(e.target.value)} className="w-full glass-input p-2 rounded-xl font-mono uppercase text-xs" />
+              <div className="col-span-6 md:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">HSN/SAC Code</label>
+                <input type="text" placeholder="21069030" value={hsnCode} onChange={(e) => setHsnCode(e.target.value)} className="w-full glass-input p-3 rounded-2xl font-mono uppercase text-xs font-bold" />
               </div>
 
-              <div className="col-span-2">
-                <label className="block text-[10px] font-bold text-slate-600 mb-1">Quantity</label>
-                <div className="flex gap-1">
-                  <input type="number" placeholder="5" value={billedQty} onChange={(e) => setBilledQty(e.target.value)} className="w-full glass-input p-2 rounded-xl font-bold text-xs" />
-                  <select value={unit} onChange={(e) => setUnit(e.target.value)} className="glass-input p-1 rounded-xl bg-white text-[10px] font-bold">
+              <div className="col-span-6 md:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Quantity & Unit</label>
+                <div className="flex gap-1.5">
+                  <input type="number" placeholder="5" value={billedQty} onChange={(e) => setBilledQty(e.target.value)} className="w-full glass-input p-3 rounded-2xl font-extrabold text-xs" />
+                  <select value={unit} onChange={(e) => setUnit(e.target.value)} className="glass-input p-3 rounded-2xl bg-white text-xs font-extrabold">
                     <option value="BAG">BAG</option>
                     <option value="BOX">BOX</option>
                     <option value="KG">KG</option>
@@ -317,92 +426,105 @@ export default function PurchasesPage() {
                 </div>
               </div>
 
-              <div className="col-span-2">
-                <label className="block text-[10px] font-bold text-slate-600 mb-1">Rate / Unit (₹)</label>
-                <input type="number" step="0.01" placeholder="4800.00" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} className="w-full glass-input p-2 rounded-xl font-bold text-xs" />
+              <div className="col-span-6 md:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Rate / Unit (₹)</label>
+                <input type="number" step="0.01" placeholder="4800.00" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} className="w-full glass-input p-3 rounded-2xl font-extrabold text-xs text-slate-900" />
               </div>
 
-              <div className="col-span-1 flex items-end">
-                <button type="button" onClick={handleAddItem} className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-sm text-xs">
+              <div className="col-span-6 md:col-span-1">
+                <button type="button" onClick={handleAddItem} className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold rounded-2xl shadow-md shadow-indigo-600/20 text-xs transition-all">
                   + Add
                 </button>
               </div>
             </div>
+
+            {/* Added Invoice Items List Table */}
+            {items.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <span className="font-extrabold text-slate-800 block text-xs">Invoice Items Cart ({items.length})</span>
+                <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden shadow-sm text-xs">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-100/90 text-slate-500 uppercase text-[10px] font-extrabold">
+                      <tr>
+                        <th className="p-3.5">Item Description</th>
+                        <th className="p-3.5">HSN/SAC</th>
+                        <th className="p-3.5">Quantity</th>
+                        <th className="p-3.5">Rate per Unit</th>
+                        <th className="p-3.5">GST %</th>
+                        <th className="p-3.5">Taxable Value</th>
+                        <th className="p-3.5">Line Total</th>
+                        <th className="p-3.5 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-800">
+                      {items.map((it, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50">
+                          <td className="p-3.5 font-bold text-slate-900">{it.product_name}</td>
+                          <td className="p-3.5 font-mono text-indigo-700 font-bold">{it.hsn_code}</td>
+                          <td className="p-3.5 font-extrabold text-slate-900">{it.billed_quantity} {it.unit}</td>
+                          <td className="p-3.5 font-semibold">₹{it.unit_purchase_price.toFixed(2)}</td>
+                          <td className="p-3.5 font-bold text-slate-600">{it.gst_rate}%</td>
+                          <td className="p-3.5 font-semibold text-slate-800">₹{it.taxable_amount.toFixed(2)}</td>
+                          <td className="p-3.5 font-extrabold text-indigo-900 text-sm">₹{it.line_total.toFixed(2)}</td>
+                          <td className="p-3.5 text-right">
+                            <button type="button" onClick={() => handleRemoveItem(idx)} className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Items List Table */}
-          {items.length > 0 && (
-            <div className="space-y-2">
-              <span className="font-bold text-slate-700 block">Invoice Items ({items.length})</span>
-              <div className="divide-y divide-slate-100 rounded-xl bg-white border border-slate-200 overflow-hidden text-xs">
-                {items.map((it, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 hover:bg-slate-50">
-                    <div>
-                      <div className="font-bold text-slate-900">{it.product_name}</div>
-                      <div className="text-[10px] text-slate-500 font-medium">
-                        HSN: <span className="font-mono">{it.hsn_code}</span> | Qty: <span className="font-bold text-slate-800">{it.billed_quantity} {it.unit}</span> | Rate: ₹{it.unit_purchase_price}/{it.unit} | GST: {it.gst_rate}%
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <div className="font-extrabold text-slate-900">₹{it.line_total.toFixed(2)}</div>
-                        <div className="text-[10px] text-slate-400">Taxable ₹{it.taxable_amount.toFixed(2)} + GST ₹{it.gst_amount.toFixed(2)}</div>
-                      </div>
-                      <button type="button" onClick={() => handleRemoveItem(idx)} className="text-rose-500 hover:text-rose-700 p-1">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Calculation & Payment Summary Cards */}
-          <div className="grid grid-cols-2 gap-3 pt-2">
+          {/* SECTION 3: Financial Breakdown & Payment Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
             {/* Official Billed Tax Invoice Card */}
-            <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-200 space-y-2 text-xs">
-              <span className="font-extrabold text-indigo-900 uppercase tracking-wider block flex items-center gap-1.5">
+            <div className="p-6 rounded-3xl bg-indigo-50/70 border border-indigo-200 space-y-3 text-xs shadow-sm">
+              <span className="font-extrabold text-indigo-950 text-xs uppercase tracking-wider block flex items-center gap-2">
                 <Receipt className="h-4 w-4 text-indigo-700" />
-                Official Billed Tax Invoice
+                Official Billed Tax Invoice Summary
               </span>
 
-              <div className="flex justify-between text-slate-600">
-                <span>Subtotal (Taxable Value):</span>
-                <span className="font-bold">₹{calculatedSubtotal.toFixed(2)}</span>
+              <div className="flex justify-between text-slate-700 py-1 border-b border-indigo-100">
+                <span className="font-medium">Goods Subtotal (Taxable Value):</span>
+                <span className="font-extrabold text-slate-900">₹{calculatedSubtotal.toFixed(2)}</span>
               </div>
 
-              <div className="flex justify-between text-slate-600">
-                <span>GST Tax Amount (5%):</span>
-                <span className="font-bold">₹{calculatedTaxAmount.toFixed(2)}</span>
+              <div className="flex justify-between text-slate-700 py-1 border-b border-indigo-100">
+                <span className="font-medium">GST Tax Amount (5% Output IGST):</span>
+                <span className="font-extrabold text-slate-900">₹{calculatedTaxAmount.toFixed(2)}</span>
               </div>
 
-              <div className="flex justify-between items-center text-slate-600 pt-1">
-                <span>Billed Freight / Logistics (₹):</span>
-                <input type="number" step="0.01" value={freightCharges} onChange={(e) => setFreightCharges(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs" />
+              <div className="flex justify-between items-center text-slate-700 py-1">
+                <span className="font-medium">Billed Freight Charges (₹):</span>
+                <input type="number" step="0.01" value={freightCharges} onChange={(e) => setFreightCharges(e.target.value)} className="w-28 glass-input p-2 rounded-xl text-right font-extrabold text-xs" />
               </div>
 
-              <div className="flex justify-between text-indigo-950 font-extrabold text-sm border-t border-indigo-200 pt-2">
-                <span>Billed Invoice Total:</span>
+              <div className="flex justify-between text-indigo-950 font-extrabold text-base border-t-2 border-indigo-200 pt-3">
+                <span>Official Billed Total:</span>
                 <span>₹{officialBilledTotal.toFixed(2)}</span>
               </div>
             </div>
 
-            {/* Unbilled Non-GST & Total Payable Card */}
-            <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-2 text-xs">
-              <span className="font-extrabold text-amber-900 uppercase tracking-wider block flex items-center gap-1.5">
+            {/* Unbilled Cash / Non-GST Payment Card */}
+            <div className="p-6 rounded-3xl bg-amber-50/70 border border-amber-200 space-y-3 text-xs shadow-sm">
+              <span className="font-extrabold text-amber-950 text-xs uppercase tracking-wider block flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-amber-700" />
                 Unbilled Cash / Non-GST Payment
               </span>
 
-              <p className="text-[10px] text-amber-800">Unbilled payment amount to be paid (not written on official GST bill).</p>
+              <p className="text-xs text-amber-800/90 font-medium">Off-the-record unbilled payment amount to be paid (not written on official GST tax bill).</p>
 
-              <div>
-                <label className="block font-bold text-amber-900 mb-1">Unbilled Non-GST Amount to Pay (₹)</label>
-                <input type="number" step="0.01" value={unbilledNonGst} onChange={(e) => setUnbilledNonGst(e.target.value)} className="w-full glass-input p-2 rounded-xl text-amber-900 font-extrabold text-sm" />
+              <div className="pt-1">
+                <label className="block font-bold text-amber-950 mb-1.5">Unbilled Non-GST Amount to Pay (₹)</label>
+                <input type="number" step="0.01" value={unbilledNonGst} onChange={(e) => setUnbilledNonGst(e.target.value)} className="w-full glass-input p-3 rounded-2xl text-amber-950 font-extrabold text-base border-amber-300" />
               </div>
 
-              <div className="flex justify-between text-emerald-900 font-extrabold text-sm border-t border-amber-200 pt-2">
+              <div className="flex justify-between text-emerald-950 font-extrabold text-base border-t-2 border-amber-200 pt-3">
                 <span>Total Payable Amount:</span>
                 <span className="text-emerald-700">₹{totalPayableAmount.toFixed(2)}</span>
               </div>
@@ -412,9 +534,9 @@ export default function PurchasesPage() {
           <button
             type="submit"
             disabled={createPurchaseMutation.isPending}
-            className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-xl shadow-lg shadow-indigo-500/20 transition-all text-sm mt-2"
+            className="w-full py-4 bg-gradient-to-r from-indigo-600 via-teal-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-500/25 transition-all text-sm uppercase tracking-wider mt-4"
           >
-            {createPurchaseMutation.isPending ? 'Processing Purchase & Updating Stock...' : 'Save Purchase Entry & Directly Create/Update Product Stock'}
+            {createPurchaseMutation.isPending ? 'Processing & Updating Stock...' : 'Save Purchase Entry & Directly Create/Update Product Stock'}
           </button>
         </form>
       </Modal>
