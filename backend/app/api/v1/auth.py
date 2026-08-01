@@ -10,6 +10,7 @@ from app.schemas.auth import LoginRequest, TokenResponse
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login", response_model=TokenResponse)
+@router.post("/login/", response_model=TokenResponse)
 async def login(credentials: LoginRequest, db: AsyncSession = Depends(get_db)):
     """
     Authenticate user via email and password, returning a JWT Access Token.
