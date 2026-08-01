@@ -189,9 +189,9 @@ export default function SalesPage() {
             <div className="grid grid-cols-4 gap-2">
               <div className="col-span-2">
                 <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="w-full glass-input p-2 rounded-xl bg-white">
-                  <option value="">-- Select SKU --</option>
+                  <option value="">-- Select Product --</option>
                   {products.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock?.current_stock || 0})</option>
+                    <option key={p.id} value={p.id}>{p.name} (HSN: {p.hsn_code || p.sku}) - Stock: {p.stock?.current_stock || 0} {p.unit || 'BAG'}</option>
                   ))}
                 </select>
               </div>

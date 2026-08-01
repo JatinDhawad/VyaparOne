@@ -21,11 +21,11 @@ async def create_product(
     current_user: User = Depends(require_role([RoleName.ADMIN])),
 ):
     """Create a new product SKU. ADMIN only."""
-    existing = await db.execute(select(Product).where(Product.sku == product_in.sku))
-    if existing.scalars().first():
-        raise HTTPException(status_code=400, detail="SKU already exists.")
+    product_data = product_in.model_dump()
+    if not product_data.get("sku"):
+        product_data["sku"] = product_data.get("hsn_code")
 
-    db_product = Product(**product_in.model_dump())
+    db_product = Product(**product_data)
     db.add(db_product)
     await db.flush()  # flush to get the product ID
 

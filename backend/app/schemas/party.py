@@ -14,7 +14,7 @@ class PartyBase(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
-    credit_limit: Decimal = Decimal("0.00")
+    credit_limit: Optional[Decimal] = Decimal("0.00")
     credit_days: int = 30
     is_active: bool = True
 
