@@ -31,18 +31,17 @@ async def seed_data():
         await session.commit()
         logger.info("Roles seeded.")
 
-        # 2. Create Default Admin User
+        # 2. Create or Update Default Admin User
         admin_email = "admin@vyaparone.com"
-        logger.info(f"Checking for default admin user ({admin_email})...")
+        logger.info(f"Ensuring default admin user ({admin_email})...")
         
         result = await session.execute(select(User).where(User.email == admin_email))
         admin_user = result.scalars().first()
         
+        role_result = await session.execute(select(Role).where(Role.name == RoleName.ADMIN.value))
+        admin_role = role_result.scalars().first()
+
         if not admin_user:
-            # Get ADMIN role id
-            role_result = await session.execute(select(Role).where(Role.name == RoleName.ADMIN.value))
-            admin_role = role_result.scalars().first()
-            
             if admin_role:
                 new_admin = User(
                     email=admin_email,
@@ -54,10 +53,11 @@ async def seed_data():
                 session.add(new_admin)
                 await session.commit()
                 logger.info("Default admin user created.")
-            else:
-                logger.error("ADMIN role not found. Cannot create admin user.")
         else:
-            logger.info("Admin user already exists.")
+            admin_user.password_hash = get_password_hash("adminpassword")
+            admin_user.is_active = True
+            await session.commit()
+            logger.info("Default admin user password updated to adminpassword.")
 
 async def main():
     logger.info("Starting database initialization...")
