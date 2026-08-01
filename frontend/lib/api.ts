@@ -1,4 +1,4 @@
-let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8088/api/v1';
+let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vyaparone-backend.onrender.com/api/v1';
 rawApiUrl = rawApiUrl.trim().replace(/\/+$/, '');
 if (!rawApiUrl.includes('/api/v1')) {
   rawApiUrl = `${rawApiUrl}/api/v1`;
