@@ -44,7 +44,7 @@ async def create_purchase_invoice(
     unbilled_nongst = Decimal(str(invoice_in.unbilled_nongst_amount or 0))
     amt_paid = Decimal(str(invoice_in.amount_paid or 0))
 
-    billed_expenses = - (lr_charges + local_freight + salesman_expense + scheme_money)
+    billed_expenses = lr_charges + local_freight - salesman_expense - scheme_money
 
     db_items = []
 
@@ -126,8 +126,8 @@ async def create_purchase_invoice(
         db_items.append((db_item, product_id, total_qty, round(effective_unit_cost, 2)))
 
     net_subtotal = subtotal - total_discount
-    grand_total = net_subtotal + total_tax + billed_expenses  # Billed Tax Invoice Total
-    total_payable = grand_total + unbilled_nongst  # Total Payable = Billed Total + Unbilled Non-GST
+    grand_total = net_subtotal + total_tax  # Official Billed Tax Invoice Total (written on paper GST bill)
+    total_payable = grand_total + billed_expenses + unbilled_nongst  # Total Payable = Billed Total + Adjustments + Unbilled Non-GST
     pending_amount = total_payable - amt_paid
 
     # 2. Save Purchase Invoice
