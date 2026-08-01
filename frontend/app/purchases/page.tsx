@@ -225,7 +225,7 @@ export default function PurchasesPage() {
     });
   };
 
-  // Calculations: Official Billed Total = Subtotal + GST Tax Amount
+  // Calculations: All 4 expenses (LR Charges, Local Freight, Salesman Expense, Scheme Money) are minused/deducted
   const calculatedSubtotal = items.reduce((sum, i) => sum + i.taxable_amount, 0);
   const calculatedTaxAmount = items.reduce((sum, i) => sum + i.gst_amount, 0);
 
@@ -234,7 +234,7 @@ export default function PurchasesPage() {
   const numSalesExp = parseFloat(salesmanExpense) || 0;
   const numScheme = parseFloat(schemeMoney) || 0;
 
-  const totalBilledExpenses = numLr + numLocalFr - numSalesExp - numScheme;
+  const totalBilledExpenses = - (numLr + numLocalFr + numSalesExp + numScheme);
   const officialBilledTotal = calculatedSubtotal + calculatedTaxAmount;
 
   const unbilledPayable = parseFloat(unbilledNonGst) || 0;
