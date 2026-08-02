@@ -117,6 +117,63 @@ async def debug_tables():
         import traceback
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
+@app.post("/api/v1/admin/reconcile_balances")
+async def reconcile_balances():
+    """
+    Recomputes all LedgerAccount current_balances from actual LedgerEntries.
+    Fixes stale balances caused by partial wipes (invoices deleted but ledger entries kept).
+    """
+    import traceback
+    try:
+        from app.scripts.init_db import engine, AsyncSessionLocal
+        from app.models.ledger import LedgerAccount, LedgerEntry
+        from sqlalchemy.future import select
+        from sqlalchemy import func
+        from decimal import Decimal
+
+        async with AsyncSessionLocal() as session:
+            # Get all accounts
+            acct_res = await session.execute(select(LedgerAccount))
+            accounts = acct_res.scalars().all()
+
+            updated = []
+            for acct in accounts:
+                # Sum debits
+                dr_res = await session.execute(
+                    select(func.coalesce(func.sum(LedgerEntry.amount), 0))
+                    .where(LedgerEntry.debit_account_id == acct.id)
+                )
+                total_debits = Decimal(str(dr_res.scalar()))
+
+                # Sum credits
+                cr_res = await session.execute(
+                    select(func.coalesce(func.sum(LedgerEntry.amount), 0))
+                    .where(LedgerEntry.credit_account_id == acct.id)
+                )
+                total_credits = Decimal(str(cr_res.scalar()))
+
+                # For LIABILITY accounts (suppliers): balance = credits - debits
+                # For ASSET/EXPENSE accounts: balance = debits - credits
+                from app.models.ledger import AccountType
+                if acct.account_type in [AccountType.LIABILITY.value, AccountType.REVENUE.value]:
+                    new_balance = total_credits - total_debits
+                else:
+                    new_balance = total_debits - total_credits
+
+                old_balance = Decimal(str(acct.current_balance or 0))
+                acct.current_balance = new_balance
+                updated.append({
+                    "account": acct.account_name,
+                    "old_balance": str(old_balance),
+                    "new_balance": str(new_balance)
+                })
+
+            await session.commit()
+
+        return {"status": "ok", "reconciled": updated}
+    except Exception as e:
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
 @app.get("/")
 async def root():
     return {
