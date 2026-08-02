@@ -74,18 +74,20 @@ async def post_purchase_ledger(
     freight_amount: Decimal,
     grand_total: Decimal,
     invoice_date: date,
-    created_by: Optional[uuid.UUID] = None
+    created_by: Optional[uuid.UUID] = None,
+    amount_paid: Decimal = Decimal("0.00")
 ):
     """
     Double-entry posting for Purchase Invoice:
     - Debit: Purchase Account (goods_amount)
     - Debit: Freight Expense Account (freight_amount, if > 0)
-    - Credit: Supplier Ledger Account (grand_total)
+    - Credit: Supplier Ledger Account (grand_total) — ONE entry for clarity
+    - Debit: Supplier Ledger Account (amount_paid) — if paid at invoice time
     """
     purchase_account = await get_or_create_system_account(db, "Purchase Account", AccountType.EXPENSE.value)
     supplier_account = await get_party_ledger_account(db, supplier_id)
 
-    # 1. Debit Purchase Account, Credit Supplier Account for Goods
+    # 1. Debit Purchase Account for goods
     if goods_amount > 0:
         entry_goods = LedgerEntry(
             transaction_date=invoice_date,
@@ -94,13 +96,13 @@ async def post_purchase_ledger(
             debit_account_id=purchase_account.id,
             credit_account_id=supplier_account.id,
             amount=goods_amount,
-            narration=f"Purchase invoice goods amount",
+            narration="Purchase bill — goods value",
             created_by=created_by
         )
         db.add(entry_goods)
         purchase_account.current_balance = Decimal(str(purchase_account.current_balance or 0)) + goods_amount
 
-    # 2. Debit Freight Account, Credit Supplier Account for Freight
+    # 2. Debit Freight Account for freight/adjustments
     if freight_amount > 0:
         freight_account = await get_or_create_system_account(db, "Freight & Transport Expense", AccountType.EXPENSE.value)
         entry_freight = LedgerEntry(
@@ -110,14 +112,32 @@ async def post_purchase_ledger(
             debit_account_id=freight_account.id,
             credit_account_id=supplier_account.id,
             amount=freight_amount,
-            narration=f"Freight charges on purchase invoice",
+            narration="Purchase bill — freight & other charges",
             created_by=created_by
         )
         db.add(entry_freight)
         freight_account.current_balance = Decimal(str(freight_account.current_balance or 0)) + freight_amount
 
-    # Update supplier balance once with the full grand_total (what we owe them)
+    # Update supplier balance with the full amount owed (grand_total)
     supplier_account.current_balance = Decimal(str(supplier_account.current_balance or 0)) + grand_total
+
+    # 3. If payment was made at invoice entry time, record a debit against supplier
+    if amount_paid > 0:
+        mode_acct_name = "Cash In Hand"
+        cash_account = await get_or_create_system_account(db, mode_acct_name, AccountType.ASSET.value)
+        entry_payment = LedgerEntry(
+            transaction_date=invoice_date,
+            voucher_type="PAYMENT",
+            reference_id=purchase_invoice_id,
+            debit_account_id=supplier_account.id,
+            credit_account_id=cash_account.id,
+            amount=amount_paid,
+            narration="Payment made at time of purchase bill entry",
+            created_by=created_by
+        )
+        db.add(entry_payment)
+        supplier_account.current_balance = Decimal(str(supplier_account.current_balance or 0)) - amount_paid
+        cash_account.current_balance = Decimal(str(cash_account.current_balance or 0)) - amount_paid
 
 
 async def post_sales_ledger(
