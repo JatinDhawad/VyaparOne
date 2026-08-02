@@ -96,11 +96,26 @@ async def debug_init_db():
         sys.stderr = old_stderr
         return {"status": "ok", "message": "Database initialized successfully", "tables": tables, "stderr": output}
     except Exception as e:
+        import os
         from app.core.database import Base
         tables = list(Base.metadata.tables.keys())
+        db_url = os.getenv("DATABASE_URL", "NOT_SET")
         output = new_stderr.getvalue()
         sys.stderr = old_stderr
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc(), "tables": tables, "stderr": output}
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc(), "tables": tables, "stderr": output, "db_url": db_url}
+
+@app.get("/api/v1/debug_tables")
+async def debug_tables():
+    try:
+        from app.scripts.init_db import engine
+        from sqlalchemy import text
+        async with engine.connect() as conn:
+            result = await conn.execute(text("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'"))
+            tables_in_db = [row[0] for row in result.fetchall()]
+        return {"status": "ok", "tables_in_db": tables_in_db}
+    except Exception as e:
+        import traceback
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
 @app.get("/")
 async def root():
