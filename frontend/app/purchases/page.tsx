@@ -24,6 +24,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 
 export default function PurchasesPage() {
   const queryClient = useQueryClient();
@@ -286,7 +287,7 @@ export default function PurchasesPage() {
               </div>
               <div className="mt-4">
                 <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  ₹{isLoading ? '...' : totalBilledPurchases.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  ₹{isLoading ? '...' : formatCurrency(totalBilledPurchases)}
                 </h3>
                 <p className="text-xs font-semibold text-slate-500 mt-1">Official GST Vendor Invoices</p>
               </div>
@@ -316,7 +317,7 @@ export default function PurchasesPage() {
               </div>
               <div className="mt-4">
                 <h3 className="text-3xl font-extrabold text-rose-800 tracking-tight">
-                  ₹{isLoading ? '...' : totalPendingOwed.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  ₹{isLoading ? '...' : formatCurrency(totalPendingOwed)}
                 </h3>
                 <p className="text-xs font-semibold text-rose-700/80 mt-1">Outstanding Supplier Payable</p>
               </div>

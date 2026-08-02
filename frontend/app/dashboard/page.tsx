@@ -16,6 +16,7 @@ import {
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 
 type Period = '30d' | '90d' | '6m' | '1y' | 'all';
@@ -36,17 +37,11 @@ export default function DashboardPage() {
     queryFn: () => api.getDashboardSummary(period),
   });
 
-  const fmt = (v: number | undefined) =>
-    (v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
-        <Header 
-          title="Executive Dashboard" 
-          subtitle="Real-time trading economics, inventory valuation & profit margins" 
-        />
+        <Header title="Executive Dashboard" />
 
         <main className="p-8 space-y-8 flex-1 overflow-y-auto">
 
@@ -74,7 +69,7 @@ export default function DashboardPage() {
           {/* Top 4 KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {/* Sales Card */}
-            <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-indigo-100">
+            <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-indigo-100 flex flex-col justify-between min-h-[140px]">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-indigo-700">Total Sales</span>
                 <div className="h-10 w-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
@@ -82,15 +77,14 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-                  ₹{isLoading ? '...' : fmt(summary?.total_sales)}
+                <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                  ₹{isLoading ? '...' : formatCurrency(summary?.total_sales)}
                 </h3>
-                <p className="text-[11px] font-medium text-slate-500 mt-1">Gross sales invoices billing</p>
               </div>
             </div>
 
             {/* Purchases Card — with billed/unbilled breakdown */}
-            <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-slate-200">
+            <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-slate-200 flex flex-col justify-between min-h-[140px]">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Total Purchases</span>
                 <div className="h-10 w-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700">
@@ -98,24 +92,24 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-                  ₹{isLoading ? '...' : fmt(summary?.total_purchases)}
+                <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                  ₹{isLoading ? '...' : formatCurrency(summary?.total_purchases)}
                 </h3>
-                <div className="mt-2 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold text-slate-500">Billed (GST Invoice)</span>
-                    <span className="text-[10px] font-bold text-slate-700">₹{isLoading ? '...' : fmt(summary?.total_billed_purchases)}</span>
+                <div className="mt-3 space-y-1 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-600">Billed (GST Invoice)</span>
+                    <span className="font-bold text-slate-900">₹{isLoading ? '...' : formatCurrency(summary?.total_billed_purchases)}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold text-amber-600">+ Unbilled (Non-GST)</span>
-                    <span className="text-[10px] font-bold text-amber-700">₹{isLoading ? '...' : fmt(summary?.total_unbilled_purchases)}</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-amber-700">+ Unbilled (Non-GST)</span>
+                    <span className="font-bold text-amber-800">₹{isLoading ? '...' : formatCurrency(summary?.total_unbilled_purchases)}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Net Profit Card */}
-            <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white glow-emerald">
+            <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white glow-emerald flex flex-col justify-between min-h-[140px]">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Net Profit</span>
                 <div className="h-10 w-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-600">
@@ -124,14 +118,13 @@ export default function DashboardPage() {
               </div>
               <div className="mt-4">
                 <h3 className="text-2xl font-extrabold text-emerald-700 tracking-tight">
-                  ₹{isLoading ? '...' : fmt(summary?.net_profit)}
+                  ₹{isLoading ? '...' : formatCurrency(summary?.net_profit)}
                 </h3>
-                <p className="text-[11px] font-medium text-slate-500 mt-1">Gross profit minus operational expenses</p>
               </div>
             </div>
 
             {/* Operational Expenses Card */}
-            <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-rose-100">
+            <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-rose-100 flex flex-col justify-between min-h-[140px]">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-rose-700">Expenses</span>
                 <div className="h-10 w-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
@@ -139,10 +132,9 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-                  ₹{isLoading ? '...' : fmt(summary?.total_operational_expenses)}
+                <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                  ₹{isLoading ? '...' : formatCurrency(summary?.total_operational_expenses)}
                 </h3>
-                <p className="text-[11px] font-medium text-slate-500 mt-1">Fuel, rent, godown maintenance</p>
               </div>
             </div>
           </div>
@@ -152,9 +144,8 @@ export default function DashboardPage() {
             <div>
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-emerald-600" />
-                Quick Billing & Transactions Launcher
+                Quick Billing & Transactions
               </h3>
-              <p className="text-xs font-medium text-slate-500 mt-1">Generate new Sales Tax Invoice or record Supplier Purchase Bill with automatic double-entry ledger posting.</p>
             </div>
             <div className="flex items-center gap-3">
               <Link
@@ -189,9 +180,8 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-3xl font-extrabold text-slate-900">
-                  ₹{isLoading ? '...' : fmt(summary?.total_receivables)}
+                  ₹{isLoading ? '...' : formatCurrency(summary?.total_receivables)}
                 </p>
-                <p className="text-xs font-medium text-slate-500 mt-1">Outstanding payments owed by buyers</p>
               </div>
             </div>
 
@@ -208,9 +198,8 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-3xl font-extrabold text-slate-900">
-                  ₹{isLoading ? '...' : fmt(summary?.total_payables)}
+                  ₹{isLoading ? '...' : formatCurrency(summary?.total_payables)}
                 </p>
-                <p className="text-xs font-medium text-slate-500 mt-1">Outstanding bills owed to vendors</p>
               </div>
             </div>
 
@@ -228,9 +217,8 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-extrabold text-amber-700">{isLoading ? '...' : summary?.low_stock_items_count || 0}</span>
-                  <span className="text-xs font-bold text-slate-700">Out-of-Stock Items (0 stock balance)</span>
+                  <span className="text-xs font-bold text-slate-700">Out-of-Stock Items</span>
                 </div>
-                <p className="text-xs font-medium text-slate-500 mt-2">Record purchase bills to directly create and increment product stock.</p>
               </div>
             </div>
           </div>
