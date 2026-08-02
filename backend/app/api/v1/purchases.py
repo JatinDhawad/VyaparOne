@@ -14,17 +14,6 @@ from app.api.deps import get_current_active_user
 
 router = APIRouter(prefix="/purchases", tags=["Purchases"])
 
-@router.delete("/wipe_everything_dangerously_xyz123", status_code=200)
-async def wipe_everything(db: AsyncSession = Depends(get_db)):
-    from app.core.database import Base, engine
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
-            await conn.run_sync(Base.metadata.create_all)
-        return {"status": "WIPED_EVERYTHING"}
-    except Exception as e:
-        return {"error": str(e)}
-
 @router.delete("/wipe_all", status_code=200)
 async def wipe_all_data(db: AsyncSession = Depends(get_db)):
     from sqlalchemy import text
