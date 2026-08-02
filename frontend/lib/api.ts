@@ -5,7 +5,7 @@ if (!rawApiUrl.includes('/api/v1')) {
 }
 const API_BASE_URL = rawApiUrl;
 
-async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, retries = 2): Promise<T> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('vyaparone_token') : null;
 
   const headers: Record<string, string> = {
@@ -17,46 +17,61 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout for cloud cold-starts
+  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullUrl = `${API_BASE_URL}${formattedEndpoint}`;
 
-  try {
-    const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const response = await fetch(`${API_BASE_URL}${formattedEndpoint}`, {
-      ...options,
-      headers,
-      signal: controller.signal,
-    });
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for Render cold-starts
 
-    const data = await response.json().catch(() => ({}));
+    try {
+      const response = await fetch(fullUrl, {
+        ...options,
+        headers,
+        signal: controller.signal,
+      });
 
-    if (response.status === 401 || (data && typeof data.detail === 'string' && (data.detail.includes('User not found') || data.detail.includes('session expired')))) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('vyaparone_token');
-        localStorage.removeItem('vyaparone_user');
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
+      clearTimeout(timeoutId);
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401 || (data && typeof data.detail === 'string' && (data.detail.includes('User not found') || data.detail.includes('session expired')))) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('vyaparone_token');
+          localStorage.removeItem('vyaparone_user');
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
         }
       }
-    }
 
-    if (!response.ok) {
-      const errorMsg = data.detail || 'An error occurred while communicating with the server.';
-      throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
-    }
+      if (!response.ok) {
+        const errorMsg = data.detail || 'An error occurred while communicating with the server.';
+        throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+      }
 
-    return data as T;
-  } catch (err: any) {
-    if (err.name === 'AbortError') {
-      throw new Error(`Server response timed out (45s) while connecting to ${API_BASE_URL}. The backend on Render may still be spinning up, or the backend URL configured on Vercel is incorrect.`);
+      return data as T;
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      const isNetworkError = err.message === 'Failed to fetch' || err instanceof TypeError || err.name === 'AbortError';
+
+      if (isNetworkError && attempt < retries) {
+        // Wait 2.5 seconds before retrying to allow Render cold-start to complete
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        continue;
+      }
+
+      if (err.name === 'AbortError') {
+        throw new Error('Cloud server response timed out (60s). Render backend is warming up. Please try again in a few seconds.');
+      }
+      if (err.message === 'Failed to fetch' || err instanceof TypeError) {
+        throw new Error('Cloud server is warming up or unreachable. Please try again in a moment.');
+      }
+      throw err;
     }
-    if (err.message === 'Failed to fetch' || err instanceof TypeError) {
-      throw new Error(`Unable to connect to backend API (${API_BASE_URL}). Please verify your backend server status on Render or Vercel NEXT_PUBLIC_API_URL settings.`);
-    }
-    throw err;
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  throw new Error('Unable to connect to backend server. Please try again.');
 }
 
 export const api = {
