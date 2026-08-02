@@ -76,6 +76,17 @@ async def health_check():
     except Exception as e:
         return {"status": "error", "database": str(e), "traceback": traceback.format_exc()}
 
+@app.get("/api/v1/debug_init_db")
+async def debug_init_db():
+    import traceback
+    try:
+        from app.scripts.init_db import init_db, seed_data
+        await init_db()
+        await seed_data()
+        return {"status": "ok", "message": "Database initialized successfully"}
+    except Exception as e:
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
 @app.get("/")
 async def root():
     return {
