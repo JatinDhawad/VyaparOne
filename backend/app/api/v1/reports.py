@@ -99,10 +99,12 @@ async def gst_summary_report(
 
 @router.get("/dashboard-summary", response_model=DashboardSummaryResponse)
 async def dashboard_summary_report(
+    period: Optional[str] = Query(None, description="Filter period: 30d, 90d, 6m, 1y, all"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """
     Get high-level Executive Dashboard KPIs (Sales, Purchases, Profits, Expenses, Receivables, Payables, Low Stock Count).
+    Supports period filter: 30d, 90d, 6m, 1y, all
     """
-    return await get_dashboard_summary(db)
+    return await get_dashboard_summary(db, period)
