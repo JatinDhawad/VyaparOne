@@ -1,5 +1,4 @@
 const PRIMARY_API_URL = 'https://vyaparone-production.up.railway.app/api/v1';
-const FALLBACK_API_URL = 'https://vyaparone-backend.onrender.com/api/v1';
 
 let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || PRIMARY_API_URL;
 
@@ -29,9 +28,6 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, retries 
 
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const baseUrls = [API_BASE_URL];
-  if (!baseUrls.includes(FALLBACK_API_URL)) {
-    baseUrls.push(FALLBACK_API_URL);
-  }
 
   let lastError: any = null;
 
@@ -49,10 +45,6 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, retries 
         });
 
         clearTimeout(timeoutId);
-
-        if (response.status === 502 || response.status === 503) {
-          break; // Try next server in failover list
-        }
 
         const data = await response.json().catch(() => ({}));
 
