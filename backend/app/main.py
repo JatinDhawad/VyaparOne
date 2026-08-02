@@ -79,13 +79,28 @@ async def health_check():
 @app.get("/api/v1/debug_init_db")
 async def debug_init_db():
     import traceback
+    import io
+    import sys
+    
+    old_stderr = sys.stderr
+    new_stderr = io.StringIO()
+    sys.stderr = new_stderr
+    
     try:
         from app.scripts.init_db import init_db, seed_data
+        from app.core.database import Base
+        tables = list(Base.metadata.tables.keys())
         await init_db()
         await seed_data()
-        return {"status": "ok", "message": "Database initialized successfully"}
+        output = new_stderr.getvalue()
+        sys.stderr = old_stderr
+        return {"status": "ok", "message": "Database initialized successfully", "tables": tables, "stderr": output}
     except Exception as e:
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+        from app.core.database import Base
+        tables = list(Base.metadata.tables.keys())
+        output = new_stderr.getvalue()
+        sys.stderr = old_stderr
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc(), "tables": tables, "stderr": output}
 
 @app.get("/")
 async def root():
