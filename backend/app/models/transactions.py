@@ -26,6 +26,7 @@ class PurchaseInvoice(Base):
     local_freight: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     salesman_expense: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     scheme_money: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    discount_deduction: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     grand_total: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # Official GST Billed Invoice Total
     unbilled_nongst_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # Separate unbilled payment
     total_payable_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00) # grand_total + unbilled_nongst_amount

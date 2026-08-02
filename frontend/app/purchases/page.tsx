@@ -43,6 +43,7 @@ export default function PurchasesPage() {
   const [localFreight, setLocalFreight] = useState('0.00');
   const [salesmanExpense, setSalesmanExpense] = useState('0.00');
   const [schemeMoney, setSchemeMoney] = useState('0.00');
+  const [discountDeduction, setDiscountDeduction] = useState('0.00');
 
   // Unbilled & Payment Given
   const [unbilledNonGst, setUnbilledNonGst] = useState('0.00');
@@ -99,6 +100,7 @@ export default function PurchasesPage() {
     setLocalFreight('0.00');
     setSalesmanExpense('0.00');
     setSchemeMoney('0.00');
+    setDiscountDeduction('0.00');
     setUnbilledNonGst('0.00');
     setAmountPaid('0.00');
     setNotes('');
@@ -209,6 +211,7 @@ export default function PurchasesPage() {
       local_freight: parseFloat(localFreight) || 0,
       salesman_expense: parseFloat(salesmanExpense) || 0,
       scheme_money: parseFloat(schemeMoney) || 0,
+      discount_deduction: parseFloat(discountDeduction) || 0,
       unbilled_nongst_amount: parseFloat(unbilledNonGst) || 0,
       amount_paid: parseFloat(amountPaid) || 0,
       notes,
@@ -233,8 +236,9 @@ export default function PurchasesPage() {
   const numLocalFr = parseFloat(localFreight) || 0;
   const numSalesExp = parseFloat(salesmanExpense) || 0;
   const numScheme = parseFloat(schemeMoney) || 0;
+  const numDiscountDeduct = parseFloat(discountDeduction) || 0;
 
-  const totalBilledExpenses = - (numLr + numLocalFr + numSalesExp + numScheme);
+  const totalBilledExpenses = - (numLr + numLocalFr + numSalesExp + numScheme + numDiscountDeduct);
   const officialBilledTotal = calculatedSubtotal + calculatedTaxAmount;
 
   const unbilledPayable = parseFloat(unbilledNonGst) || 0;
@@ -514,6 +518,11 @@ export default function PurchasesPage() {
                   <span className="font-medium text-slate-600">Scheme Money Deduction (-):</span>
                   <span className="font-bold text-emerald-700">₹{parseFloat(selectedInvoiceForView.scheme_money || 0).toFixed(2)}</span>
                 </div>
+
+                <div className="flex justify-between py-1 border-b border-indigo-100/80">
+                  <span className="font-medium text-slate-600">Discount Deduction (-):</span>
+                  <span className="font-bold text-emerald-700">₹{parseFloat(selectedInvoiceForView.discount_deduction || 0).toFixed(2)}</span>
+                </div>
               </div>
 
               {/* Summary Highlights */}
@@ -725,6 +734,10 @@ export default function PurchasesPage() {
                 <div className="flex justify-between items-center text-slate-700">
                   <span>Scheme Money:</span>
                   <input type="number" step="0.01" value={schemeMoney} onChange={(e) => setSchemeMoney(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
+                </div>
+                <div className="flex justify-between items-center text-slate-700">
+                  <span>Discount Deduction (-):</span>
+                  <input type="number" step="0.01" value={discountDeduction} onChange={(e) => setDiscountDeduction(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
               </div>
 

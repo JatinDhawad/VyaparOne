@@ -51,10 +51,11 @@ async def create_purchase_invoice(
     local_freight = Decimal(str(invoice_in.local_freight or 0))
     salesman_expense = Decimal(str(invoice_in.salesman_expense or 0))
     scheme_money = Decimal(str(invoice_in.scheme_money or 0))
+    discount_deduction = Decimal(str(invoice_in.discount_deduction or 0))
     unbilled_nongst = Decimal(str(invoice_in.unbilled_nongst_amount or 0))
     amt_paid = Decimal(str(invoice_in.amount_paid or 0))
 
-    billed_expenses = - (lr_charges + local_freight + salesman_expense + scheme_money)
+    billed_expenses = - (lr_charges + local_freight + salesman_expense + scheme_money + discount_deduction)
 
     db_items = []
 
@@ -154,6 +155,7 @@ async def create_purchase_invoice(
         local_freight=round(local_freight, 2),
         salesman_expense=round(salesman_expense, 2),
         scheme_money=round(scheme_money, 2),
+        discount_deduction=round(discount_deduction, 2),
         grand_total=round(grand_total, 2),
         unbilled_nongst_amount=round(unbilled_nongst, 2),
         total_payable_amount=round(total_payable, 2),
