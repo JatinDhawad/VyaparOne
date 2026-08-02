@@ -16,14 +16,17 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
-        # Auto-migrate new columns safely
-        from sqlalchemy import text
-        try:
+    # Auto-migrate new columns safely in a SEPARATE transaction
+    # PostgreSQL aborts the entire transaction if a query fails, 
+    # so catching the exception in Python doesn't prevent the rollback!
+    from sqlalchemy import text
+    try:
+        async with engine.begin() as conn:
             await conn.execute(text("ALTER TABLE purchase_invoices ADD COLUMN discount_deduction NUMERIC(15, 2) DEFAULT 0.00;"))
             logger.info("Added discount_deduction column.")
-        except Exception:
-            pass # Column already exists
-            
+    except Exception:
+        pass # Column already exists
+        
     logger.info("Tables created successfully.")
 
 async def seed_data():
