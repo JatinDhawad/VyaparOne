@@ -50,6 +50,7 @@ class PurchaseInvoiceCreate(BaseModel):
     local_freight: Decimal = Decimal("0.00")
     salesman_expense: Decimal = Decimal("0.00")
     scheme_money: Decimal = Decimal("0.00")
+    discount_deduction: Decimal = Decimal("0.00")
     unbilled_nongst_amount: Decimal = Decimal("0.00")
     amount_paid: Decimal = Decimal("0.00")
     notes: Optional[str] = None
@@ -61,19 +62,20 @@ class PurchaseInvoiceResponse(BaseModel):
     supplier_id: uuid.UUID
     invoice_date: date
     billing_mode: str
-    subtotal: Decimal
-    discount_amount: Decimal
-    tax_amount: Decimal
-    additional_expenses: Decimal
-    lr_charges: Decimal = Decimal("0.00")
-    local_freight: Decimal = Decimal("0.00")
-    salesman_expense: Decimal = Decimal("0.00")
-    scheme_money: Decimal = Decimal("0.00")
-    grand_total: Decimal
-    unbilled_nongst_amount: Decimal = Decimal("0.00")
-    total_payable_amount: Decimal = Decimal("0.00")
-    amount_paid: Decimal = Decimal("0.00")
-    pending_amount: Decimal = Decimal("0.00")
+    subtotal: Optional[Decimal] = Decimal("0.00")
+    discount_amount: Optional[Decimal] = Decimal("0.00")
+    tax_amount: Optional[Decimal] = Decimal("0.00")
+    additional_expenses: Optional[Decimal] = Decimal("0.00")
+    lr_charges: Optional[Decimal] = Decimal("0.00")
+    local_freight: Optional[Decimal] = Decimal("0.00")
+    salesman_expense: Optional[Decimal] = Decimal("0.00")
+    scheme_money: Optional[Decimal] = Decimal("0.00")
+    discount_deduction: Optional[Decimal] = Decimal("0.00")
+    grand_total: Optional[Decimal] = Decimal("0.00")
+    unbilled_nongst_amount: Optional[Decimal] = Decimal("0.00")
+    total_payable_amount: Optional[Decimal] = Decimal("0.00")
+    amount_paid: Optional[Decimal] = Decimal("0.00")
+    pending_amount: Optional[Decimal] = Decimal("0.00")
     notes: Optional[str] = None
     created_by: Optional[uuid.UUID] = None
     created_at: datetime
