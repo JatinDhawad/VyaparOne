@@ -13,12 +13,14 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import traceback
     try:
         from app.scripts.init_db import init_db, seed_data
         await init_db()
         await seed_data()
     except Exception as e:
-        logger.error(f"Startup DB init error: {e}")
+        logger.error(f"Database initialization failed: {e}")
+        traceback.print_exc()
     yield
 
 app = FastAPI(
@@ -61,6 +63,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/api/v1/health")
+async def health_check():
+    import traceback
+    try:
+        from app.scripts.init_db import engine
+        from sqlalchemy import text
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "connected"}
+    except Exception as e:
+        return {"status": "error", "database": str(e), "traceback": traceback.format_exc()}
 
 @app.get("/")
 async def root():
