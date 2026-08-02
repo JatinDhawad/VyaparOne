@@ -7,6 +7,7 @@ import uuid
 
 from app.core.database import get_db
 from app.models.transactions import PurchaseInvoice, PurchaseItem
+from app.models.company import Product
 from app.models.user import User
 from app.schemas.transactions import PurchaseInvoiceCreate, PurchaseInvoiceResponse
 from app.services.purchase_service import create_purchase_invoice
@@ -50,7 +51,7 @@ async def create_purchase(
         res = await db.execute(
             select(PurchaseInvoice)
             .options(
-                selectinload(PurchaseInvoice.items).selectinload(PurchaseItem.product),
+                selectinload(PurchaseInvoice.items).selectinload(PurchaseItem.product).selectinload(Product.stock),
                 selectinload(PurchaseInvoice.supplier)
             )
             .where(PurchaseInvoice.id == invoice.id)
@@ -71,7 +72,7 @@ async def list_purchases(
 ):
     """List purchase invoices with optional supplier filter."""
     query = select(PurchaseInvoice).options(
-        selectinload(PurchaseInvoice.items).selectinload(PurchaseItem.product),
+        selectinload(PurchaseInvoice.items).selectinload(PurchaseItem.product).selectinload(Product.stock),
         selectinload(PurchaseInvoice.supplier)
     )
     if supplier_id:
@@ -90,7 +91,7 @@ async def get_purchase(
     result = await db.execute(
         select(PurchaseInvoice)
         .options(
-            selectinload(PurchaseInvoice.items).selectinload(PurchaseItem.product),
+            selectinload(PurchaseInvoice.items).selectinload(PurchaseItem.product).selectinload(Product.stock),
             selectinload(PurchaseInvoice.supplier)
         )
         .where(PurchaseInvoice.id == purchase_id)
