@@ -36,6 +36,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof window !== 'undefined') {
       localStorage.removeItem('vyaparone_token');
       localStorage.removeItem('vyaparone_user');
+      window.location.href = '/login';
     }
     set({ token: null, user: null });
   },
