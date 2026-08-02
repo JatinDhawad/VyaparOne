@@ -26,7 +26,7 @@ async def wipe_all_data(db: AsyncSession = Depends(get_db)):
         await db.execute(text("TRUNCATE TABLE payments CASCADE;"))
         await db.execute(text("TRUNCATE TABLE expenses CASCADE;"))
         await db.execute(text("TRUNCATE TABLE ledger_entries CASCADE;"))
-        await db.execute(text("UPDATE products SET current_stock = 0;"))
+        await db.execute(text("UPDATE godown_stock SET current_stock = 0;"))
         await db.commit()
         return {"status": "Wiped successfully"}
     except Exception as e:
