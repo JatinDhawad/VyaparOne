@@ -136,5 +136,5 @@ export const api = {
   getPartyProfitability: () => fetchAPI<any>('/reports/profitability/parties'),
   getProductProfitability: () => fetchAPI<any>('/reports/profitability/products'),
   getGSTSummary: () => fetchAPI<any>('/reports/gst-summary'),
-  getDashboardSummary: () => fetchAPI<any>('/reports/dashboard-summary'),
+  getDashboardSummary: (period?: string) => fetchAPI<any>(`/reports/dashboard-summary${period && period !== 'all' ? `?period=${period}` : ''}`),
 };

@@ -99,7 +99,6 @@ async def post_purchase_ledger(
         )
         db.add(entry_goods)
         purchase_account.current_balance = Decimal(str(purchase_account.current_balance or 0)) + goods_amount
-        supplier_account.current_balance = Decimal(str(supplier_account.current_balance or 0)) + goods_amount
 
     # 2. Debit Freight Account, Credit Supplier Account for Freight
     if freight_amount > 0:
@@ -116,7 +115,9 @@ async def post_purchase_ledger(
         )
         db.add(entry_freight)
         freight_account.current_balance = Decimal(str(freight_account.current_balance or 0)) + freight_amount
-        supplier_account.current_balance = Decimal(str(supplier_account.current_balance or 0)) + freight_amount
+
+    # Update supplier balance once with the full grand_total (what we owe them)
+    supplier_account.current_balance = Decimal(str(supplier_account.current_balance or 0)) + grand_total
 
 
 async def post_sales_ledger(

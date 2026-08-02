@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   TrendingUp, 
@@ -9,18 +10,34 @@ import {
   AlertTriangle, 
   CreditCard,
   Plus,
-  ArrowUpRight
+  ArrowUpRight,
+  Calendar
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { api } from '@/lib/api';
 import Link from 'next/link';
 
+type Period = '30d' | '90d' | '6m' | '1y' | 'all';
+
+const PERIOD_OPTIONS: { value: Period; label: string }[] = [
+  { value: '30d', label: 'Last 30 Days' },
+  { value: '90d', label: 'Last 90 Days' },
+  { value: '6m', label: 'Last 6 Months' },
+  { value: '1y', label: 'Last 1 Year' },
+  { value: 'all', label: 'All Time' },
+];
+
 export default function DashboardPage() {
+  const [period, setPeriod] = useState<Period>('all');
+
   const { data: summary, isLoading } = useQuery({
-    queryKey: ['dashboard-summary'],
-    queryFn: () => api.getDashboardSummary(),
+    queryKey: ['dashboard-summary', period],
+    queryFn: () => api.getDashboardSummary(period),
   });
+
+  const fmt = (v: number | undefined) =>
+    (v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -32,6 +49,28 @@ export default function DashboardPage() {
         />
 
         <main className="p-8 space-y-8 flex-1 overflow-y-auto">
+
+          {/* Period Selector */}
+          <div className="flex items-center gap-3">
+            <Calendar className="h-4 w-4 text-slate-500" />
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">View Period:</span>
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+              {PERIOD_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setPeriod(opt.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    period === opt.value
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Top 4 KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {/* Sales Card */}
@@ -44,13 +83,13 @@ export default function DashboardPage() {
               </div>
               <div className="mt-4">
                 <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-                  ₹{isLoading ? '...' : (summary?.total_sales || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  ₹{isLoading ? '...' : fmt(summary?.total_sales)}
                 </h3>
                 <p className="text-[11px] font-medium text-slate-500 mt-1">Gross sales invoices billing</p>
               </div>
             </div>
 
-            {/* Purchases Card */}
+            {/* Purchases Card — with billed/unbilled breakdown */}
             <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-slate-200">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Total Purchases</span>
@@ -60,9 +99,18 @@ export default function DashboardPage() {
               </div>
               <div className="mt-4">
                 <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-                  ₹{isLoading ? '...' : (summary?.total_purchases || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  ₹{isLoading ? '...' : fmt(summary?.total_purchases)}
                 </h3>
-                <p className="text-[11px] font-medium text-slate-500 mt-1">Official GST vendor purchases</p>
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-slate-500">Billed (GST Invoice)</span>
+                    <span className="text-[10px] font-bold text-slate-700">₹{isLoading ? '...' : fmt(summary?.total_billed_purchases)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-amber-600">+ Unbilled (Non-GST)</span>
+                    <span className="text-[10px] font-bold text-amber-700">₹{isLoading ? '...' : fmt(summary?.total_unbilled_purchases)}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -76,7 +124,7 @@ export default function DashboardPage() {
               </div>
               <div className="mt-4">
                 <h3 className="text-2xl font-extrabold text-emerald-700 tracking-tight">
-                  ₹{isLoading ? '...' : (summary?.net_profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  ₹{isLoading ? '...' : fmt(summary?.net_profit)}
                 </h3>
                 <p className="text-[11px] font-medium text-slate-500 mt-1">Gross profit minus operational expenses</p>
               </div>
@@ -92,7 +140,7 @@ export default function DashboardPage() {
               </div>
               <div className="mt-4">
                 <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-                  ₹{isLoading ? '...' : (summary?.total_operational_expenses || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  ₹{isLoading ? '...' : fmt(summary?.total_operational_expenses)}
                 </h3>
                 <p className="text-[11px] font-medium text-slate-500 mt-1">Fuel, rent, godown maintenance</p>
               </div>
@@ -141,7 +189,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-3xl font-extrabold text-slate-900">
-                  ₹{isLoading ? '...' : (summary?.total_receivables || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  ₹{isLoading ? '...' : fmt(summary?.total_receivables)}
                 </p>
                 <p className="text-xs font-medium text-slate-500 mt-1">Outstanding payments owed by buyers</p>
               </div>
@@ -160,7 +208,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-3xl font-extrabold text-slate-900">
-                  ₹{isLoading ? '...' : (summary?.total_payables || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  ₹{isLoading ? '...' : fmt(summary?.total_payables)}
                 </p>
                 <p className="text-xs font-medium text-slate-500 mt-1">Outstanding bills owed to vendors</p>
               </div>

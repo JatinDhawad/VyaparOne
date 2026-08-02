@@ -1,5 +1,6 @@
 from decimal import Decimal
-from datetime import date
+from datetime import date, timedelta
+from dateutil.relativedelta import relativedelta
 import uuid
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -390,9 +391,30 @@ async def get_gst_summary(
     )
 
 
-async def get_dashboard_summary(db: AsyncSession) -> DashboardSummaryResponse:
+def _period_to_start_date(period: Optional[str]) -> Optional[date]:
+    """Convert period string to a start date."""
+    if not period or period == 'all':
+        return None
+    today = date.today()
+    if period == '30d':
+        return today - timedelta(days=30)
+    elif period == '90d':
+        return today - timedelta(days=90)
+    elif period == '6m':
+        return today - relativedelta(months=6)
+    elif period == '1y':
+        return today - relativedelta(years=1)
+    return None
+
+
+async def get_dashboard_summary(db: AsyncSession, period: Optional[str] = None) -> DashboardSummaryResponse:
+    start_date = _period_to_start_date(period)
+
     # 1. Sales & Profit
-    s_res = await db.execute(select(SalesInvoice))
+    s_query = select(SalesInvoice)
+    if start_date:
+        s_query = s_query.where(SalesInvoice.invoice_date >= start_date)
+    s_res = await db.execute(s_query)
     sales_invs = s_res.scalars().all()
 
     tot_sales = sum(Decimal(str(i.grand_total or 0)) for i in sales_invs)
@@ -400,23 +422,32 @@ async def get_dashboard_summary(db: AsyncSession) -> DashboardSummaryResponse:
     tot_net_profit = sum(Decimal(str(i.net_profit or 0)) for i in sales_invs)
     tot_gross_profit = sum((Decimal(str(i.subtotal or 0)) - Decimal(str(i.discount_amount or 0)) - Decimal(str(i.total_cost_of_goods or 0))) for i in sales_invs)
 
-    # 2. Purchases (Total Amount to be Paid)
-    p_res = await db.execute(select(PurchaseInvoice))
+    # 2. Purchases — billed (grand_total) + unbilled (unbilled_nongst_amount)
+    p_query = select(PurchaseInvoice)
+    if start_date:
+        p_query = p_query.where(PurchaseInvoice.invoice_date >= start_date)
+    p_res = await db.execute(p_query)
     pur_invs = p_res.scalars().all()
-    tot_purchases = sum(Decimal(str(i.total_payable_amount or i.grand_total or 0)) for i in pur_invs)
+
+    tot_billed_purchases = sum(Decimal(str(i.grand_total or 0)) for i in pur_invs)
+    tot_unbilled_purchases = sum(Decimal(str(i.unbilled_nongst_amount or 0)) for i in pur_invs)
+    tot_purchases = tot_billed_purchases + tot_unbilled_purchases
 
     # 3. Expenses
-    e_res = await db.execute(select(Expense))
+    e_query = select(Expense)
+    if start_date:
+        e_query = e_query.where(Expense.expense_date >= start_date)
+    e_res = await db.execute(e_query)
     expenses = e_res.scalars().all()
     tot_expenses = sum(Decimal(str(e.amount or 0)) for e in expenses)
 
     overall_net_profit = tot_net_profit - tot_expenses
 
-    # 4. Receivables & Payables
+    # 4. Receivables & Payables (always all-time — reflects current outstanding)
     rec_rep = await get_receivables_report(db)
     pay_rep = await get_payables_report(db)
 
-    # 5. Out of stock count (min threshold feature disabled)
+    # 5. Out of stock count
     stk_res = await db.execute(
         select(GodownStock, Product)
         .join(Product, Product.id == GodownStock.product_id)
@@ -434,6 +465,8 @@ async def get_dashboard_summary(db: AsyncSession) -> DashboardSummaryResponse:
     return DashboardSummaryResponse(
         total_sales=round(tot_sales, 2),
         total_purchases=round(tot_purchases, 2),
+        total_billed_purchases=round(tot_billed_purchases, 2),
+        total_unbilled_purchases=round(tot_unbilled_purchases, 2),
         gross_profit=round(tot_gross_profit, 2),
         net_profit=round(overall_net_profit, 2),
         total_operational_expenses=round(tot_expenses, 2),

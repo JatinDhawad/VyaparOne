@@ -106,6 +106,8 @@ class GSTSummaryResponse(BaseModel):
 class DashboardSummaryResponse(BaseModel):
     total_sales: Decimal
     total_purchases: Decimal
+    total_billed_purchases: Decimal = Decimal("0.00")
+    total_unbilled_purchases: Decimal = Decimal("0.00")
     gross_profit: Decimal
     net_profit: Decimal
     total_operational_expenses: Decimal
