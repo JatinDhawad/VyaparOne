@@ -1,8 +1,11 @@
-let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vyaparone-production.up.railway.app/api/v1';
+const PRIMARY_API_URL = 'https://vyaparone-production.up.railway.app/api/v1';
+const FALLBACK_API_URL = 'https://vyaparone-backend.onrender.com/api/v1';
+
+let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || PRIMARY_API_URL;
 
 if (typeof window !== 'undefined' && (rawApiUrl.includes('127.0.0.1') || rawApiUrl.includes('localhost'))) {
   if (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
-    rawApiUrl = 'https://vyaparone-production.up.railway.app/api/v1';
+    rawApiUrl = PRIMARY_API_URL;
   }
 }
 
@@ -12,7 +15,7 @@ if (!rawApiUrl.includes('/api/v1')) {
 }
 const API_BASE_URL = rawApiUrl;
 
-async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, retries = 2): Promise<T> {
+async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, retries = 1): Promise<T> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('vyaparone_token') : null;
 
   const headers: Record<string, string> = {
@@ -25,60 +28,74 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, retries 
   }
 
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const fullUrl = `${API_BASE_URL}${formattedEndpoint}`;
+  const baseUrls = [API_BASE_URL];
+  if (!baseUrls.includes(FALLBACK_API_URL)) {
+    baseUrls.push(FALLBACK_API_URL);
+  }
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for Render cold-starts
+  let lastError: any = null;
 
-    try {
-      const response = await fetch(fullUrl, {
-        ...options,
-        headers,
-        signal: controller.signal,
-      });
+  for (const baseUrl of baseUrls) {
+    const fullUrl = `${baseUrl}${formattedEndpoint}`;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      clearTimeout(timeoutId);
+      try {
+        const response = await fetch(fullUrl, {
+          ...options,
+          headers,
+          signal: controller.signal,
+        });
 
-      const data = await response.json().catch(() => ({}));
+        clearTimeout(timeoutId);
 
-      if (response.status === 401 || (data && typeof data.detail === 'string' && (data.detail.includes('User not found') || data.detail.includes('session expired')))) {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('vyaparone_token');
-          localStorage.removeItem('vyaparone_user');
-          if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
+        if (response.status === 502 || response.status === 503) {
+          break; // Try next server in failover list
+        }
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401 || (data && typeof data.detail === 'string' && (data.detail.includes('User not found') || data.detail.includes('session expired')))) {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('vyaparone_token');
+            localStorage.removeItem('vyaparone_user');
+            if (!window.location.pathname.includes('/login')) {
+              window.location.href = '/login';
+            }
           }
         }
-      }
 
-      if (!response.ok) {
-        const errorMsg = data.detail || 'An error occurred while communicating with the server.';
-        throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
-      }
+        if (!response.ok) {
+          const errorMsg = data.detail || 'An error occurred while communicating with the server.';
+          throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+        }
 
-      return data as T;
-    } catch (err: any) {
-      clearTimeout(timeoutId);
-      const isNetworkError = err.message === 'Failed to fetch' || err instanceof TypeError || err.name === 'AbortError';
+        return data as T;
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        lastError = err;
+        const isNetworkError = err.message === 'Failed to fetch' || err instanceof TypeError || err.name === 'AbortError';
 
-      if (isNetworkError && attempt < retries) {
-        // Wait 2.5 seconds before retrying to allow Render cold-start to complete
-        await new Promise((resolve) => setTimeout(resolve, 2500));
-        continue;
+        if (isNetworkError && attempt < retries) {
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+          continue;
+        }
       }
-
-      if (err.name === 'AbortError') {
-        throw new Error('Cloud server response timed out (60s). Render backend is warming up. Please try again in a few seconds.');
-      }
-      if (err.message === 'Failed to fetch' || err instanceof TypeError) {
-        throw new Error('Cloud server is warming up or unreachable. Please try again in a moment.');
-      }
-      throw err;
     }
   }
 
-  throw new Error('Unable to connect to backend server. Please try again.');
+  if (lastError) {
+    if (lastError.name === 'AbortError') {
+      throw new Error('Cloud server response timed out. Please try again in a moment.');
+    }
+    if (lastError.message === 'Failed to fetch' || lastError instanceof TypeError) {
+      throw new Error('Cloud server is warming up or unreachable. Please try again in a moment.');
+    }
+    throw lastError;
+  }
+
+  throw new Error('Unable to connect to backend server.');
 }
 
 export const api = {
