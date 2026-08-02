@@ -1,8 +1,8 @@
-let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vyaparone-backend.onrender.com/api/v1';
+let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vyaparone-production.up.railway.app/api/v1';
 
 if (typeof window !== 'undefined' && (rawApiUrl.includes('127.0.0.1') || rawApiUrl.includes('localhost'))) {
   if (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
-    rawApiUrl = 'https://vyaparone-backend.onrender.com/api/v1';
+    rawApiUrl = 'https://vyaparone-production.up.railway.app/api/v1';
   }
 }
 
