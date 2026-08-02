@@ -1,4 +1,4 @@
-const PRIMARY_API_URL = 'https://vyaparone-production.up.railway.app/api/v1';
+const PRIMARY_API_URL = 'https://vyaparone-backend.onrender.com/api/v1';
 
 let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || PRIMARY_API_URL;
 
