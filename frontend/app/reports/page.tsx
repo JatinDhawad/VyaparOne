@@ -6,6 +6,7 @@ import { FileText, CreditCard, Landmark, TrendingUp } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<'LEDGER' | 'RECEIVABLES' | 'PAYABLES' | 'PROFITABILITY' | 'GST'>('LEDGER');
@@ -50,10 +51,7 @@ export default function ReportsPage() {
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
-        <Header 
-          title="Financial Reports & Analytics Center" 
-          subtitle="Double-entry ledger statements, aging balances, customer profitability & GST tax liability" 
-        />
+        <Header title="Financial Reports & Analytics" />
 
         <main className="p-8 space-y-6 flex-1 overflow-y-auto">
           {/* Report Tab Selector */}
@@ -92,7 +90,7 @@ export default function ReportsPage() {
                 <select
                   value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(e.target.value)}
-                  className="glass-input p-2 rounded-xl text-xs bg-white w-80 font-semibold"
+                  className="glass-input p-2 rounded-xl text-xs bg-white w-80 font-semibold border border-slate-200"
                 >
                   <option value="">-- Select Account --</option>
                   {accounts.map((a: any) => (
@@ -110,7 +108,7 @@ export default function ReportsPage() {
                     </div>
                     <div className="text-right">
                       <span className="text-xs font-bold text-slate-400 block uppercase">Closing Balance</span>
-                      <span className="text-xl font-extrabold text-emerald-700">₹{statement.closing_balance}</span>
+                      <span className="text-xl font-extrabold text-emerald-700">₹{formatCurrency(statement.closing_balance)}</span>
                     </div>
                   </div>
 
@@ -119,19 +117,23 @@ export default function ReportsPage() {
                       <tr>
                         <th className="p-3">Date</th>
                         <th className="p-3">Voucher</th>
-                        <th className="p-3">Debit (₹)</th>
-                        <th className="p-3">Credit (₹)</th>
-                        <th className="p-3">Running Balance (₹)</th>
+                        <th className="p-3 text-right">Debit (₹)</th>
+                        <th className="p-3 text-right">Credit (₹)</th>
+                        <th className="p-3 text-right">Running Balance (₹)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700">
                       {statement.lines.map((line: any) => (
                         <tr key={line.id} className="hover:bg-slate-100/50">
-                          <td className="p-3">{line.transaction_date}</td>
+                          <td className="p-3 font-medium">{line.transaction_date}</td>
                           <td className="p-3 font-mono font-bold text-indigo-700">{line.voucher_type}</td>
-                          <td className="p-3 text-emerald-700 font-bold">{parseFloat(line.debit_amount) > 0 ? `₹${line.debit_amount}` : '-'}</td>
-                          <td className="p-3 text-rose-700 font-bold">{parseFloat(line.credit_amount) > 0 ? `₹${line.credit_amount}` : '-'}</td>
-                          <td className="p-3 font-extrabold text-slate-900">₹{line.running_balance}</td>
+                          <td className="p-3 text-right text-emerald-700 font-bold">
+                            {parseFloat(line.debit_amount) > 0 ? `₹${formatCurrency(line.debit_amount)}` : '-'}
+                          </td>
+                          <td className="p-3 text-right text-rose-700 font-bold">
+                            {parseFloat(line.credit_amount) > 0 ? `₹${formatCurrency(line.credit_amount)}` : '-'}
+                          </td>
+                          <td className="p-3 text-right font-extrabold text-slate-900">₹{formatCurrency(line.running_balance)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -146,16 +148,16 @@ export default function ReportsPage() {
             <div className="glass-panel p-6 rounded-2xl border border-slate-200 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-900 text-base">Customer Receivables Overview</h3>
-                <span className="text-xl font-extrabold text-emerald-700">Total: ₹{receivables.total_receivables}</span>
+                <span className="text-xl font-extrabold text-emerald-700">Total: ₹{formatCurrency(receivables.total_receivables)}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {receivables.parties.map((p: any) => (
                   <div key={p.party_id} className="glass-card p-4 rounded-xl flex items-center justify-between">
                     <div>
                       <div className="font-bold text-slate-900">{p.party_name}</div>
-                      <div className="text-[10px] text-slate-500 font-medium">{p.city} | Credit Days: {p.credit_days}</div>
+                      <div className="text-[11px] text-slate-500 font-medium">{p.city} | Credit Days: {p.credit_days}</div>
                     </div>
-                    <div className="font-extrabold text-emerald-700 text-base">₹{p.current_balance}</div>
+                    <div className="font-extrabold text-emerald-700 text-base">₹{formatCurrency(p.current_balance)}</div>
                   </div>
                 ))}
               </div>
@@ -167,16 +169,16 @@ export default function ReportsPage() {
             <div className="glass-panel p-6 rounded-2xl border border-slate-200 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-900 text-base">Supplier Payables Overview</h3>
-                <span className="text-xl font-extrabold text-rose-700">Total: ₹{payables.total_payables}</span>
+                <span className="text-xl font-extrabold text-rose-700">Total: ₹{formatCurrency(payables.total_payables)}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {payables.parties.map((p: any) => (
                   <div key={p.party_id} className="glass-card p-4 rounded-xl flex items-center justify-between">
                     <div>
                       <div className="font-bold text-slate-900">{p.party_name}</div>
-                      <div className="text-[10px] text-slate-500 font-medium">{p.city}</div>
+                      <div className="text-[11px] text-slate-500 font-medium">{p.city}</div>
                     </div>
-                    <div className="font-extrabold text-rose-700 text-base">₹{p.current_balance}</div>
+                    <div className="font-extrabold text-rose-700 text-base">₹{formatCurrency(p.current_balance)}</div>
                   </div>
                 ))}
               </div>
@@ -190,27 +192,27 @@ export default function ReportsPage() {
                 <h3 className="font-bold text-slate-900 text-base">Customer & Party Margins</h3>
                 <div className="text-right">
                   <span className="text-xs text-slate-500 block font-semibold uppercase">Total Net Profit</span>
-                  <span className="text-xl font-extrabold text-emerald-700">₹{partyProf.total_profit}</span>
+                  <span className="text-xl font-extrabold text-emerald-700">₹{formatCurrency(partyProf.total_profit)}</span>
                 </div>
               </div>
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
                   <tr>
                     <th className="p-3">Customer</th>
-                    <th className="p-3">Revenue (₹)</th>
-                    <th className="p-3">COGS (₹)</th>
-                    <th className="p-3">Net Profit (₹)</th>
-                    <th className="p-3">Margin %</th>
+                    <th className="p-3 text-right">Revenue (₹)</th>
+                    <th className="p-3 text-right">COGS (₹)</th>
+                    <th className="p-3 text-right">Net Profit (₹)</th>
+                    <th className="p-3 text-right">Margin %</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   {partyProf.parties.map((pt: any) => (
-                    <tr key={pt.party_id}>
+                    <tr key={pt.party_id} className="hover:bg-slate-50">
                       <td className="p-3 font-bold text-slate-900">{pt.party_name}</td>
-                      <td className="p-3">₹{pt.total_revenue}</td>
-                      <td className="p-3 text-slate-500">₹{pt.total_cogs}</td>
-                      <td className="p-3 text-emerald-700 font-bold">₹{pt.net_profit}</td>
-                      <td className="p-3 font-bold text-indigo-700">{pt.profit_margin_percent}%</td>
+                      <td className="p-3 text-right">₹{formatCurrency(pt.total_revenue)}</td>
+                      <td className="p-3 text-right text-slate-500">₹{formatCurrency(pt.total_cogs)}</td>
+                      <td className="p-3 text-right text-emerald-700 font-bold">₹{formatCurrency(pt.net_profit)}</td>
+                      <td className="p-3 text-right font-bold text-indigo-700">{pt.profit_margin_percent}%</td>
                     </tr>
                   ))}
                 </tbody>
@@ -223,19 +225,19 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="glass-card p-6 rounded-2xl border-indigo-100">
                 <span className="text-xs font-bold uppercase text-indigo-700">Output GST (Sales)</span>
-                <h3 className="text-2xl font-bold text-slate-900 mt-2">₹{gst.output_gst_amount}</h3>
-                <p className="text-[11px] font-medium text-slate-500 mt-1">Taxable Turnover: ₹{gst.sales_taxable_amount}</p>
+                <h3 className="text-2xl font-bold text-slate-900 mt-2">₹{formatCurrency(gst.output_gst_amount)}</h3>
+                <p className="text-[11px] font-medium text-slate-500 mt-1">Taxable Turnover: ₹{formatCurrency(gst.sales_taxable_amount)}</p>
               </div>
 
               <div className="glass-card p-6 rounded-2xl border-emerald-100">
                 <span className="text-xs font-bold uppercase text-emerald-700">Input Tax Credit (ITC)</span>
-                <h3 className="text-2xl font-bold text-slate-900 mt-2">₹{gst.input_gst_amount}</h3>
-                <p className="text-[11px] font-medium text-slate-500 mt-1">Purchase Taxable: ₹{gst.purchase_taxable_amount}</p>
+                <h3 className="text-2xl font-bold text-slate-900 mt-2">₹{formatCurrency(gst.input_gst_amount)}</h3>
+                <p className="text-[11px] font-medium text-slate-500 mt-1">Purchase Taxable: ₹{formatCurrency(gst.purchase_taxable_amount)}</p>
               </div>
 
               <div className="glass-card p-6 rounded-2xl border-amber-200 bg-amber-50/50 glow-amber">
                 <span className="text-xs font-bold uppercase text-amber-800">Net GST Liability</span>
-                <h3 className="text-2xl font-extrabold text-amber-800 mt-2">₹{gst.net_gst_payable}</h3>
+                <h3 className="text-2xl font-extrabold text-amber-800 mt-2">₹{formatCurrency(gst.net_gst_payable)}</h3>
                 <p className="text-[11px] font-medium text-slate-500 mt-1">Output GST minus Input Tax Credit</p>
               </div>
             </div>

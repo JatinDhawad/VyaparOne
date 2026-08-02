@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 
 export default function ExpensesPage() {
   const queryClient = useQueryClient();
@@ -59,7 +60,6 @@ export default function ExpensesPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
           title="Operational Expenses" 
-          subtitle="Record fuel, rent, godown maintenance & operational expenses" 
           onActionClick={() => setIsModalOpen(true)}
           actionLabel="Record Expense"
         />
@@ -73,7 +73,7 @@ export default function ExpensesPage() {
                   <th className="p-4">Date</th>
                   <th className="p-4">Category</th>
                   <th className="p-4">Mode</th>
-                  <th className="p-4">Amount</th>
+                  <th className="p-4 text-right">Amount (₹)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -84,10 +84,10 @@ export default function ExpensesPage() {
                 ) : (
                   expenses.map((e: any) => (
                     <tr key={e.id} className="hover:bg-slate-100/50 transition-colors">
-                      <td className="p-4">{e.expense_date}</td>
+                      <td className="p-4 font-medium">{e.expense_date}</td>
                       <td className="p-4 font-bold text-slate-900">{e.category}</td>
                       <td className="p-4 text-slate-600">{e.payment_mode}</td>
-                      <td className="p-4 font-bold text-rose-700">₹{parseFloat(e.amount || 0).toFixed(2)}</td>
+                      <td className="p-4 text-right font-bold text-rose-700">₹{formatCurrency(e.amount)}</td>
                     </tr>
                   ))
                 )}
@@ -98,36 +98,75 @@ export default function ExpensesPage() {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record Operational Expense">
-        {formError && <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">{formError}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {formError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium">
+              {formError}
+            </div>
+          )}
+
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Expense Category *</label>
-            <input required type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Vehicle Fuel, Rent, Maintenance" className="w-full glass-input p-2.5 rounded-xl" />
+            <label className="text-xs font-bold text-slate-700 block mb-1">Expense Category</label>
+            <input 
+              type="text" 
+              value={category} 
+              onChange={(e) => setCategory(e.target.value)} 
+              className="glass-input w-full p-2.5 rounded-xl text-xs" 
+              required 
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Amount (₹) *</label>
-              <input required type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full glass-input p-2.5 rounded-xl text-rose-700 font-bold" />
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Payment Mode</label>
-              <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-white">
-                <option value="CASH">CASH</option>
-                <option value="UPI">UPI</option>
-                <option value="BANK">BANK</option>
-              </select>
-            </div>
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Amount (₹)</label>
+            <input 
+              type="number" 
+              step="0.01" 
+              value={amount} 
+              onChange={(e) => setAmount(e.target.value)} 
+              className="glass-input w-full p-2.5 rounded-xl text-xs" 
+              required 
+            />
           </div>
 
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="w-full py-3 bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg transition-all"
-          >
-            {createMutation.isPending ? 'Processing...' : 'Save Expense & Debit Ledger'}
-          </button>
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Payment Mode</label>
+            <select 
+              value={paymentMode} 
+              onChange={(e) => setPaymentMode(e.target.value)} 
+              className="glass-input w-full p-2.5 rounded-xl text-xs bg-white"
+            >
+              <option value="CASH">CASH</option>
+              <option value="BANK">BANK / ONLINE</option>
+              <option value="UPI">UPI</option>
+              <option value="CHEQUE">CHEQUE</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Remarks / Purpose</label>
+            <textarea 
+              value={remarks} 
+              onChange={(e) => setRemarks(e.target.value)} 
+              className="glass-input w-full p-2.5 rounded-xl text-xs h-20" 
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button 
+              type="button" 
+              onClick={() => setIsModalOpen(false)} 
+              className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={createMutation.isPending} 
+              className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all"
+            >
+              {createMutation.isPending ? 'Saving...' : 'Save Expense'}
+            </button>
+          </div>
         </form>
       </Modal>
     </div>

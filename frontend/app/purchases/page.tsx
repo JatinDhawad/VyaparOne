@@ -262,8 +262,7 @@ export default function PurchasesPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
-          title="Purchase Invoices" 
-          subtitle="Manage vendor bills, line items, payments, and stock records" 
+          title="Purchase Invoices & Bills" 
           onActionClick={() => setIsModalOpen(true)}
           actionLabel="New Purchase Entry"
         />
@@ -355,11 +354,11 @@ export default function PurchasesPage() {
                     <th className="p-4">Invoice #</th>
                     <th className="p-4">Date</th>
                     <th className="p-4">Supplier</th>
-                    <th className="p-4 text-indigo-900">Billed Total</th>
-                    <th className="p-4 text-amber-800">Unbilled Amount</th>
-                    <th className="p-4">Total Payable</th>
-                    <th className="p-4 text-emerald-800">Amount Paid</th>
-                    <th className="p-4 text-rose-800">Pending Balance</th>
+                    <th className="p-4 text-right text-indigo-900">Billed Total (₹)</th>
+                    <th className="p-4 text-right text-amber-800">Unbilled Amount (₹)</th>
+                    <th className="p-4 text-right">Total Payable (₹)</th>
+                    <th className="p-4 text-right text-emerald-800">Amount Paid (₹)</th>
+                    <th className="p-4 text-right text-rose-800">Pending Balance (₹)</th>
                     <th className="p-4 text-right">Details</th>
                   </tr>
                 </thead>
@@ -386,17 +385,17 @@ export default function PurchasesPage() {
                           <td className="p-4 font-mono font-extrabold text-indigo-700 text-sm">{p.invoice_number}</td>
                           <td className="p-4 font-medium text-slate-600">{p.invoice_date}</td>
                           <td className="p-4 font-bold text-slate-900">{supplierName}</td>
-                          <td className="p-4 font-extrabold text-indigo-950 text-sm">₹{bTotal.toFixed(2)}</td>
-                          <td className="p-4 text-amber-800 font-bold">₹{unbilled.toFixed(2)}</td>
-                          <td className="p-4 font-extrabold text-slate-900">₹{payable.toFixed(2)}</td>
-                          <td className="p-4 text-emerald-700 font-extrabold">₹{paid.toFixed(2)}</td>
-                          <td className="p-4">
+                          <td className="p-4 text-right font-extrabold text-indigo-950 text-sm">₹{formatCurrency(bTotal)}</td>
+                          <td className="p-4 text-right text-amber-800 font-bold">₹{formatCurrency(unbilled)}</td>
+                          <td className="p-4 text-right font-extrabold text-slate-900">₹{formatCurrency(payable)}</td>
+                          <td className="p-4 text-right text-emerald-700 font-extrabold">₹{formatCurrency(paid)}</td>
+                          <td className="p-4 text-right">
                             <span className={`px-2.5 py-1 rounded-xl text-xs font-extrabold border ${
                               pending <= 0 
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                 : 'bg-rose-50 text-rose-700 border-rose-200'
                             }`}>
-                              {pending <= 0 ? 'Paid' : `₹${pending.toFixed(2)}`}
+                              {pending <= 0 ? 'Paid' : `₹${formatCurrency(pending)}`}
                             </span>
                           </td>
                           <td className="p-4 text-right">
