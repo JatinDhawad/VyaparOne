@@ -34,6 +34,16 @@ async def create_purchase_invoice(
     if not supplier:
         raise ValueError(f"Supplier with ID {invoice_in.supplier_id} not found.")
 
+    # 1b. Check if invoice number is duplicate for this supplier
+    dup_res = await db.execute(
+        select(PurchaseInvoice).where(
+            PurchaseInvoice.supplier_id == invoice_in.supplier_id,
+            PurchaseInvoice.invoice_number == invoice_in.invoice_number
+        )
+    )
+    if dup_res.scalars().first():
+        raise ValueError(f"Purchase Invoice #{invoice_in.invoice_number} from this supplier has already been saved.")
+
     subtotal = Decimal("0.00")
     total_discount = Decimal("0.00")
     total_tax = Decimal("0.00")
@@ -173,7 +183,11 @@ async def create_purchase_invoice(
         created_by=created_by
     )
 
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise e
 
     # Fetch with items loaded
     result = await db.execute(

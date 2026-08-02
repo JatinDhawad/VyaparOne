@@ -34,19 +34,35 @@ async def get_or_create_system_account(
     return account
 
 
+from app.models.party import Party
+
+
 async def get_party_ledger_account(
     db: AsyncSession,
     party_id: uuid.UUID
 ) -> LedgerAccount:
     """
-    Fetches the ledger account associated with a specific Party.
+    Fetches or creates the ledger account associated with a specific Party.
     """
     result = await db.execute(
         select(LedgerAccount).where(LedgerAccount.party_id == party_id)
     )
     account = result.scalars().first()
     if not account:
-        raise ValueError(f"No ledger account found for party_id={party_id}")
+        p_res = await db.execute(select(Party).where(Party.id == party_id))
+        party = p_res.scalars().first()
+        party_name = party.name if party else "Party"
+        party_type = party.party_type if party else "BOTH"
+        acct_type = "LIABILITY" if party_type == "SUPPLIER" else "ASSET"
+
+        account = LedgerAccount(
+            account_name=f"{party_name} A/c",
+            account_type=acct_type,
+            party_id=party_id,
+            current_balance=Decimal("0.00")
+        )
+        db.add(account)
+        await db.flush()
     return account
 
 

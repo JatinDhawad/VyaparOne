@@ -31,6 +31,25 @@ app = FastAPI(
 # Include v1 Router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+# Global Exception Handlers
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": str(exc)},
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global unhandled error: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc) or "Internal server error"},
+    )
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
