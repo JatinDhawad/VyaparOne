@@ -14,6 +14,24 @@ from app.api.deps import get_current_active_user
 
 router = APIRouter(prefix="/purchases", tags=["Purchases"])
 
+@router.delete("/wipe_all", status_code=200)
+async def wipe_all_data(db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    try:
+        await db.execute(text("DELETE FROM purchase_items;"))
+        await db.execute(text("DELETE FROM purchase_invoices;"))
+        await db.execute(text("DELETE FROM sales_items;"))
+        await db.execute(text("DELETE FROM sales_invoices;"))
+        await db.execute(text("DELETE FROM payments;"))
+        await db.execute(text("DELETE FROM expenses;"))
+        await db.execute(text("DELETE FROM ledger_entries;"))
+        await db.execute(text("UPDATE godown_stock SET current_stock = 0;"))
+        await db.commit()
+        return {"status": "Wiped successfully"}
+    except Exception as e:
+        await db.rollback()
+        return {"error": str(e)}
+
 
 @router.post("", response_model=PurchaseInvoiceResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=PurchaseInvoiceResponse, status_code=status.HTTP_201_CREATED)
