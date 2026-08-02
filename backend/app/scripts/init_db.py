@@ -15,6 +15,15 @@ async def init_db():
     logger.info("Creating database tables...")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        
+        # Auto-migrate new columns safely
+        from sqlalchemy import text
+        try:
+            await conn.execute(text("ALTER TABLE purchase_invoices ADD COLUMN discount_deduction NUMERIC(15, 2) DEFAULT 0.00;"))
+            logger.info("Added discount_deduction column.")
+        except Exception:
+            pass # Column already exists
+            
     logger.info("Tables created successfully.")
 
 async def seed_data():
