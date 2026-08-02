@@ -156,22 +156,29 @@ async def get_receivables_report(db: AsyncSession) -> ReceivablesReportResponse:
 
 
 async def get_payables_report(db: AsyncSession) -> PayablesReportResponse:
-    res = await db.execute(
-        select(Party, LedgerAccount)
-        .join(LedgerAccount, LedgerAccount.party_id == Party.id)
-        .where(
-            Party.is_active == True,
-            Party.party_type.in_(["SUPPLIER", "BOTH"])
-        )
+    from app.models.transactions import PurchaseInvoice
+    from sqlalchemy import func
+
+    # Get all active suppliers
+    sup_res = await db.execute(
+        select(Party)
+        .where(Party.is_active == True, Party.party_type.in_(["SUPPLIER", "BOTH"]))
     )
-    rows = res.all()
+    suppliers = sup_res.scalars().all()
+
     total_pay = Decimal("0.00")
     party_items = []
 
-    for party, account in rows:
-        bal = Decimal(str(account.current_balance or 0))
-        if bal > Decimal("0.00"):
-            total_pay += bal
+    for party in suppliers:
+        # Sum pending_amount from purchase invoices for this supplier
+        pending_res = await db.execute(
+            select(func.coalesce(func.sum(PurchaseInvoice.pending_amount), 0))
+            .where(PurchaseInvoice.supplier_id == party.id)
+        )
+        pending = Decimal(str(pending_res.scalar()))
+
+        if pending > Decimal("0.00"):
+            total_pay += pending
             party_items.append(
                 OutstandingPartyItem(
                     party_id=party.id,
@@ -181,7 +188,7 @@ async def get_payables_report(db: AsyncSession) -> PayablesReportResponse:
                     city=party.city,
                     credit_limit=Decimal(str(party.credit_limit or 0)),
                     credit_days=party.credit_days or 30,
-                    current_balance=bal,
+                    current_balance=pending,
                     is_overdue=False
                 )
             )

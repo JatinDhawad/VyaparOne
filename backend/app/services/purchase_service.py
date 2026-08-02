@@ -182,7 +182,8 @@ async def create_purchase_invoice(
         freight_amount=round(billed_expenses + unbilled_nongst, 2),
         grand_total=round(total_payable, 2),
         invoice_date=invoice_in.invoice_date,
-        created_by=created_by
+        created_by=created_by,
+        amount_paid=round(amt_paid, 2)
     )
 
     try:
