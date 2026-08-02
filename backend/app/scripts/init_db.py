@@ -24,21 +24,6 @@ async def init_db():
         except Exception:
             pass # Column already exists
             
-        # TEMPORARY WIPE ALL TRANSACTIONS (User Requested)
-        try:
-            logger.info("WIPING ALL TRANSACTIONS AS REQUESTED...")
-            await conn.execute(text("TRUNCATE TABLE purchase_items CASCADE;"))
-            await conn.execute(text("TRUNCATE TABLE purchase_invoices CASCADE;"))
-            await conn.execute(text("TRUNCATE TABLE sales_items CASCADE;"))
-            await conn.execute(text("TRUNCATE TABLE sales_invoices CASCADE;"))
-            await conn.execute(text("TRUNCATE TABLE payments CASCADE;"))
-            await conn.execute(text("TRUNCATE TABLE expenses CASCADE;"))
-            await conn.execute(text("TRUNCATE TABLE ledger_entries CASCADE;"))
-            await conn.execute(text("UPDATE products SET current_stock = 0;"))
-            logger.info("TRANSACTIONS WIPED.")
-        except Exception as e:
-            logger.error(f"Failed to wipe: {e}")
-            
     logger.info("Tables created successfully.")
 
 async def seed_data():
