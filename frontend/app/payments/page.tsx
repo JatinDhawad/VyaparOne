@@ -7,6 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 
 export default function PaymentsPage() {
   const queryClient = useQueryClient();
@@ -68,7 +69,6 @@ export default function PaymentsPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
           title="Payments & Receipts Vouchers" 
-          subtitle="Record customer payments & vendor receipts with real-time double-entry ledger posting" 
           onActionClick={() => setIsModalOpen(true)}
           actionLabel="New Voucher Entry"
         />
@@ -83,7 +83,7 @@ export default function PaymentsPage() {
                   <th className="p-4">Type</th>
                   <th className="p-4">Date</th>
                   <th className="p-4">Mode</th>
-                  <th className="p-4">Amount</th>
+                  <th className="p-4 text-right">Amount (₹)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -105,9 +105,9 @@ export default function PaymentsPage() {
                           {p.payment_type}
                         </span>
                       </td>
-                      <td className="p-4">{p.payment_date}</td>
+                      <td className="p-4 font-medium">{p.payment_date}</td>
                       <td className="p-4 font-bold text-slate-700">{p.payment_mode}</td>
-                      <td className="p-4 font-bold text-slate-900">₹{parseFloat(p.amount || 0).toFixed(2)}</td>
+                      <td className="p-4 text-right font-bold text-slate-900">₹{formatCurrency(p.amount)}</td>
                     </tr>
                   ))
                 )}
@@ -118,58 +118,109 @@ export default function PaymentsPage() {
       </div>
 
       {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record Payment / Receipt Voucher">
-        {formError && <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">{formError}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Voucher Number *</label>
-              <input required type="text" value={voucherNumber} onChange={(e) => setVoucherNumber(e.target.value)} placeholder="VOUCH-101" className="w-full glass-input p-2.5 rounded-xl font-mono" />
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Record New Payment Voucher">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {formError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium">
+              {formError}
             </div>
+          )}
 
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Voucher Type *</label>
-              <select value={paymentType} onChange={(e) => setPaymentType(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-white">
-                <option value="RECEIPT">RECEIPT (Customer pays us)</option>
-                <option value="PAYMENT">PAYMENT (We pay Supplier)</option>
-              </select>
-            </div>
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Voucher Number</label>
+            <input 
+              type="text" 
+              value={voucherNumber} 
+              onChange={(e) => setVoucherNumber(e.target.value)} 
+              placeholder="e.g. VOUCH-1001 (Auto-generated if blank)" 
+              className="glass-input w-full p-2.5 rounded-xl text-xs font-mono" 
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Party (Optional)</label>
-              <select value={partyId} onChange={(e) => setPartyId(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-white">
-                <option value="">-- Choose Party --</option>
-                {parties.map((pt: any) => (
-                  <option key={pt.id} value={pt.id}>{pt.name} ({pt.party_type})</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Amount (₹) *</label>
-              <input required type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full glass-input p-2.5 rounded-xl text-emerald-700 font-bold" />
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Transaction Type</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setPaymentType('RECEIPT')}
+                className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                  paymentType === 'RECEIPT'
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                RECEIPT (From Customer)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentType('PAYMENT')}
+                className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                  paymentType === 'PAYMENT'
+                    ? 'bg-rose-600 text-white border-rose-600 shadow-md'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                PAYMENT (To Supplier)
+              </button>
             </div>
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Payment Mode</label>
-            <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-white">
-              <option value="UPI">UPI / GPay</option>
-              <option value="CASH">CASH</option>
-              <option value="BANK">BANK / NEFT</option>
-              <option value="CHEQUE">CHEQUE</option>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Associated Party</label>
+            <select 
+              value={partyId} 
+              onChange={(e) => setPartyId(e.target.value)} 
+              className="glass-input w-full p-2.5 rounded-xl text-xs bg-white font-medium"
+            >
+              <option value="">-- General Account (No Specific Party) --</option>
+              {parties.map((pt: any) => (
+                <option key={pt.id} value={pt.id}>{pt.name} ({pt.party_type})</option>
+              ))}
             </select>
           </div>
 
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-bold rounded-xl shadow-lg transition-all"
-          >
-            {createMutation.isPending ? 'Saving...' : 'Save Voucher & Update Ledger'}
-          </button>
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Amount (₹)</label>
+            <input 
+              type="number" 
+              step="0.01" 
+              value={amount} 
+              onChange={(e) => setAmount(e.target.value)} 
+              className="glass-input w-full p-2.5 rounded-xl text-xs font-bold" 
+              required 
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Payment Mode</label>
+            <select 
+              value={paymentMode} 
+              onChange={(e) => setPaymentMode(e.target.value)} 
+              className="glass-input w-full p-2.5 rounded-xl text-xs bg-white"
+            >
+              <option value="UPI">UPI / Online Transfer</option>
+              <option value="BANK">Bank Account / NEFT / RTGS</option>
+              <option value="CASH">Cash In Hand</option>
+              <option value="CHEQUE">Cheque</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button 
+              type="button" 
+              onClick={() => setIsModalOpen(false)} 
+              className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={createMutation.isPending} 
+              className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all"
+            >
+              {createMutation.isPending ? 'Recording...' : 'Record Voucher'}
+            </button>
+          </div>
         </form>
       </Modal>
     </div>

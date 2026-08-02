@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 
 export default function SalesPage() {
   const queryClient = useQueryClient();
@@ -68,32 +69,32 @@ export default function SalesPage() {
     const prod = products.find((p: any) => p.id === selectedProduct);
     if (!prod) return;
 
-    const availableStock = parseFloat(prod.stock?.current_stock || 0);
-    const requestQty = parseFloat(qty) || 0;
-
-    if (requestQty > availableStock) {
-      setFormError(`Insufficient stock for '${prod.name}'. Available: ${availableStock}, Requested: ${requestQty}`);
-      return;
+    const existingIdx = items.findIndex((i) => i.product_id === selectedProduct);
+    if (existingIdx >= 0) {
+      const updated = [...items];
+      updated[existingIdx].quantity += parseFloat(qty) || 0;
+      setItems(updated);
+    } else {
+      setItems([
+        ...items,
+        {
+          product_id: prod.id,
+          product_name: prod.name,
+          quantity: parseFloat(qty) || 0,
+          unit_selling_price: parseFloat(unitPrice) || 0,
+        },
+      ]);
     }
-    setFormError('');
-
-    setItems([
-      ...items,
-      {
-        product_id: selectedProduct,
-        product_name: prod.name,
-        quantity: requestQty,
-        unit_selling_price: parseFloat(unitPrice) || 0,
-        discount_amount: 0,
-        gst_rate: parseFloat(prod.gst_rate || 0),
-      },
-    ]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerId || items.length === 0) {
-      setFormError('Please select a customer and add at least one line item.');
+    if (!customerId) {
+      setFormError('Please select a customer.');
+      return;
+    }
+    if (items.length === 0) {
+      setFormError('Please add at least one product item.');
       return;
     }
 
@@ -108,8 +109,6 @@ export default function SalesPage() {
         product_id: i.product_id,
         quantity: i.quantity,
         unit_selling_price: i.unit_selling_price,
-        discount_amount: i.discount_amount,
-        gst_rate: i.gst_rate,
       })),
     });
   };
@@ -119,10 +118,9 @@ export default function SalesPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header 
-          title="Sales POS & Tax Invoices" 
-          subtitle="Real-time stock validation, line profit calculation & customer ledger debiting" 
+          title="Sales & POS Billing" 
           onActionClick={() => setIsModalOpen(true)}
-          actionLabel="New Sales POS Billing"
+          actionLabel="New Sales POS"
         />
 
         <main className="p-8 space-y-6 flex-1 overflow-y-auto">
@@ -133,10 +131,10 @@ export default function SalesPage() {
                 <tr>
                   <th className="p-4">Invoice #</th>
                   <th className="p-4">Date</th>
-                  <th className="p-4">Customer ID</th>
-                  <th className="p-4">COGS</th>
-                  <th className="p-4">Net Profit</th>
-                  <th className="p-4">Grand Total</th>
+                  <th className="p-4">Customer</th>
+                  <th className="p-4 text-right">COGS (₹)</th>
+                  <th className="p-4 text-right">Net Profit (₹)</th>
+                  <th className="p-4 text-right">Grand Total (₹)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -148,11 +146,11 @@ export default function SalesPage() {
                   sales.map((s: any) => (
                     <tr key={s.id} className="hover:bg-slate-100/50 transition-colors">
                       <td className="p-4 font-mono font-bold text-indigo-700">{s.invoice_number}</td>
-                      <td className="p-4">{s.invoice_date}</td>
-                      <td className="p-4 font-semibold text-slate-900">{s.customer_id}</td>
-                      <td className="p-4 text-slate-500">₹{parseFloat(s.total_cost_of_goods || 0).toFixed(2)}</td>
-                      <td className="p-4 text-emerald-700 font-bold">₹{parseFloat(s.net_profit || 0).toFixed(2)}</td>
-                      <td className="p-4 font-bold text-slate-900">₹{parseFloat(s.grand_total || 0).toFixed(2)}</td>
+                      <td className="p-4 font-medium">{s.invoice_date}</td>
+                      <td className="p-4 font-semibold text-slate-900">{s.customer?.name || s.customer_id}</td>
+                      <td className="p-4 text-right text-slate-500">₹{formatCurrency(s.total_cost_of_goods)}</td>
+                      <td className="p-4 text-right text-emerald-700 font-bold">₹{formatCurrency(s.net_profit)}</td>
+                      <td className="p-4 text-right font-bold text-slate-900">₹{formatCurrency(s.grand_total)}</td>
                     </tr>
                   ))
                 )}
@@ -168,71 +166,105 @@ export default function SalesPage() {
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Invoice Number *</label>
-              <input required type="text" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="INV-2026-001" className="w-full glass-input p-2.5 rounded-xl font-mono" />
+              <label className="font-bold text-slate-700 block mb-1">Invoice #</label>
+              <input 
+                type="text" 
+                value={invoiceNumber} 
+                onChange={(e) => setInvoiceNumber(e.target.value)} 
+                placeholder="e.g. INV-1001" 
+                className="glass-input w-full p-2.5 rounded-xl font-mono" 
+              />
             </div>
-
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Select Customer *</label>
-              <select required value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="w-full glass-input p-2.5 rounded-xl bg-white">
+              <label className="font-bold text-slate-700 block mb-1">Select Customer</label>
+              <select 
+                value={customerId} 
+                onChange={(e) => setCustomerId(e.target.value)} 
+                className="glass-input w-full p-2.5 rounded-xl bg-white font-medium" 
+                required
+              >
                 <option value="">-- Choose Buyer --</option>
                 {customers.map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.city || 'Customer'})</option>
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Item Add Bar */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-            <span className="font-bold text-emerald-700 text-xs uppercase tracking-wider block">Add Items to Cart</span>
-            <div className="grid grid-cols-4 gap-2">
-              <div className="col-span-2">
-                <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} className="w-full glass-input p-2 rounded-xl bg-white">
-                  <option value="">-- Select Product --</option>
-                  {products.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.name} (HSN: {p.hsn_code || p.sku}) - Stock: {p.stock?.current_stock || 0} {p.unit || 'BAG'}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <input type="number" placeholder="Qty" value={qty} onChange={(e) => setQty(e.target.value)} className="w-full glass-input p-2 rounded-xl" />
-              </div>
-
-              <div>
-                <input type="number" step="0.01" placeholder="Selling Price (₹)" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} className="w-full glass-input p-2 rounded-xl font-bold text-emerald-700" />
-              </div>
+          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <span className="font-bold text-indigo-900 block text-xs">Add Line Item</span>
+            <div className="grid grid-cols-3 gap-2">
+              <select 
+                value={selectedProduct} 
+                onChange={(e) => {
+                  setSelectedProduct(e.target.value);
+                  const p = products.find((pr: any) => pr.id === e.target.value);
+                  if (p) setUnitPrice(p.default_selling_price || '100');
+                }} 
+                className="glass-input p-2 rounded-xl bg-white col-span-1"
+              >
+                <option value="">Select Item</option>
+                {products.map((p: any) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <input 
+                type="number" 
+                placeholder="Qty" 
+                value={qty} 
+                onChange={(e) => setQty(e.target.value)} 
+                className="glass-input p-2 rounded-xl" 
+              />
+              <input 
+                type="number" 
+                placeholder="Price" 
+                value={unitPrice} 
+                onChange={(e) => setUnitPrice(e.target.value)} 
+                className="glass-input p-2 rounded-xl" 
+              />
             </div>
-
-            <button type="button" onClick={handleAddItem} className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-md shadow-emerald-600/15">
-              + Add to Invoice Cart
+            <button 
+              type="button" 
+              onClick={handleAddItem} 
+              className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs"
+            >
+              Add Item
             </button>
           </div>
 
-          {/* Cart Items */}
           {items.length > 0 && (
-            <div className="space-y-2">
-              <span className="font-bold text-slate-700 block">Cart Items ({items.length})</span>
-              {items.map((it, idx) => (
-                <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <div>
-                    <div className="font-bold text-slate-900">{it.product_name}</div>
-                    <div className="text-[10px] text-slate-500">Qty: {it.quantity} | Rate: ₹{it.unit_selling_price}</div>
+            <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <div className="bg-slate-100 p-2 font-bold text-slate-700">Added Items ({items.length})</div>
+              <div className="divide-y divide-slate-100 max-h-36 overflow-y-auto">
+                {items.map((it, idx) => (
+                  <div key={idx} className="p-2 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-slate-900">{it.product_name}</div>
+                      <div className="text-[10px] text-slate-500">{it.quantity} x ₹{formatCurrency(it.unit_selling_price)}</div>
+                    </div>
+                    <div className="font-bold text-emerald-700">₹{formatCurrency(it.quantity * it.unit_selling_price)}</div>
                   </div>
-                  <div className="font-bold text-emerald-700">₹{(it.quantity * it.unit_selling_price).toFixed(2)}</div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
-          >
-            {createMutation.isPending ? 'Billing Invoice...' : 'Complete POS Bill & Post Ledger'}
-          </button>
+          <div className="flex justify-end gap-3 pt-2">
+            <button 
+              type="button" 
+              onClick={() => setIsModalOpen(false)} 
+              className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={createMutation.isPending} 
+              className="px-5 py-2 font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md"
+            >
+              {createMutation.isPending ? 'Processing...' : 'Complete POS Bill'}
+            </button>
+          </div>
         </form>
       </Modal>
     </div>
