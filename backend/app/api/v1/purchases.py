@@ -26,6 +26,7 @@ async def wipe_all_data(db: AsyncSession = Depends(get_db)):
         await db.execute(text("DELETE FROM payments;"))
         await db.execute(text("DELETE FROM expenses;"))
         await db.execute(text("DELETE FROM ledger_entries;"))
+        await db.execute(text("UPDATE ledger_accounts SET current_balance = 0;"))
         await db.execute(text("UPDATE godown_stock SET current_stock = 0;"))
         await db.commit()
         return {"status": "Wiped successfully"}
