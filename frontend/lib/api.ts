@@ -1,11 +1,9 @@
 const PRIMARY_API_URL = 'https://vyaparone-production.up.railway.app/api/v1';
 
-let rawApiUrl = process.env.NEXT_PUBLIC_API_URL || PRIMARY_API_URL;
+let rawApiUrl = PRIMARY_API_URL;
 
-if (typeof window !== 'undefined' && (rawApiUrl.includes('127.0.0.1') || rawApiUrl.includes('localhost'))) {
-  if (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
-    rawApiUrl = PRIMARY_API_URL;
-  }
+if (typeof window !== 'undefined' && (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1'))) {
+  rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1';
 }
 
 rawApiUrl = rawApiUrl.trim().replace(/\/+$/, '');
