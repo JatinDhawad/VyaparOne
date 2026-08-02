@@ -14,9 +14,6 @@ logger = logging.getLogger(__name__)
 async def init_db():
     logger.info("Creating database tables...")
     async with engine.begin() as conn:
-        # TEMPORARY: Drop all tables for a 100% clean reset (User Requested)
-        await conn.run_sync(Base.metadata.drop_all)
-        
         await conn.run_sync(Base.metadata.create_all)
         
         # Auto-migrate new columns safely
