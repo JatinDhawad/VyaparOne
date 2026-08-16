@@ -53,15 +53,17 @@ async def create_sales_invoice(
         unit_cost = Decimal(str(stock.average_landed_cost or 0))
 
         line_subtotal = (qty * unit_price) - disc_amt
-        gst_amount = line_subtotal * (gst_rate / Decimal("100.00"))
-        line_total = line_subtotal + gst_amount
+        # Selling prices are GST-inclusive — do NOT add GST on top.
+        # gst_amount is stored as 0 for reference only.
+        gst_amount = Decimal("0.00")
+        line_total = line_subtotal
 
         line_cogs = qty * unit_cost
         line_profit = line_subtotal - line_cogs
 
         subtotal += (qty * unit_price)
         total_discount += disc_amt
-        total_tax += gst_amount
+        total_tax += gst_amount  # always 0
         total_cost_of_goods += line_cogs
 
         db_item = SalesItem(
@@ -78,7 +80,8 @@ async def create_sales_invoice(
         db_items.append(db_item)
 
     net_subtotal = subtotal - total_discount
-    grand_total = net_subtotal + total_tax + delivery_charges
+    # Prices are GST-inclusive: grand_total = net_subtotal + delivery_charges only.
+    grand_total = net_subtotal + delivery_charges
     net_profit = (net_subtotal - total_cost_of_goods) - salesman_commission
 
     # 2. Save Sales Invoice
