@@ -145,7 +145,9 @@ async def create_sales_invoice(
         sales_amount=round(net_subtotal, 2),
         grand_total=round(grand_total, 2),
         invoice_date=invoice_in.invoice_date,
-        created_by=created_by
+        created_by=created_by,
+        amount_paid=round(amount_paid, 2),
+        payment_mode=invoice_in.payment_mode or "CASH"
     )
 
     await db.commit()

@@ -147,16 +147,25 @@ async def post_sales_ledger(
     sales_amount: Decimal,
     grand_total: Decimal,
     invoice_date: date,
-    created_by: Optional[uuid.UUID] = None
+    created_by: Optional[uuid.UUID] = None,
+    amount_paid: Decimal = Decimal("0.00"),
+    payment_mode: str = "CASH"
 ):
     """
     Double-entry posting for Sales Invoice:
-    - Debit: Customer Ledger Account (grand_total)
-    - Credit: Sales Account (sales_amount)
+    - Debit:  Customer Ledger Account  (grand_total)   → they owe us
+    - Credit: Sales Account            (grand_total)   → our revenue
+
+    If amount_paid > 0 (payment received on-the-spot at POS):
+    - Debit:  Cash/Bank Account        (amount_paid)   → we received cash
+    - Credit: Customer Ledger Account  (amount_paid)   → their balance reduces
+
+    Net effect on customer ledger = grand_total - amount_paid = pending_amount
     """
     sales_account = await get_or_create_system_account(db, "Sales Account", AccountType.REVENUE.value)
     customer_account = await get_party_ledger_account(db, customer_id)
 
+    # 1. Debit customer for the full grand_total
     entry = LedgerEntry(
         transaction_date=invoice_date,
         voucher_type="SALES",
@@ -170,6 +179,26 @@ async def post_sales_ledger(
     db.add(entry)
     customer_account.current_balance = Decimal(str(customer_account.current_balance or 0)) + grand_total
     sales_account.current_balance = Decimal(str(sales_account.current_balance or 0)) + grand_total
+
+    # 2. If payment was received on-the-spot, post a RECEIPT entry immediately
+    if amount_paid and amount_paid > Decimal("0.00"):
+        mode_acct_name = "Bank Account" if payment_mode.upper() in ["BANK", "UPI", "CHEQUE", "NEFT"] else "Cash In Hand"
+        cash_account = await get_or_create_system_account(db, mode_acct_name, AccountType.ASSET.value)
+
+        receipt_entry = LedgerEntry(
+            transaction_date=invoice_date,
+            voucher_type="RECEIPT",
+            reference_id=sales_invoice_id,
+            debit_account_id=cash_account.id,
+            credit_account_id=customer_account.id,
+            amount=amount_paid,
+            narration=f"POS payment received ({payment_mode})",
+            created_by=created_by
+        )
+        db.add(receipt_entry)
+        # Reduce customer outstanding balance
+        customer_account.current_balance = customer_account.current_balance - amount_paid
+        cash_account.current_balance = Decimal(str(cash_account.current_balance or 0)) + amount_paid
 
 
 async def post_payment_ledger(

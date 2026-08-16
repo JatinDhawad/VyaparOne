@@ -424,7 +424,7 @@ async def get_dashboard_summary(db: AsyncSession, period: Optional[str] = None) 
     s_res = await db.execute(s_query)
     sales_invs = s_res.scalars().all()
 
-    tot_sales = sum(Decimal(str(i.grand_total or 0)) for i in sales_invs)
+    tot_sales = sum(Decimal(str(i.subtotal or 0)) for i in sales_invs)  # gross goods amount before deductions
     tot_cogs = sum(Decimal(str(i.total_cost_of_goods or 0)) for i in sales_invs)
     tot_net_profit = sum(Decimal(str(i.net_profit or 0)) for i in sales_invs)
     tot_gross_profit = sum((Decimal(str(i.subtotal or 0)) - Decimal(str(i.discount_amount or 0)) - Decimal(str(i.total_cost_of_goods or 0))) for i in sales_invs)
