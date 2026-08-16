@@ -102,6 +102,8 @@ export const api = {
   createCategory: (data: any) => fetchAPI<any>('/categories/', { method: 'POST', body: JSON.stringify(data) }),
   getProducts: (params?: string) => fetchAPI<any[]>(`/products/${params ? `?${params}` : ''}`),
   createProduct: (data: any) => fetchAPI<any>('/products/', { method: 'POST', body: JSON.stringify(data) }),
+  updateProduct: (id: string, data: any) => fetchAPI<any>(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  unpackBags: (id: string, data: any) => fetchAPI<any>(`/products/${id}/unpack`, { method: 'POST', body: JSON.stringify(data) }),
   getProductStock: (id: string) => fetchAPI<any>(`/products/${id}/stock`),
 
   // Parties
@@ -117,6 +119,7 @@ export const api = {
   // Transactions
   getPurchases: () => fetchAPI<any[]>('/purchases/'),
   createPurchase: (data: any) => fetchAPI<any>('/purchases/', { method: 'POST', body: JSON.stringify(data) }),
+  editPurchase: (id: string, data: any) => fetchAPI<any>(`/purchases/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   getSales: () => fetchAPI<any[]>('/sales/'),
   createSale: (data: any) => fetchAPI<any>('/sales/', { method: 'POST', body: JSON.stringify(data) }),
   getPayments: () => fetchAPI<any[]>('/payments/'),

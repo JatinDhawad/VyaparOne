@@ -49,6 +49,14 @@ async def init_db():
         except Exception:
             pass  # Column already exists
 
+    # New field on products table
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE products ADD COLUMN packets_per_bag INTEGER DEFAULT 0;"))
+            logger.info("Added products.packets_per_bag column.")
+    except Exception:
+        pass  # Already exists
+
     logger.info("Tables created successfully.")
 
 async def seed_data():
