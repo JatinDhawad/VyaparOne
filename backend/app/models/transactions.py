@@ -85,12 +85,24 @@ class SalesInvoice(Base):
     subtotal: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     discount_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     tax_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    # GST split (informational only — prices are GST-inclusive)
+    gst_billed_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    without_gst_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    # Deductions
     delivery_charges: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     salesman_commission: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
-    
+    lr_charges: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    local_freight: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    scheme_money: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    # Totals
     grand_total: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     total_cost_of_goods: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     net_profit: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    # Payment
+    amount_paid: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    pending_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
+    payment_mode: Mapped[Optional[str]] = mapped_column(String(30), default="CASH")
+    location: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
     
     notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
@@ -99,6 +111,7 @@ class SalesInvoice(Base):
     )
 
     items: Mapped[List["SalesItem"]] = relationship("SalesItem", back_populates="sales_invoice", cascade="all, delete-orphan")
+    customer: Mapped[Optional["Party"]] = relationship("Party", foreign_keys=[customer_id], lazy="select")
 
 
 class SalesItem(Base):
