@@ -101,6 +101,76 @@ async def seed_data():
             await session.commit()
             logger.info("Default admin user password updated to adminpassword.")
 
+        # 3. Auto-backfill missing POS payment receipts & reconcile ledger balances
+        try:
+            from decimal import Decimal
+            from app.models.transactions import SalesInvoice
+            from app.models.ledger import LedgerAccount, LedgerEntry, AccountType
+            from app.services.ledger_service import get_party_ledger_account, get_or_create_system_account
+            from sqlalchemy import func
+
+            # Check sales invoices with amount_paid > 0
+            sales_res = await session.execute(
+                select(SalesInvoice).where(SalesInvoice.amount_paid > 0)
+            )
+            invoices_with_payment = sales_res.scalars().all()
+
+            for inv in invoices_with_payment:
+                # Check if RECEIPT entry exists
+                receipt_check = await session.execute(
+                    select(LedgerEntry).where(
+                        LedgerEntry.reference_id == inv.id,
+                        LedgerEntry.voucher_type == "RECEIPT"
+                    )
+                )
+                if not receipt_check.scalars().first():
+                    pm = getattr(inv, 'payment_mode', 'CASH') or 'CASH'
+                    mode_acct_name = "Bank Account" if pm.upper() in ["BANK", "UPI", "CHEQUE", "NEFT"] else "Cash In Hand"
+                    cash_acct = await get_or_create_system_account(session, mode_acct_name, AccountType.ASSET.value)
+                    cust_acct = await get_party_ledger_account(session, inv.customer_id)
+
+                    paid_amt = Decimal(str(inv.amount_paid))
+                    entry = LedgerEntry(
+                        transaction_date=inv.invoice_date,
+                        voucher_type="RECEIPT",
+                        reference_id=inv.id,
+                        debit_account_id=cash_acct.id,
+                        credit_account_id=cust_acct.id,
+                        amount=paid_amt,
+                        narration=f"POS payment received ({pm})",
+                        created_by=inv.created_by
+                    )
+                    session.add(entry)
+                    logger.info(f"Backfilled missing RECEIPT of ₹{paid_amt} for invoice {inv.invoice_number}")
+
+            await session.commit()
+
+            # Reconcile all ledger balances based on actual entries
+            acct_res = await session.execute(select(LedgerAccount))
+            accounts = acct_res.scalars().all()
+            for acct in accounts:
+                dr_res = await session.execute(
+                    select(func.coalesce(func.sum(LedgerEntry.amount), 0))
+                    .where(LedgerEntry.debit_account_id == acct.id)
+                )
+                total_dr = Decimal(str(dr_res.scalar()))
+
+                cr_res = await session.execute(
+                    select(func.coalesce(func.sum(LedgerEntry.amount), 0))
+                    .where(LedgerEntry.credit_account_id == acct.id)
+                )
+                total_cr = Decimal(str(cr_res.scalar()))
+
+                if acct.account_type in [AccountType.LIABILITY.value, AccountType.REVENUE.value]:
+                    acct.current_balance = total_cr - total_dr
+                else:
+                    acct.current_balance = total_dr - total_cr
+
+            await session.commit()
+            logger.info("Ledger balances reconciled successfully.")
+        except Exception as e:
+            logger.error(f"Auto-backfill/reconciliation warning: {e}")
+
 async def main():
     logger.info("Starting database initialization...")
     await init_db()
