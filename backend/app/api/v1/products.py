@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from pydantic import BaseModel
+from decimal import Decimal
 import uuid
 
 from app.core.database import get_db
@@ -116,3 +118,97 @@ async def get_product_stock(
     if not stock:
         raise HTTPException(status_code=404, detail="Stock record not found for this product.")
     return stock
+
+
+# ── Bags-to-Packets Breakdown ──────────────────────────────────────────────────
+
+class UnpackBagsRequest(BaseModel):
+    bags_to_unpack: Decimal
+    packets_per_bag: int                        # e.g. 480, 300, 240
+    packet_product_id: Optional[uuid.UUID] = None  # if unpacking into a SEPARATE packet SKU
+
+
+class UnpackBagsResponse(BaseModel):
+    message: str
+    bags_deducted: Decimal
+    packets_added: Decimal
+    new_bag_stock: Decimal
+    packet_unit_landed_cost: Decimal
+
+
+@router.post("/{product_id}/unpack", response_model=UnpackBagsResponse)
+async def unpack_bags_to_packets(
+    product_id: uuid.UUID,
+    body: UnpackBagsRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Breaks down bags into loose packets for a product.
+
+    Logic:
+      1. Deducts `bags_to_unpack` from the BAG product stock.
+      2. Computes packet_unit_landed_cost = bag_avg_landed_cost / packets_per_bag
+      3. If packet_product_id is provided, adds packets to that SKU with the new cost.
+         Otherwise, converts the same product in-place (unit stays as PKT or the stock 
+         is re-added as packet qty).
+    """
+    bags_to_unpack = Decimal(str(body.bags_to_unpack))
+    pkts_per_bag = int(body.packets_per_bag)
+
+    if bags_to_unpack <= 0:
+        raise HTTPException(status_code=400, detail="bags_to_unpack must be greater than 0.")
+    if pkts_per_bag <= 0:
+        raise HTTPException(status_code=400, detail="packets_per_bag must be at least 1.")
+
+    # 1. Get bag product stock
+    bag_stock_res = await db.execute(select(GodownStock).where(GodownStock.product_id == product_id))
+    bag_stock = bag_stock_res.scalars().first()
+    if not bag_stock:
+        raise HTTPException(status_code=404, detail="Stock record not found for the bag product.")
+    if bag_stock.current_stock < bags_to_unpack:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Insufficient bag stock. Available: {bag_stock.current_stock}, Requested: {bags_to_unpack}"
+        )
+
+    bag_cost = Decimal(str(bag_stock.average_landed_cost or 0))
+    packet_unit_cost = (bag_cost / pkts_per_bag) if pkts_per_bag > 0 else Decimal("0.00")
+    total_packets = bags_to_unpack * pkts_per_bag
+
+    # 2. Deduct bags
+    bag_stock.current_stock = bag_stock.current_stock - bags_to_unpack
+
+    # 3. Add packets to target SKU
+    target_product_id = body.packet_product_id or product_id
+
+    pkt_stock_res = await db.execute(select(GodownStock).where(GodownStock.product_id == target_product_id))
+    pkt_stock = pkt_stock_res.scalars().first()
+
+    if not pkt_stock:
+        # Create stock record if it doesn't exist
+        pkt_stock = GodownStock(product_id=target_product_id, current_stock=Decimal("0.00"), average_landed_cost=Decimal("0.00"))
+        db.add(pkt_stock)
+        await db.flush()
+
+    # Weighted average update for packet stock
+    existing_pkt_qty = Decimal(str(pkt_stock.current_stock or 0))
+    existing_pkt_cost = Decimal(str(pkt_stock.average_landed_cost or 0))
+
+    if existing_pkt_qty > 0:
+        new_avg = ((existing_pkt_qty * existing_pkt_cost) + (total_packets * packet_unit_cost)) / (existing_pkt_qty + total_packets)
+    else:
+        new_avg = packet_unit_cost
+
+    pkt_stock.current_stock = existing_pkt_qty + total_packets
+    pkt_stock.average_landed_cost = round(new_avg, 4)
+
+    await db.commit()
+
+    return UnpackBagsResponse(
+        message=f"Successfully unpacked {bags_to_unpack} bag(s) → {total_packets} packets.",
+        bags_deducted=bags_to_unpack,
+        packets_added=total_packets,
+        new_bag_stock=bag_stock.current_stock,
+        packet_unit_landed_cost=round(packet_unit_cost, 4),
+    )

@@ -75,6 +75,7 @@ class ProductBase(BaseModel):
     category_id: Optional[int] = None
     gst_rate: Decimal = Decimal("0.00")
     unit: str = "BAG"
+    packets_per_bag: int = 0
     default_purchase_price: Decimal = Decimal("0.00")
     default_selling_price: Decimal = Decimal("0.00")
     min_stock_alert: int = 0
@@ -91,6 +92,7 @@ class ProductUpdate(BaseModel):
     category_id: Optional[int] = None
     gst_rate: Optional[Decimal] = None
     unit: Optional[str] = None
+    packets_per_bag: Optional[int] = None
     default_purchase_price: Optional[Decimal] = None
     default_selling_price: Optional[Decimal] = None
     min_stock_alert: Optional[int] = None

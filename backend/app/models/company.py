@@ -58,6 +58,7 @@ class Product(Base):
     hsn_code: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     gst_rate: Mapped[float] = mapped_column(Numeric(5, 2), default=0.00) # e.g. 5.00, 12.00, 18.00
     unit: Mapped[str] = mapped_column(String(20), default="BAG") # BAG, BOX, KG, PKT
+    packets_per_bag: Mapped[int] = mapped_column(Integer, default=0)  # 0 = not a bag product
     
     default_purchase_price: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)
     default_selling_price: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00)

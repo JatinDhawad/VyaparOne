@@ -30,8 +30,10 @@ export default function PurchasesPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedInvoiceForView, setSelectedInvoiceForView] = useState<any>(null);
+  const [editInvoice, setEditInvoice] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [formError, setFormError] = useState('');
+  const [editError, setEditError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   // Main Form State
@@ -91,6 +93,40 @@ export default function PurchasesPage() {
     onError: (err: any) => {
       setFormError(err.message || 'Failed to record purchase bill.');
     },
+  });
+
+  // Edit purchase bill fields only (no stock re-processing)
+  const [editLr, setEditLr]                   = useState('0');
+  const [editFreight, setEditFreight]         = useState('0');
+  const [editSalesmanExp, setEditSalesmanExp] = useState('0');
+  const [editScheme, setEditScheme]           = useState('0');
+  const [editDiscount, setEditDiscount]       = useState('0');
+  const [editUnbilled, setEditUnbilled]       = useState('0');
+  const [editAmountPaid, setEditAmountPaid]   = useState('0');
+  const [editNotes, setEditNotes]             = useState('');
+
+  const openEditInvoice = (inv: any) => {
+    setEditInvoice(inv);
+    setEditLr(String(inv.lr_charges || 0));
+    setEditFreight(String(inv.local_freight || 0));
+    setEditSalesmanExp(String(inv.salesman_expense || 0));
+    setEditScheme(String(inv.scheme_money || 0));
+    setEditDiscount(String(inv.discount_deduction || 0));
+    setEditUnbilled(String(inv.unbilled_nongst_amount || 0));
+    setEditAmountPaid(String(inv.amount_paid || 0));
+    setEditNotes(inv.notes || '');
+    setEditError('');
+  };
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.editPurchase(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      setEditInvoice(null);
+      setSuccessMessage('Purchase bill updated successfully.');
+      setTimeout(() => setSuccessMessage(''), 5000);
+    },
+    onError: (err: any) => setEditError(err.message || 'Failed to update purchase bill.'),
   });
 
   const resetForm = () => {
@@ -379,8 +415,7 @@ export default function PurchasesPage() {
                       return (
                         <tr 
                           key={p.id} 
-                          onClick={() => setSelectedInvoiceForView(p)} 
-                          className="hover:bg-indigo-50/40 cursor-pointer transition-colors"
+                          className="hover:bg-indigo-50/40 transition-colors"
                         >
                           <td className="p-4 font-mono font-extrabold text-indigo-700 text-sm">{p.invoice_number}</td>
                           <td className="p-4 font-medium text-slate-600">{p.invoice_date}</td>
@@ -399,13 +434,22 @@ export default function PurchasesPage() {
                             </span>
                           </td>
                           <td className="p-4 text-right">
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); setSelectedInvoiceForView(p); }} 
-                              className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-extrabold text-xs transition-colors inline-flex items-center gap-1.5 border border-indigo-200"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                              View
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setSelectedInvoiceForView(p); }} 
+                                className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-extrabold text-xs transition-colors inline-flex items-center gap-1.5 border border-indigo-200"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                View
+                              </button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); openEditInvoice(p); }} 
+                                className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl font-extrabold text-xs transition-colors inline-flex items-center gap-1.5 border border-amber-200"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Edit
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -808,6 +852,75 @@ export default function PurchasesPage() {
           </button>
         </form>
       </Modal>
+
+      {/* ── Edit Purchase Bill Modal ─────────────────────────────────────────── */}
+      {editInvoice && (
+        <Modal isOpen={!!editInvoice} onClose={() => setEditInvoice(null)} title={`Edit Purchase Bill — #${editInvoice.invoice_number}`}>
+          <div className="space-y-4 text-xs">
+            {editError && <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl font-medium">{editError}</div>}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+              <span className="text-[10px] font-black uppercase text-slate-400 block mb-2">⚠ Note: Stock levels and ledger entries are not changed. Only financial adjustment fields are editable.</span>
+              <div className="grid grid-cols-2 gap-2 font-medium text-slate-600">
+                <span>Supplier: <strong className="text-slate-900">{editInvoice.supplier?.name || '—'}</strong></span>
+                <span>Date: <strong className="text-slate-900">{editInvoice.invoice_date}</strong></span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="font-bold text-slate-600 block mb-1">LR / Bilty Charges (₹)</label>
+                <input type="number" step="0.01" value={editLr} onChange={(e) => setEditLr(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+              </div>
+              <div>
+                <label className="font-bold text-slate-600 block mb-1">Local Freight (₹)</label>
+                <input type="number" step="0.01" value={editFreight} onChange={(e) => setEditFreight(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+              </div>
+              <div>
+                <label className="font-bold text-emerald-700 block mb-1">Salesman Expense (₹) −</label>
+                <input type="number" step="0.01" value={editSalesmanExp} onChange={(e) => setEditSalesmanExp(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+              </div>
+              <div>
+                <label className="font-bold text-emerald-700 block mb-1">Scheme Money (₹) −</label>
+                <input type="number" step="0.01" value={editScheme} onChange={(e) => setEditScheme(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+              </div>
+              <div>
+                <label className="font-bold text-emerald-700 block mb-1">Discount Deduction (₹) −</label>
+                <input type="number" step="0.01" value={editDiscount} onChange={(e) => setEditDiscount(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+              </div>
+              <div>
+                <label className="font-bold text-amber-700 block mb-1">Unbilled Non-GST Amount (₹)</label>
+                <input type="number" step="0.01" value={editUnbilled} onChange={(e) => setEditUnbilled(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+              </div>
+            </div>
+            <div>
+              <label className="font-bold text-slate-800 block mb-1">Amount Paid (₹)</label>
+              <input type="number" step="0.01" value={editAmountPaid} onChange={(e) => setEditAmountPaid(e.target.value)} className="glass-input w-full p-2.5 rounded-xl text-emerald-800 font-extrabold" min="0" />
+            </div>
+            <div>
+              <label className="font-bold text-slate-600 block mb-1">Notes</label>
+              <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={2} className="glass-input w-full p-2.5 rounded-xl resize-none" />
+            </div>
+            <div className="flex justify-end gap-3 pt-1">
+              <button type="button" onClick={() => setEditInvoice(null)} className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+              <button
+                disabled={editMutation.isPending}
+                onClick={() => editMutation.mutate({ id: editInvoice.id, data: {
+                  lr_charges:              parseFloat(editLr) || 0,
+                  local_freight:           parseFloat(editFreight) || 0,
+                  salesman_expense:        parseFloat(editSalesmanExp) || 0,
+                  scheme_money:            parseFloat(editScheme) || 0,
+                  discount_deduction:      parseFloat(editDiscount) || 0,
+                  unbilled_nongst_amount:  parseFloat(editUnbilled) || 0,
+                  amount_paid:             parseFloat(editAmountPaid) || 0,
+                  notes: editNotes,
+                }})}
+                className="px-6 py-2 font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-md transition-colors disabled:opacity-60"
+              >
+                {editMutation.isPending ? 'Saving...' : '✓ Save Changes'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
