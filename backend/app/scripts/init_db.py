@@ -20,13 +20,35 @@ async def init_db():
     # PostgreSQL aborts the entire transaction if a query fails, 
     # so catching the exception in Python doesn't prevent the rollback!
     from sqlalchemy import text
+
+    # Existing column
     try:
         async with engine.begin() as conn:
             await conn.execute(text("ALTER TABLE purchase_invoices ADD COLUMN discount_deduction NUMERIC(15, 2) DEFAULT 0.00;"))
             logger.info("Added discount_deduction column.")
     except Exception:
-        pass # Column already exists
-        
+        pass
+
+    # New POS fields for sales_invoices
+    new_sales_columns = [
+        ("gst_billed_amount",   "NUMERIC(12, 2) DEFAULT 0.00"),
+        ("without_gst_amount",  "NUMERIC(12, 2) DEFAULT 0.00"),
+        ("lr_charges",          "NUMERIC(12, 2) DEFAULT 0.00"),
+        ("local_freight",       "NUMERIC(12, 2) DEFAULT 0.00"),
+        ("scheme_money",        "NUMERIC(12, 2) DEFAULT 0.00"),
+        ("amount_paid",         "NUMERIC(12, 2) DEFAULT 0.00"),
+        ("pending_amount",      "NUMERIC(12, 2) DEFAULT 0.00"),
+        ("payment_mode",        "VARCHAR(30) DEFAULT 'CASH'"),
+        ("location",            "VARCHAR(150)"),
+    ]
+    for col_name, col_def in new_sales_columns:
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(text(f"ALTER TABLE sales_invoices ADD COLUMN {col_name} {col_def};"))
+                logger.info(f"Added sales_invoices.{col_name} column.")
+        except Exception:
+            pass  # Column already exists
+
     logger.info("Tables created successfully.")
 
 async def seed_data():

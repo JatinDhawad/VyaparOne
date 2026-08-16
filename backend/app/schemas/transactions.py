@@ -114,13 +114,24 @@ class SalesItemResponse(BaseModel):
 # ── Sales Invoice ─────────────────────────────────────────────────────────────
 
 class SalesInvoiceCreate(BaseModel):
-    invoice_number: str
+    invoice_number: Optional[str] = None          # auto-generated if blank
     customer_id: uuid.UUID
     salesman_id: Optional[uuid.UUID] = None
     invoice_date: date
     billing_mode: str = "TAX_INVOICE"
+    location: Optional[str] = None
+    # Informational GST split (prices already GST-inclusive)
+    gst_billed_amount: Decimal = Decimal("0.00")
+    without_gst_amount: Decimal = Decimal("0.00")
+    # Deductions (subtracted from gross to get grand_total)
     delivery_charges: Decimal = Decimal("0.00")
     salesman_commission: Decimal = Decimal("0.00")
+    lr_charges: Decimal = Decimal("0.00")
+    local_freight: Decimal = Decimal("0.00")
+    scheme_money: Decimal = Decimal("0.00")
+    # Payment
+    amount_paid: Decimal = Decimal("0.00")
+    payment_mode: str = "CASH"
     notes: Optional[str] = None
     items: List[SalesItemCreate]
 
@@ -131,18 +142,28 @@ class SalesInvoiceResponse(BaseModel):
     salesman_id: Optional[uuid.UUID] = None
     invoice_date: date
     billing_mode: str
+    location: Optional[str] = None
     subtotal: Decimal
     discount_amount: Decimal
     tax_amount: Decimal
+    gst_billed_amount: Optional[Decimal] = Decimal("0.00")
+    without_gst_amount: Optional[Decimal] = Decimal("0.00")
     delivery_charges: Decimal
     salesman_commission: Decimal
+    lr_charges: Optional[Decimal] = Decimal("0.00")
+    local_freight: Optional[Decimal] = Decimal("0.00")
+    scheme_money: Optional[Decimal] = Decimal("0.00")
     grand_total: Decimal
     total_cost_of_goods: Decimal
     net_profit: Decimal
+    amount_paid: Optional[Decimal] = Decimal("0.00")
+    pending_amount: Optional[Decimal] = Decimal("0.00")
+    payment_mode: Optional[str] = "CASH"
     notes: Optional[str] = None
     created_by: Optional[uuid.UUID] = None
     created_at: datetime
     items: List[SalesItemResponse] = []
+    customer: Optional[PartyResponse] = None
 
     class Config:
         from_attributes = True
