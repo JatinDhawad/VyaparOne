@@ -64,6 +64,10 @@ async def list_parties(
     current_user: User = Depends(get_current_active_user),
 ):
     """List parties with optional type filter. All authenticated users."""
+    from decimal import Decimal
+    from app.models.transactions import PurchaseInvoice, SalesInvoice
+    from sqlalchemy import func
+
     query = select(Party)
     if active_only:
         query = query.where(Party.is_active == True)
@@ -72,17 +76,28 @@ async def list_parties(
     result = await db.execute(query.offset(skip).limit(limit))
     parties = result.scalars().all()
 
-    # Enrich with ledger balance from the party's LedgerAccount
-    from decimal import Decimal
     enriched = []
     for party in parties:
-        ledger_res = await db.execute(
-            select(LedgerAccount).where(LedgerAccount.party_id == party.id)
-        )
-        ledger = ledger_res.scalars().first()
-        bal = Decimal(str(ledger.current_balance or 0)) if ledger else Decimal("0.00")
+        bal = Decimal("0.00")
 
-        # Build a dict from the ORM object and inject the balance
+        if party.party_type in ("SUPPLIER", "BOTH"):
+            # Supplier: what we still owe them = SUM of pending_amount on purchase invoices
+            pur_res = await db.execute(
+                select(func.coalesce(func.sum(PurchaseInvoice.pending_amount), 0))
+                .where(PurchaseInvoice.supplier_id == party.id)
+            )
+            bal = Decimal(str(pur_res.scalar()))
+
+        if party.party_type in ("CUSTOMER", "BOTH"):
+            # Customer: what they still owe us = SUM of pending_amount on sales invoices
+            sal_res = await db.execute(
+                select(func.coalesce(func.sum(SalesInvoice.pending_amount), 0))
+                .where(SalesInvoice.customer_id == party.id)
+            )
+            cust_bal = Decimal(str(sal_res.scalar()))
+            # For BOTH: net = customer receivable - supplier payable
+            bal = cust_bal - bal if party.party_type == "BOTH" else cust_bal
+
         party_dict = {
             "id": party.id,
             "name": party.name,
