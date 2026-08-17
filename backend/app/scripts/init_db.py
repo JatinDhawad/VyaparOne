@@ -168,6 +168,24 @@ async def seed_data():
 
             await session.commit()
             logger.info("Ledger balances reconciled successfully.")
+
+            # 4. Auto-correct MOUTH FRESHNER @1/- stock for 240 packets/bag
+            from app.models.company import Product, GodownStock
+            mf_res = await session.execute(
+                select(Product).where(Product.name.ilike("%MOUTH FRESHNER%"))
+            )
+            mf_prod = mf_res.scalars().first()
+            if mf_prod:
+                mf_prod.packets_per_bag = 240
+                stock_res = await session.execute(
+                    select(GodownStock).where(GodownStock.product_id == mf_prod.id)
+                )
+                mf_stock = stock_res.scalars().first()
+                if mf_stock:
+                    mf_stock.current_stock = Decimal("1332.00")
+                    mf_stock.average_landed_cost = Decimal("20.49")
+                    logger.info("Auto-corrected MOUTH FRESHNER @1/- stock to 1332.00 PKT at ₹20.49 landed cost.")
+                await session.commit()
         except Exception as e:
             logger.error(f"Auto-backfill/reconciliation warning: {e}")
 
