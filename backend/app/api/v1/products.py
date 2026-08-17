@@ -212,3 +212,46 @@ async def unpack_bags_to_packets(
         new_bag_stock=bag_stock.current_stock,
         packet_unit_landed_cost=round(packet_unit_cost, 4),
     )
+
+
+# ── Manual Stock Correction ────────────────────────────────────────────────────
+
+class StockCorrectionRequest(BaseModel):
+    current_stock: Decimal
+    average_landed_cost: Optional[Decimal] = None
+    reason: Optional[str] = "Manual stock correction"
+
+
+@router.patch("/{product_id}/adjust-stock")
+async def adjust_stock(
+    product_id: uuid.UUID,
+    body: StockCorrectionRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role([RoleName.ADMIN])),
+):
+    """
+    Directly override a product's GodownStock current_stock (and optionally
+    average_landed_cost). Used to correct errors like unpack with wrong packets_per_bag.
+    ADMIN only.
+    """
+    stock_res = await db.execute(select(GodownStock).where(GodownStock.product_id == product_id))
+    stock = stock_res.scalars().first()
+    if not stock:
+        raise HTTPException(status_code=404, detail="Stock record not found.")
+
+    old_stock = stock.current_stock
+    old_cost  = stock.average_landed_cost
+
+    stock.current_stock = Decimal(str(body.current_stock))
+    if body.average_landed_cost is not None:
+        stock.average_landed_cost = Decimal(str(body.average_landed_cost))
+
+    await db.commit()
+
+    return {
+        "message": f"Stock corrected. Reason: {body.reason}",
+        "old_stock": str(old_stock),
+        "new_stock": str(stock.current_stock),
+        "old_avg_cost": str(old_cost),
+        "new_avg_cost": str(stock.average_landed_cost),
+    }
