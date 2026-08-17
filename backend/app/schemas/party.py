@@ -37,6 +37,7 @@ class PartyUpdate(BaseModel):
 class PartyResponse(PartyBase):
     id: uuid.UUID
     created_at: datetime
+    ledger_balance: Optional[Decimal] = None  # Positive = we receive; Negative = we owe (for supplier)
 
     class Config:
         from_attributes = True

@@ -229,64 +229,103 @@ export default function PartiesPage() {
             ) : filteredParties.length === 0 ? (
               <div className="col-span-full py-16 text-center text-slate-500 text-sm">No parties found matching criteria.</div>
             ) : (
-              filteredParties.map((party: any) => (
-                <div key={party.id} className="glass-card p-6 rounded-3xl space-y-4 border-slate-200 flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-extrabold text-slate-900 text-lg leading-snug">{party.name}</h3>
-                        <span className={`inline-block text-[11px] font-extrabold uppercase px-3 py-1 rounded-xl mt-1.5 border ${
-                          party.party_type === 'SUPPLIER' 
-                            ? 'bg-amber-50 text-amber-800 border-amber-200'
-                            : party.party_type === 'CUSTOMER'
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                            : 'bg-indigo-50 text-indigo-800 border-indigo-200'
-                        }`}>
-                          {party.party_type}
-                        </span>
+              filteredParties.map((party: any) => {
+                const balance = parseFloat(party.ledger_balance || 0);
+                const isSupplier = party.party_type === 'SUPPLIER';
+                const isCustomer = party.party_type === 'CUSTOMER';
+                const isBoth = party.party_type === 'BOTH';
+
+                // For customers: positive balance = they owe us (to collect)
+                // For suppliers: positive balance = we owe them (to pay) — backend stores as positive too
+                const isCleared = Math.abs(balance) < 0.01;
+
+                return (
+                  <div key={party.id} className="glass-card p-6 rounded-3xl space-y-4 border-slate-200 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-extrabold text-slate-900 text-lg leading-snug">{party.name}</h3>
+                          <span className={`inline-block text-[11px] font-extrabold uppercase px-3 py-1 rounded-xl mt-1.5 border ${
+                            party.party_type === 'SUPPLIER' 
+                              ? 'bg-amber-50 text-amber-800 border-amber-200'
+                              : party.party_type === 'CUSTOMER'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                          }`}>
+                            {party.party_type}
+                          </span>
+                        </div>
+
+                        {/* Edit Button */}
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleOpenEditModal(party)}
+                            className="px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5 shadow-xs shrink-0"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Edit
+                          </button>
+                        )}
                       </div>
 
-                      {/* Edit Button */}
-                      {isAdmin && (
-                        <button
-                          onClick={() => handleOpenEditModal(party)}
-                          className="px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5 shadow-xs shrink-0"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Edit
-                        </button>
-                      )}
+                      <div className="space-y-2 pt-3 border-t border-slate-100 text-xs text-slate-600">
+                        {party.phone && (
+                          <div className="flex items-center gap-2.5">
+                            <Phone className="h-4 w-4 text-slate-400 shrink-0" />
+                            <span className="font-semibold text-slate-800">{party.phone}</span>
+                          </div>
+                        )}
+                        {party.email && (
+                          <div className="flex items-center gap-2.5">
+                            <Mail className="h-4 w-4 text-slate-400 shrink-0" />
+                            <span className="truncate font-medium">{party.email}</span>
+                          </div>
+                        )}
+                        {party.city && (
+                          <div className="flex items-center gap-2.5">
+                            <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+                            <span className="font-medium text-slate-700">{party.city}{party.state ? `, ${party.state}` : ''}</span>
+                          </div>
+                        )}
+                        {party.gstin && (
+                          <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 pt-1">
+                            <span className="font-bold">GSTIN:</span>
+                            <span className="text-slate-900 font-extrabold uppercase">{party.gstin}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="space-y-2 pt-3 border-t border-slate-100 text-xs text-slate-600">
-                      {party.phone && (
-                        <div className="flex items-center gap-2.5">
-                          <Phone className="h-4 w-4 text-slate-400 shrink-0" />
-                          <span className="font-semibold text-slate-800">{party.phone}</span>
-                        </div>
-                      )}
-                      {party.email && (
-                        <div className="flex items-center gap-2.5">
-                          <Mail className="h-4 w-4 text-slate-400 shrink-0" />
-                          <span className="truncate font-medium">{party.email}</span>
-                        </div>
-                      )}
-                      {party.city && (
-                        <div className="flex items-center gap-2.5">
-                          <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                          <span className="font-medium text-slate-700">{party.city}{party.state ? `, ${party.state}` : ''}</span>
-                        </div>
-                      )}
-                      {party.gstin && (
-                        <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 pt-1">
-                          <span className="font-bold">GSTIN:</span>
-                          <span className="text-slate-900 font-extrabold uppercase">{party.gstin}</span>
-                        </div>
-                      )}
+                    {/* Outstanding Balance Badge */}
+                    <div className={`mt-1 p-3.5 rounded-2xl border flex items-center justify-between ${
+                      isCleared
+                        ? 'bg-slate-50 border-slate-200'
+                        : isSupplier
+                        ? 'bg-rose-50 border-rose-200'
+                        : 'bg-emerald-50 border-emerald-200'
+                    }`}>
+                      <div className="flex flex-col">
+                        <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
+                          isCleared ? 'text-slate-400' : isSupplier ? 'text-rose-600' : 'text-emerald-700'
+                        }`}>
+                          {isCleared ? 'All Settled' : isSupplier ? 'To Pay' : 'To Collect'}
+                        </span>
+                        <span className={`text-base font-black mt-0.5 ${
+                          isCleared ? 'text-slate-400' : isSupplier ? 'text-rose-800' : 'text-emerald-900'
+                        }`}>
+                          {isCleared ? '✓ No Dues' : `₹${Math.abs(balance).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                        </span>
+                      </div>
+                      <div className={`h-8 w-8 rounded-xl flex items-center justify-center text-sm ${
+                        isCleared ? 'bg-slate-100' : isSupplier ? 'bg-rose-100' : 'bg-emerald-100'
+                      }`}>
+                        {isCleared ? '✓' : isSupplier ? '↑' : '↓'}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
+
             )}
           </div>
         </main>

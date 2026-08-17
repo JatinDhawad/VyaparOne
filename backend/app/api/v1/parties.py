@@ -70,7 +70,38 @@ async def list_parties(
     if party_type:
         query = query.where(Party.party_type == party_type.upper())
     result = await db.execute(query.offset(skip).limit(limit))
-    return result.scalars().all()
+    parties = result.scalars().all()
+
+    # Enrich with ledger balance from the party's LedgerAccount
+    from decimal import Decimal
+    enriched = []
+    for party in parties:
+        ledger_res = await db.execute(
+            select(LedgerAccount).where(LedgerAccount.party_id == party.id)
+        )
+        ledger = ledger_res.scalars().first()
+        bal = Decimal(str(ledger.current_balance or 0)) if ledger else Decimal("0.00")
+
+        # Build a dict from the ORM object and inject the balance
+        party_dict = {
+            "id": party.id,
+            "name": party.name,
+            "party_type": party.party_type,
+            "gstin": party.gstin,
+            "phone": party.phone,
+            "email": party.email,
+            "address": party.address,
+            "city": party.city,
+            "state": party.state,
+            "credit_limit": party.credit_limit,
+            "credit_days": party.credit_days,
+            "is_active": party.is_active,
+            "created_at": party.created_at,
+            "ledger_balance": bal,
+        }
+        enriched.append(party_dict)
+
+    return enriched
 
 
 @router.get("/{party_id}", response_model=PartyResponse)
