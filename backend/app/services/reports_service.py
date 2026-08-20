@@ -481,9 +481,80 @@ async def get_dashboard_summary(db: AsyncSession, period: Optional[str] = None) 
     sales_invs = s_res.scalars().all()
 
     tot_sales = sum(Decimal(str(i.subtotal or 0)) for i in sales_invs)  # gross goods amount before deductions
-    tot_cogs = sum(Decimal(str(i.total_cost_of_goods or 0)) for i in sales_invs)
-    tot_net_profit = sum(Decimal(str(i.net_profit or 0)) for i in sales_invs)
-    tot_gross_profit = sum((Decimal(str(i.subtotal or 0)) - Decimal(str(i.discount_amount or 0)) - Decimal(str(i.total_cost_of_goods or 0))) for i in sales_invs)
+
+    # ── Recalculate profit using ACTUAL purchase cost vs actual sale revenue ──
+    # Same method as product profitability: don't use stored net_profit (stale average cost)
+    from app.models.transactions import PurchaseItem, SalesItem
+
+    # Build per-product actual cost from ALL purchases (all-time, regardless of period)
+    pur_rows_res = await db.execute(
+        select(PurchaseItem, PurchaseInvoice)
+        .join(PurchaseInvoice, PurchaseInvoice.id == PurchaseItem.purchase_invoice_id)
+    )
+    pur_rows = pur_rows_res.all()
+
+    prod_purchase = {}
+    inv_billed = {}
+    for pitem, pinv in pur_rows:
+        pid = str(pitem.product_id)
+        inv_id = str(pinv.id)
+        bags = Decimal(str(pitem.billed_quantity or 0)) + Decimal(str(pitem.free_quantity or 0))
+        billed_cost = Decimal(str(pitem.line_total or 0))
+        if pid not in prod_purchase:
+            prod_purchase[pid] = {"bags": Decimal("0"), "billed_cost": Decimal("0"), "inv_product_cost": {}}
+        prod_purchase[pid]["bags"] += bags
+        prod_purchase[pid]["billed_cost"] += billed_cost
+        if inv_id not in prod_purchase[pid]["inv_product_cost"]:
+            prod_purchase[pid]["inv_product_cost"][inv_id] = Decimal("0")
+        prod_purchase[pid]["inv_product_cost"][inv_id] += billed_cost
+        if inv_id not in inv_billed:
+            inv_billed[inv_id] = {"total_billed": Decimal("0"), "unbilled": Decimal(str(pinv.unbilled_nongst_amount or 0))}
+        inv_billed[inv_id]["total_billed"] += billed_cost
+
+    # Add proportional unbilled share
+    for pid, pdata in prod_purchase.items():
+        unbilled_share = Decimal("0")
+        for inv_id, product_billed in pdata["inv_product_cost"].items():
+            inv_data = inv_billed.get(inv_id, {})
+            inv_total = inv_data.get("total_billed", Decimal("1"))
+            inv_unbilled = inv_data.get("unbilled", Decimal("0"))
+            if inv_total > 0:
+                unbilled_share += (product_billed / inv_total) * inv_unbilled
+        pdata["total_actual_cost"] = pdata["billed_cost"] + unbilled_share
+
+    # Get packets_per_bag for each product
+    prod_res_all = await db.execute(select(Product))
+    all_products = {str(p.id): p for p in prod_res_all.scalars().all()}
+
+    prod_cost_per_pkt = {}
+    for pid, pdata in prod_purchase.items():
+        prod = all_products.get(pid)
+        pkts_per_bag = int(prod.packets_per_bag) if prod and prod.packets_per_bag else 1
+        total_pkts = pdata["bags"] * pkts_per_bag
+        if total_pkts <= 0:
+            total_pkts = pdata["bags"]
+        prod_cost_per_pkt[pid] = pdata["total_actual_cost"] / total_pkts if total_pkts > 0 else Decimal("0")
+
+    # Sum sales items for the period
+    si_query = select(SalesItem, SalesInvoice).join(SalesInvoice, SalesInvoice.id == SalesItem.sales_invoice_id)
+    if start_date:
+        si_query = si_query.where(SalesInvoice.invoice_date >= start_date)
+    si_res = await db.execute(si_query)
+    si_rows = si_res.all()
+
+    tot_revenue = Decimal("0")
+    tot_cogs = Decimal("0")
+    for sitem, sinv in si_rows:
+        pid = str(sitem.product_id)
+        qty = Decimal(str(sitem.quantity or 0))
+        rev = Decimal(str(sitem.line_total or 0)) - Decimal(str(sitem.gst_amount or 0))
+        cogs = prod_cost_per_pkt.get(pid, Decimal("0")) * qty
+        tot_revenue += rev
+        tot_cogs += cogs
+
+    tot_net_profit = tot_revenue - tot_cogs
+    tot_gross_profit = tot_net_profit  # before expenses
+
 
     # 2. Purchases — billed (grand_total) + unbilled (unbilled_nongst_amount)
     p_query = select(PurchaseInvoice)
