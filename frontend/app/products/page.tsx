@@ -183,7 +183,7 @@ export default function ProductsPage() {
                       </div>
                       <span className="flex items-center gap-1.5 text-xs font-extrabold px-3 py-1.5 rounded-xl border bg-emerald-50 text-emerald-800 border-emerald-200/80 shadow-xs shrink-0">
                         <PackageCheck className="h-4 w-4 text-emerald-600" />
-                        {currentStock} {p.unit}
+                        {currentStock} {p.packets_per_bag > 0 ? 'PKT' : p.unit}
                       </span>
                     </div>
 
