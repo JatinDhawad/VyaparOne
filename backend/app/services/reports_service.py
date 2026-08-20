@@ -277,73 +277,128 @@ async def get_product_profitability(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None
 ) -> ProductProfitabilityResponse:
-    query = select(SalesItem, SalesInvoice).join(SalesInvoice, SalesInvoice.id == SalesItem.sales_invoice_id)
+    from app.models.transactions import PurchaseItem
+
+    # ── Step 1: Build per-product purchase cost from ACTUAL invoices ──────────
+    # For each product, sum the total actual money paid (billed line_total + proportional unbilled)
+    # across ALL purchase invoices (not filtered by date — cost base is all-time)
+    pur_items_res = await db.execute(
+        select(PurchaseItem, PurchaseInvoice)
+        .join(PurchaseInvoice, PurchaseInvoice.id == PurchaseItem.purchase_invoice_id)
+    )
+    pur_rows = pur_items_res.all()
+
+    # Build: product_id -> {total_bags, total_billed_cost, invoice_id set}
+    # Also need unbilled amount per invoice to allocate to products on that invoice
+    prod_purchase = {}   # product_id -> {bags, billed_cost, inv_ids: {inv_id}}
+    inv_billed = {}      # invoice_id -> total billed line_total for that invoice
+
+    for pitem, pinv in pur_rows:
+        pid = pitem.product_id
+        inv_id = pinv.id
+        bags = Decimal(str(pitem.billed_quantity or 0)) + Decimal(str(pitem.free_quantity or 0))
+        billed_cost = Decimal(str(pitem.line_total or 0))  # includes GST + additional costs
+
+        if pid not in prod_purchase:
+            prod_purchase[pid] = {"bags": Decimal("0"), "billed_cost": Decimal("0"), "inv_product_cost": {}}
+        prod_purchase[pid]["bags"] += bags
+        prod_purchase[pid]["billed_cost"] += billed_cost
+
+        # Track per-invoice billed cost per product for unbilled allocation
+        inv_id_str = str(inv_id)
+        if inv_id_str not in prod_purchase[pid]["inv_product_cost"]:
+            prod_purchase[pid]["inv_product_cost"][inv_id_str] = Decimal("0")
+        prod_purchase[pid]["inv_product_cost"][inv_id_str] += billed_cost
+
+        if inv_id_str not in inv_billed:
+            inv_billed[inv_id_str] = {"total_billed": Decimal("0"), "unbilled": Decimal(str(pinv.unbilled_nongst_amount or 0))}
+        inv_billed[inv_id_str]["total_billed"] += billed_cost
+
+    # Add proportional share of unbilled_nongst_amount per product per invoice
+    for pid, pdata in prod_purchase.items():
+        unbilled_share = Decimal("0")
+        for inv_id_str, product_billed in pdata["inv_product_cost"].items():
+            inv_data = inv_billed.get(inv_id_str, {})
+            inv_total_billed = inv_data.get("total_billed", Decimal("1"))
+            inv_unbilled = inv_data.get("unbilled", Decimal("0"))
+            if inv_total_billed > 0:
+                share = (product_billed / inv_total_billed) * inv_unbilled
+                unbilled_share += share
+        pdata["total_actual_cost"] = pdata["billed_cost"] + unbilled_share
+
+    # ── Step 2: Get packets_per_bag for each product ───────────────────────────
+    prod_res = await db.execute(select(Product).options())
+    all_products = {str(p.id): p for p in prod_res.scalars().all()}
+
+    # ── Step 3: Compute actual cost per PACKET for each product ───────────────
+    # cost_per_pkt = total_actual_cost / (bags × packets_per_bag)
+    prod_cost_per_pkt = {}
+    for pid_str, pdata in prod_purchase.items():
+        prod = all_products.get(pid_str)
+        pkts_per_bag = int(prod.packets_per_bag) if prod and prod.packets_per_bag else 1
+        total_pkts = pdata["bags"] * pkts_per_bag  # if 0, treat as 1 bag=1 unit
+        if total_pkts <= 0:
+            total_pkts = pdata["bags"]  # bag-level product, no unpack
+        prod_cost_per_pkt[pid_str] = pdata["total_actual_cost"] / total_pkts if total_pkts > 0 else Decimal("0")
+
+    # ── Step 4: Sum sales revenue and qty sold per product ────────────────────
+    sal_query = select(SalesItem, SalesInvoice).join(SalesInvoice, SalesInvoice.id == SalesItem.sales_invoice_id)
     if start_date:
-        query = query.where(SalesInvoice.invoice_date >= start_date)
+        sal_query = sal_query.where(SalesInvoice.invoice_date >= start_date)
     if end_date:
-        query = query.where(SalesInvoice.invoice_date <= end_date)
+        sal_query = sal_query.where(SalesInvoice.invoice_date <= end_date)
 
-    res = await db.execute(query)
-    rows = res.all()
+    sal_res = await db.execute(sal_query)
+    sal_rows = sal_res.all()
 
-    prod_map = {}
-    for item, inv in rows:
-        pid = item.product_id
-        if pid not in prod_map:
-            prod_map[pid] = {
-                "qty": Decimal("0.00"),
-                "revenue": Decimal("0.00"),
-                "cogs": Decimal("0.00"),
-                "profit": Decimal("0.00")
-            }
+    prod_sales = {}
+    for sitem, sinv in sal_rows:
+        pid = sitem.product_id
+        pid_str = str(pid)
+        if pid_str not in prod_sales:
+            prod_sales[pid_str] = {"qty": Decimal("0"), "revenue": Decimal("0")}
+        qty = Decimal(str(sitem.quantity or 0))
+        # Revenue = packets × rate (excluding GST — it's informational)
+        revenue = Decimal(str(sitem.line_total or 0)) - Decimal(str(sitem.gst_amount or 0))
+        prod_sales[pid_str]["qty"] += qty
+        prod_sales[pid_str]["revenue"] += revenue
 
-        qty = Decimal(str(item.quantity or 0))
-        rev = Decimal(str(item.line_total or 0)) - Decimal(str(item.gst_amount or 0))
-        cogs = qty * Decimal(str(item.unit_landed_cost or 0))
-        profit = Decimal(str(item.line_profit or 0))
-
-        prod_map[pid]["qty"] += qty
-        prod_map[pid]["revenue"] += rev
-        prod_map[pid]["cogs"] += cogs
-        prod_map[pid]["profit"] += profit
-
-    total_qty = Decimal("0.00")
-    total_rev = Decimal("0.00")
-    total_prof = Decimal("0.00")
+    # ── Step 5: Build result ───────────────────────────────────────────────────
+    total_qty = Decimal("0")
+    total_rev = Decimal("0")
+    total_prof = Decimal("0")
     items = []
 
-    for pid, data in prod_map.items():
-        p_res = await db.execute(select(Product, GodownStock).join(GodownStock, GodownStock.product_id == Product.id).where(Product.id == pid))
-        p_row = p_res.first()
-        prod = p_row[0] if p_row else None
-        stock = p_row[1] if p_row else None
-
+    for pid_str, sdata in prod_sales.items():
+        prod = all_products.get(pid_str)
         pname = prod.name if prod else "Unknown Product"
         sku = prod.sku if prod else ""
-        unit = prod.unit if prod else "BOX"
-        avg_cost = Decimal(str(stock.average_landed_cost or 0)) if stock else Decimal("0.00")
+        unit = "PKT" if (prod and prod.packets_per_bag and prod.packets_per_bag > 0) else (prod.unit if prod else "BAG")
 
-        qty = data["qty"]
-        rev = data["revenue"]
-        cogs = data["cogs"]
-        prof = data["profit"]
-        margin = (prof / rev * Decimal("100.00")) if rev > 0 else Decimal("0.00")
+        qty = sdata["qty"]
+        rev = sdata["revenue"]
+
+        # COGS = actual cost per packet × packets sold
+        cost_per_pkt = prod_cost_per_pkt.get(pid_str, Decimal("0"))
+        cogs = cost_per_pkt * qty
+        profit = rev - cogs
+        margin = (profit / rev * Decimal("100")) if rev > 0 else Decimal("0")
 
         total_qty += qty
         total_rev += rev
-        total_prof += prof
+        total_prof += profit
 
         items.append(
             ProductProfitabilityItem(
-                product_id=pid,
+                product_id=uuid.UUID(pid_str),
                 product_name=pname,
                 sku=sku,
                 unit=unit,
                 quantity_sold=round(qty, 2),
                 total_revenue=round(rev, 2),
-                average_landed_cost=round(avg_cost, 2),
+                average_landed_cost=round(cost_per_pkt, 4),
                 total_cogs=round(cogs, 2),
-                total_line_profit=round(prof, 2),
+                total_line_profit=round(profit, 2),
                 profit_margin_percent=round(margin, 2)
             )
         )
@@ -354,6 +409,7 @@ async def get_product_profitability(
         total_profit=round(total_prof, 2),
         products=items
     )
+
 
 
 async def get_gst_summary(
