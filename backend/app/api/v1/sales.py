@@ -44,7 +44,10 @@ async def list_sales(
     current_user: User = Depends(get_current_active_user),
 ):
     """List sales invoices with optional customer/salesman filter."""
-    query = select(SalesInvoice).options(selectinload(SalesInvoice.items))
+    query = select(SalesInvoice).options(
+        selectinload(SalesInvoice.items),
+        selectinload(SalesInvoice.customer),
+    )
     if customer_id:
         query = query.where(SalesInvoice.customer_id == customer_id)
     if salesman_id:
@@ -62,7 +65,10 @@ async def get_sales(
     """Get a single sales invoice with items."""
     result = await db.execute(
         select(SalesInvoice)
-        .options(selectinload(SalesInvoice.items))
+        .options(
+            selectinload(SalesInvoice.items),
+            selectinload(SalesInvoice.customer),
+        )
         .where(SalesInvoice.id == sales_id)
     )
     invoice = result.scalars().first()
