@@ -2,11 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 const n = (v: string) => parseFloat(v) || 0;
@@ -42,6 +44,15 @@ export default function SalesPage() {
   const [paymentMode, setPaymentMode] = useState('CASH');
   const [notes, setNotes]             = useState('');
 
+  // ── Sort state ───────────────────────────────────────────────────────────
+  const [sortField, setSortField] = useState<'date' | 'invoice' | 'total' | 'paid' | 'pending'>('date');
+  const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('desc');
+
+  const toggleSort = (field: typeof sortField) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('desc'); }
+  };
+
   // ── Data queries ─────────────────────────────────────────────────────────
   const { data: sales = [], isLoading } = useQuery({
     queryKey: ['sales'],
@@ -55,6 +66,21 @@ export default function SalesPage() {
     queryKey: ['products'],
     queryFn: () => api.getProducts(),
   });
+
+  // ── Sorted sales list ────────────────────────────────────────────────────
+  const sortedSales = useMemo(() => {
+    return [...sales].sort((a: any, b: any) => {
+      let valA: any, valB: any;
+      if (sortField === 'date')    { valA = a.invoice_date;   valB = b.invoice_date; }
+      if (sortField === 'invoice') { valA = a.invoice_number; valB = b.invoice_number; }
+      if (sortField === 'total')   { valA = parseFloat(a.grand_total || 0);   valB = parseFloat(b.grand_total || 0); }
+      if (sortField === 'paid')    { valA = parseFloat(a.amount_paid || 0);   valB = parseFloat(b.amount_paid || 0); }
+      if (sortField === 'pending') { valA = parseFloat(a.pending_amount || 0); valB = parseFloat(b.pending_amount || 0); }
+      if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+      if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [sales, sortField, sortDir]);
 
   // ── Derived totals (live preview) ────────────────────────────────────────
   const grossGoodsAmount = useMemo(
@@ -169,7 +195,29 @@ export default function SalesPage() {
         {/* ── Invoice Table ────────────────────────────────────────────── */}
         <main className="p-8 space-y-6 flex-1 overflow-y-auto">
           <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
-            <div className="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm">Recent Sales Invoices</div>
+            {/* Table header + sort controls */}
+            <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <span className="font-bold text-slate-900 text-sm">Recent Sales Invoices</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Sort by:</span>
+                {([['date','Date'],['invoice','Invoice #'],['total','Total'],['paid','Paid'],['pending','Pending']] as const).map(([f, label]) => (
+                  <button
+                    key={f}
+                    onClick={() => toggleSort(f)}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-extrabold border transition-all ${
+                      sortField === f
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-700'
+                    }`}
+                  >
+                    {label}
+                    {sortField === f
+                      ? sortDir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+                      : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                  </button>
+                ))}
+              </div>
+            </div>
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
                 <tr>
@@ -189,7 +237,7 @@ export default function SalesPage() {
                 ) : sales.length === 0 ? (
                   <tr><td colSpan={8} className="p-8 text-center text-slate-500">No sales invoices yet.</td></tr>
                 ) : (
-                  sales.map((s: any) => (
+                  sortedSales.map((s: any) => (
                     <tr key={s.id} className="hover:bg-slate-100/50 transition-colors">
                       <td className="p-4 font-mono font-bold text-indigo-700">{s.invoice_number}</td>
                       <td className="p-4 font-medium">{s.invoice_date}</td>

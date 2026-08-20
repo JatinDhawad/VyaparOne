@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, 
@@ -18,7 +19,10 @@ import {
   Eye,
   Building2,
   Calendar,
-  Tag
+  Tag,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -284,10 +288,33 @@ export default function PurchasesPage() {
   const numPaid = parseFloat(amountPaid) || 0;
   const pendingBalanceOwed = totalPayableAmount - numPaid;
 
-  // Filtered List
+  // Filtered + Sorted List
+  const [sortField, setSortField] = useState<'date' | 'invoice' | 'billed' | 'unbilled' | 'payable' | 'pending'>('date');
+  const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('desc');
+
+  const toggleSort = (field: typeof sortField) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('desc'); }
+  };
+
   const filteredPurchases = purchases.filter((p: any) =>
     (p.invoice_number && p.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const sortedPurchases = useMemo(() => {
+    return [...filteredPurchases].sort((a: any, b: any) => {
+      let valA: any, valB: any;
+      if (sortField === 'date')     { valA = a.invoice_date;               valB = b.invoice_date; }
+      if (sortField === 'invoice')  { valA = a.invoice_number;             valB = b.invoice_number; }
+      if (sortField === 'billed')   { valA = parseFloat(a.grand_total || 0);             valB = parseFloat(b.grand_total || 0); }
+      if (sortField === 'unbilled') { valA = parseFloat(a.unbilled_nongst_amount || 0); valB = parseFloat(b.unbilled_nongst_amount || 0); }
+      if (sortField === 'payable')  { valA = parseFloat(a.total_payable_amount || 0);   valB = parseFloat(b.total_payable_amount || 0); }
+      if (sortField === 'pending')  { valA = parseFloat(a.pending_amount || 0);          valB = parseFloat(b.pending_amount || 0); }
+      if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+      if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredPurchases, sortField, sortDir]);
 
   // Overall Totals
   const totalBilledPurchases = purchases.reduce((sum: number, p: any) => sum + parseFloat(p.grand_total || 0), 0);
@@ -361,7 +388,7 @@ export default function PurchasesPage() {
 
           {/* Table Panel */}
           <div className="glass-panel p-6 rounded-3xl space-y-6 border border-slate-200">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="relative w-full md:w-96">
                 <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
                 <input
@@ -373,9 +400,33 @@ export default function PurchasesPage() {
                 />
               </div>
 
+              {/* Sort controls */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Sort:</span>
+                {([['date','Date'],['invoice','Invoice #'],['billed','Billed'],['unbilled','Unbilled'],['payable','Payable'],['pending','Pending']] as const).map(([f, label]) => (
+                  <button
+                    key={f}
+                    onClick={() => toggleSort(f)}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-extrabold border transition-all ${
+                      sortField === f
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-700'
+                    }`}
+                  >
+                    {label}
+                    {sortField === f
+                      ? sortDir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+                      : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* New purchase button row */}
+            <div className="flex justify-end">
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2"
+                className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
                 New Purchase Entry
@@ -401,10 +452,10 @@ export default function PurchasesPage() {
                 <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
                   {isLoading ? (
                     <tr><td colSpan={9} className="p-8 text-center text-slate-500 text-sm">Loading purchase bills...</td></tr>
-                  ) : filteredPurchases.length === 0 ? (
+                  ) : sortedPurchases.length === 0 ? (
                     <tr><td colSpan={9} className="p-8 text-center text-slate-500 text-sm">No purchase invoices found.</td></tr>
                   ) : (
-                    filteredPurchases.map((p: any) => {
+                    sortedPurchases.map((p: any) => {
                       const bTotal = parseFloat(p.grand_total || 0);
                       const unbilled = parseFloat(p.unbilled_nongst_amount || 0);
                       const payable = parseFloat(p.total_payable_amount || bTotal + unbilled);
