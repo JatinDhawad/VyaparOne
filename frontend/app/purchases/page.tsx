@@ -46,15 +46,15 @@ export default function PurchasesPage() {
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   
   // Itemized Expenses & Deductions
-  const [lrCharges, setLrCharges] = useState('0.00');
-  const [localFreight, setLocalFreight] = useState('0.00');
-  const [salesmanExpense, setSalesmanExpense] = useState('0.00');
-  const [schemeMoney, setSchemeMoney] = useState('0.00');
-  const [discountDeduction, setDiscountDeduction] = useState('0.00');
+  const [lrCharges, setLrCharges] = useState('');
+  const [localFreight, setLocalFreight] = useState('');
+  const [salesmanExpense, setSalesmanExpense] = useState('');
+  const [schemeMoney, setSchemeMoney] = useState('');
+  const [discountDeduction, setDiscountDeduction] = useState('');
 
   // Unbilled & Payment Given
-  const [unbilledNonGst, setUnbilledNonGst] = useState('0.00');
-  const [amountPaid, setAmountPaid] = useState('0.00');
+  const [unbilledNonGst, setUnbilledNonGst] = useState('');
+  const [amountPaid, setAmountPaid] = useState('');
   const [notes, setNotes] = useState('');
 
   // Item Add State
@@ -62,8 +62,8 @@ export default function PurchasesPage() {
   const [productName, setProductName] = useState('');
   const [hsnCode, setHsnCode] = useState('');
   const [unit, setUnit] = useState('BAG');
-  const [billedQty, setBilledQty] = useState('5');
-  const [unitPrice, setUnitPrice] = useState('4800.00');
+  const [billedQty, setBilledQty] = useState('');
+  const [unitPrice, setUnitPrice] = useState('');
   const [gstRate, setGstRate] = useState('5.00');
 
   // Items Array
@@ -100,24 +100,24 @@ export default function PurchasesPage() {
   });
 
   // Edit purchase bill fields only (no stock re-processing)
-  const [editLr, setEditLr]                   = useState('0');
-  const [editFreight, setEditFreight]         = useState('0');
-  const [editSalesmanExp, setEditSalesmanExp] = useState('0');
-  const [editScheme, setEditScheme]           = useState('0');
-  const [editDiscount, setEditDiscount]       = useState('0');
-  const [editUnbilled, setEditUnbilled]       = useState('0');
-  const [editAmountPaid, setEditAmountPaid]   = useState('0');
+  const [editLr, setEditLr]                   = useState('');
+  const [editFreight, setEditFreight]         = useState('');
+  const [editSalesmanExp, setEditSalesmanExp] = useState('');
+  const [editScheme, setEditScheme]           = useState('');
+  const [editDiscount, setEditDiscount]       = useState('');
+  const [editUnbilled, setEditUnbilled]       = useState('');
+  const [editAmountPaid, setEditAmountPaid]   = useState('');
   const [editNotes, setEditNotes]             = useState('');
 
   const openEditInvoice = (inv: any) => {
     setEditInvoice(inv);
-    setEditLr(String(inv.lr_charges || 0));
-    setEditFreight(String(inv.local_freight || 0));
-    setEditSalesmanExp(String(inv.salesman_expense || 0));
-    setEditScheme(String(inv.scheme_money || 0));
-    setEditDiscount(String(inv.discount_deduction || 0));
-    setEditUnbilled(String(inv.unbilled_nongst_amount || 0));
-    setEditAmountPaid(String(inv.amount_paid || 0));
+    setEditLr(inv.lr_charges ? String(inv.lr_charges) : '');
+    setEditFreight(inv.local_freight ? String(inv.local_freight) : '');
+    setEditSalesmanExp(inv.salesman_expense ? String(inv.salesman_expense) : '');
+    setEditScheme(inv.scheme_money ? String(inv.scheme_money) : '');
+    setEditDiscount(inv.discount_deduction ? String(inv.discount_deduction) : '');
+    setEditUnbilled(inv.unbilled_nongst_amount ? String(inv.unbilled_nongst_amount) : '');
+    setEditAmountPaid(inv.amount_paid ? String(inv.amount_paid) : '');
     setEditNotes(inv.notes || '');
     setEditError('');
   };
@@ -137,21 +137,21 @@ export default function PurchasesPage() {
     setInvoiceNumber('');
     setSupplierId('');
     setInvoiceDate(new Date().toISOString().split('T')[0]);
-    setLrCharges('0.00');
-    setLocalFreight('0.00');
-    setSalesmanExpense('0.00');
-    setSchemeMoney('0.00');
-    setDiscountDeduction('0.00');
-    setUnbilledNonGst('0.00');
-    setAmountPaid('0.00');
+    setLrCharges('');
+    setLocalFreight('');
+    setSalesmanExpense('');
+    setSchemeMoney('');
+    setDiscountDeduction('');
+    setUnbilledNonGst('');
+    setAmountPaid('');
     setNotes('');
     setItems([]);
     setSelectedProduct('');
     setProductName('');
     setHsnCode('');
     setUnit('BAG');
-    setBilledQty('5');
-    setUnitPrice('4800.00');
+    setBilledQty('');
+    setUnitPrice('');
     setGstRate('5.00');
     setFormError('');
   };
@@ -725,7 +725,7 @@ export default function PurchasesPage() {
               <div className="col-span-6 md:col-span-2">
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Quantity & Unit</label>
                 <div className="flex gap-1.5">
-                  <input type="number" placeholder="5" value={billedQty} onChange={(e) => setBilledQty(e.target.value)} className="w-full glass-input p-3 rounded-2xl font-extrabold text-xs" />
+                  <input type="text" inputMode="decimal" placeholder="1" value={billedQty} onChange={(e) => setBilledQty(e.target.value)} className="w-full glass-input p-3 rounded-2xl font-extrabold text-xs" />
                   <select value={unit} onChange={(e) => setUnit(e.target.value)} className="glass-input p-3 rounded-2xl bg-white text-xs font-extrabold">
                     <option value="BAG">BAG</option>
                     <option value="BOX">BOX</option>
@@ -737,7 +737,7 @@ export default function PurchasesPage() {
 
               <div className="col-span-6 md:col-span-2">
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Rate / Unit (₹)</label>
-                <input type="number" step="0.01" placeholder="4800.00" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} className="w-full glass-input p-3 rounded-2xl font-extrabold text-xs text-slate-900" />
+                <input type="text" inputMode="decimal" placeholder="0.00" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} className="w-full glass-input p-3 rounded-2xl font-extrabold text-xs text-slate-900" />
               </div>
 
               <div className="col-span-6 md:col-span-1">
@@ -816,23 +816,23 @@ export default function PurchasesPage() {
               <div className="space-y-1.5 pt-1 border-t border-indigo-100">
                 <div className="flex justify-between items-center text-slate-700">
                   <span>LR Charges:</span>
-                  <input type="number" step="0.01" value={lrCharges} onChange={(e) => setLrCharges(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-indigo-900" />
+                  <input type="text" inputMode="decimal" placeholder="0" value={lrCharges} onChange={(e) => setLrCharges(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-indigo-900" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
                   <span>Local Freight:</span>
-                  <input type="number" step="0.01" value={localFreight} onChange={(e) => setLocalFreight(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-indigo-900" />
+                  <input type="text" inputMode="decimal" placeholder="0" value={localFreight} onChange={(e) => setLocalFreight(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-indigo-900" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
                   <span>Salesman Expense:</span>
-                  <input type="number" step="0.01" value={salesmanExpense} onChange={(e) => setSalesmanExpense(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
+                  <input type="text" inputMode="decimal" placeholder="0" value={salesmanExpense} onChange={(e) => setSalesmanExpense(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
                   <span>Scheme Money:</span>
-                  <input type="number" step="0.01" value={schemeMoney} onChange={(e) => setSchemeMoney(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
+                  <input type="text" inputMode="decimal" placeholder="0" value={schemeMoney} onChange={(e) => setSchemeMoney(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
                   <span>Discount Deduction (-):</span>
-                  <input type="number" step="0.01" value={discountDeduction} onChange={(e) => setDiscountDeduction(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
+                  <input type="text" inputMode="decimal" placeholder="0" value={discountDeduction} onChange={(e) => setDiscountDeduction(e.target.value)} className="w-24 glass-input p-1 rounded-lg text-right font-bold text-xs text-emerald-700" />
                 </div>
               </div>
 
@@ -854,7 +854,7 @@ export default function PurchasesPage() {
 
                 <div>
                   <label className="block font-bold text-amber-950 mb-1">Unbilled Amount (₹)</label>
-                  <input type="number" step="0.01" value={unbilledNonGst} onChange={(e) => setUnbilledNonGst(e.target.value)} className="w-full glass-input p-2.5 rounded-xl text-amber-950 font-extrabold text-sm border-amber-300" />
+                  <input type="text" inputMode="decimal" placeholder="0.00" value={unbilledNonGst} onChange={(e) => setUnbilledNonGst(e.target.value)} className="w-full glass-input p-2.5 rounded-xl text-amber-950 font-extrabold text-sm border-amber-300" />
                 </div>
               </div>
 
@@ -874,7 +874,7 @@ export default function PurchasesPage() {
 
                 <div>
                   <label className="block font-bold text-slate-800 mb-1">Amount Paid (₹)</label>
-                  <input type="number" step="0.01" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="0.00" className="w-full glass-input p-2.5 rounded-xl text-emerald-800 font-extrabold text-sm border-emerald-300" />
+                  <input type="text" inputMode="decimal" placeholder="0.00" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} className="w-full glass-input p-2.5 rounded-xl text-emerald-800 font-extrabold text-sm border-emerald-300" />
                 </div>
               </div>
 
@@ -919,32 +919,32 @@ export default function PurchasesPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="font-bold text-slate-600 block mb-1">LR / Bilty Charges (₹)</label>
-                <input type="number" step="0.01" value={editLr} onChange={(e) => setEditLr(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+                <input type="text" inputMode="decimal" placeholder="0" value={editLr} onChange={(e) => setEditLr(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
               </div>
               <div>
                 <label className="font-bold text-slate-600 block mb-1">Local Freight (₹)</label>
-                <input type="number" step="0.01" value={editFreight} onChange={(e) => setEditFreight(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+                <input type="text" inputMode="decimal" placeholder="0" value={editFreight} onChange={(e) => setEditFreight(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
               </div>
               <div>
                 <label className="font-bold text-emerald-700 block mb-1">Salesman Expense (₹) −</label>
-                <input type="number" step="0.01" value={editSalesmanExp} onChange={(e) => setEditSalesmanExp(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+                <input type="text" inputMode="decimal" placeholder="0" value={editSalesmanExp} onChange={(e) => setEditSalesmanExp(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
               </div>
               <div>
                 <label className="font-bold text-emerald-700 block mb-1">Scheme Money (₹) −</label>
-                <input type="number" step="0.01" value={editScheme} onChange={(e) => setEditScheme(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+                <input type="text" inputMode="decimal" placeholder="0" value={editScheme} onChange={(e) => setEditScheme(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
               </div>
               <div>
                 <label className="font-bold text-emerald-700 block mb-1">Discount Deduction (₹) −</label>
-                <input type="number" step="0.01" value={editDiscount} onChange={(e) => setEditDiscount(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+                <input type="text" inputMode="decimal" placeholder="0" value={editDiscount} onChange={(e) => setEditDiscount(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
               </div>
               <div>
                 <label className="font-bold text-amber-700 block mb-1">Unbilled Non-GST Amount (₹)</label>
-                <input type="number" step="0.01" value={editUnbilled} onChange={(e) => setEditUnbilled(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" min="0" />
+                <input type="text" inputMode="decimal" placeholder="0" value={editUnbilled} onChange={(e) => setEditUnbilled(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
               </div>
             </div>
             <div>
               <label className="font-bold text-slate-800 block mb-1">Amount Paid (₹)</label>
-              <input type="number" step="0.01" value={editAmountPaid} onChange={(e) => setEditAmountPaid(e.target.value)} className="glass-input w-full p-2.5 rounded-xl text-emerald-800 font-extrabold" min="0" />
+              <input type="text" inputMode="decimal" placeholder="0" value={editAmountPaid} onChange={(e) => setEditAmountPaid(e.target.value)} className="glass-input w-full p-2.5 rounded-xl text-emerald-800 font-extrabold" />
             </div>
             <div>
               <label className="font-bold text-slate-600 block mb-1">Notes</label>

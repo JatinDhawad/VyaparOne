@@ -30,17 +30,17 @@ export default function SalesPage() {
   const [items, setItems]                     = useState<any[]>([]);
 
   // ── GST split (informational only) ───────────────────────────────────────
-  const [gstBilledAmount, setGstBilledAmount]     = useState('0');
-  const [withoutGstAmount, setWithoutGstAmount]   = useState('0');
+  const [gstBilledAmount, setGstBilledAmount]     = useState('');
+  const [withoutGstAmount, setWithoutGstAmount]   = useState('');
 
   // ── Deductions ───────────────────────────────────────────────────────────
-  const [lrCharges, setLrCharges]               = useState('0');
-  const [localFreight, setLocalFreight]         = useState('0');
-  const [salesmanComm, setSalesmanComm]         = useState('0');
-  const [schemeMoney, setSchemeMoney]           = useState('0');
+  const [lrCharges, setLrCharges]               = useState('');
+  const [localFreight, setLocalFreight]         = useState('');
+  const [salesmanComm, setSalesmanComm]         = useState('');
+  const [schemeMoney, setSchemeMoney]           = useState('');
 
   // ── Payment ──────────────────────────────────────────────────────────────
-  const [amountPaid, setAmountPaid]   = useState('0');
+  const [amountPaid, setAmountPaid]   = useState('');
   const [paymentMode, setPaymentMode] = useState('CASH');
   const [notes, setNotes]             = useState('');
 
@@ -114,9 +114,9 @@ export default function SalesPage() {
     setInvoiceNumber(''); setCustomerId(''); setLocation('');
     setSelectedProduct(''); setQty(''); setUnitPrice('');
     setItems([]);
-    setGstBilledAmount('0'); setWithoutGstAmount('0');
-    setLrCharges('0'); setLocalFreight('0'); setSalesmanComm('0'); setSchemeMoney('0');
-    setAmountPaid('0'); setPaymentMode('CASH'); setNotes('');
+    setGstBilledAmount(''); setWithoutGstAmount('');
+    setLrCharges(''); setLocalFreight(''); setSalesmanComm(''); setSchemeMoney('');
+    setAmountPaid(''); setPaymentMode('CASH'); setNotes('');
     setFormError('');
   };
 
@@ -147,8 +147,8 @@ export default function SalesPage() {
   // ── GST split quick-fill buttons ─────────────────────────────────────────
   const setGstSplit = (mode: 'full' | 'none' | 'half') => {
     const g = grossGoodsAmount;
-    if (mode === 'full')  { setGstBilledAmount(g.toFixed(2));         setWithoutGstAmount('0'); }
-    if (mode === 'none')  { setGstBilledAmount('0');                  setWithoutGstAmount(g.toFixed(2)); }
+    if (mode === 'full')  { setGstBilledAmount(g.toFixed(2));         setWithoutGstAmount(''); }
+    if (mode === 'none')  { setGstBilledAmount('');                  setWithoutGstAmount(g.toFixed(2)); }
     if (mode === 'half')  { setGstBilledAmount((g/2).toFixed(2));     setWithoutGstAmount((g/2).toFixed(2)); }
   };
 
@@ -327,20 +327,20 @@ export default function SalesPage() {
                   ))}
                 </select>
                 <input
-                  type="number"
+                  type="text" inputMode="decimal"
                   placeholder="Qty (PKT / BAG)"
                   value={qty}
                   onChange={(e) => setQty(e.target.value)}
                   className="glass-input p-2.5 rounded-xl"
-                  min="0"
+                 
                 />
                 <input
-                  type="number"
+                  type="text" inputMode="decimal"
                   placeholder="Rate per unit (₹) incl. GST"
                   value={unitPrice}
                   onChange={(e) => setUnitPrice(e.target.value)}
                   className="glass-input p-2.5 rounded-xl"
-                  min="0"
+                 
                 />
               </div>
               <button
@@ -405,15 +405,15 @@ export default function SalesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-blue-700 block mb-1">GST-Billed Amount (₹)</label>
-                  <input type="number" value={gstBilledAmount}
+                  <input type="text" inputMode="decimal" placeholder="0" value={gstBilledAmount}
                     onChange={(e) => setGstBilledAmount(e.target.value)}
-                    className="glass-input w-full p-2 rounded-xl" min="0" />
+                    className="glass-input w-full p-2 rounded-xl" />
                 </div>
                 <div>
                   <label className="font-bold text-slate-600 block mb-1">Without-GST / Cash (₹)</label>
-                  <input type="number" value={withoutGstAmount}
+                  <input type="text" inputMode="decimal" placeholder="0" value={withoutGstAmount}
                     onChange={(e) => setWithoutGstAmount(e.target.value)}
-                    className="glass-input w-full p-2 rounded-xl" min="0" />
+                    className="glass-input w-full p-2 rounded-xl" />
                 </div>
               </div>
             </div>
@@ -426,27 +426,27 @@ export default function SalesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-amber-800 block mb-1">LR / Bilty Charges (₹) −</label>
-                  <input type="number" value={lrCharges}
+                  <input type="text" inputMode="decimal" placeholder="0" value={lrCharges}
                     onChange={(e) => setLrCharges(e.target.value)}
-                    className="glass-input w-full p-2 rounded-xl" min="0" />
+                    className="glass-input w-full p-2 rounded-xl" />
                 </div>
                 <div>
                   <label className="font-bold text-amber-800 block mb-1">Local Freight (₹) −</label>
-                  <input type="number" value={localFreight}
+                  <input type="text" inputMode="decimal" placeholder="0" value={localFreight}
                     onChange={(e) => setLocalFreight(e.target.value)}
-                    className="glass-input w-full p-2 rounded-xl" min="0" />
+                    className="glass-input w-full p-2 rounded-xl" />
                 </div>
                 <div>
                   <label className="font-bold text-amber-800 block mb-1">Salesman Commission (₹) −</label>
-                  <input type="number" value={salesmanComm}
+                  <input type="text" inputMode="decimal" placeholder="0" value={salesmanComm}
                     onChange={(e) => setSalesmanComm(e.target.value)}
-                    className="glass-input w-full p-2 rounded-xl" min="0" />
+                    className="glass-input w-full p-2 rounded-xl" />
                 </div>
                 <div>
                   <label className="font-bold text-amber-800 block mb-1">Scheme Money (₹) −</label>
-                  <input type="number" value={schemeMoney}
+                  <input type="text" inputMode="decimal" placeholder="0" value={schemeMoney}
                     onChange={(e) => setSchemeMoney(e.target.value)}
-                    className="glass-input w-full p-2 rounded-xl" min="0" />
+                    className="glass-input w-full p-2 rounded-xl" />
                 </div>
               </div>
               {totalDeductions > 0 && (
@@ -479,11 +479,11 @@ export default function SalesPage() {
               <div>
                 <label className="font-bold text-slate-300 block mb-1">Payment Received (₹)</label>
                 <input
-                  type="number"
+                  type="text" inputMode="decimal"
                   value={amountPaid}
                   onChange={(e) => setAmountPaid(e.target.value)}
                   className="w-full p-2.5 rounded-xl bg-slate-700 border border-slate-600 text-white font-mono"
-                  min="0"
+                 
                 />
               </div>
               <div>
