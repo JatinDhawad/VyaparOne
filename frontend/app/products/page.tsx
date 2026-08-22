@@ -44,13 +44,6 @@ export default function ProductsPage() {
   const [editGstRate, setEditGstRate] = useState('');
   const [editPacketsPerBag, setEditPacketsPerBag] = useState('0');
 
-  // ── Unpack Bags modal ─────────────────────────────────────────────────────
-  const [unpackProduct, setUnpackProduct] = useState<any>(null);
-  const [unpackError, setUnpackError] = useState('');
-  const [unpackSuccess, setUnpackSuccess] = useState('');
-  const [bagsToUnpack, setBagsToUnpack] = useState('1');
-  const [packetsPerBagRatio, setPacketsPerBagRatio] = useState('480');
-
   // ── Data ──────────────────────────────────────────────────────────────────
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
@@ -77,16 +70,6 @@ export default function ProductsPage() {
     onError: (err: any) => setEditError(err.message || 'Failed to update product.'),
   });
 
-  const unpackMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.unpackBags(id, data),
-    onSuccess: (res: any) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      setUnpackSuccess(res.message || 'Bags unpacked successfully.');
-      setBagsToUnpack('1');
-    },
-    onError: (err: any) => setUnpackError(err.message || 'Failed to unpack bags.'),
-  });
-
   // ── Helpers ───────────────────────────────────────────────────────────────
   const resetCreate = () => {
     setName(''); setHsnCode(''); setUnit('BAG');
@@ -105,24 +88,10 @@ export default function ProductsPage() {
     setEditError('');
   };
 
-  const openUnpack = (p: any) => {
-    setUnpackProduct(p);
-    setUnpackError(''); setUnpackSuccess('');
-    setBagsToUnpack('1');
-    const presetRatio = p.packets_per_bag > 0 ? String(p.packets_per_bag) : '480';
-    setPacketsPerBagRatio(presetRatio);
-  };
-
   const filteredProducts = products.filter((p: any) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (p.hsn_code && p.hsn_code.includes(searchTerm))
   );
-
-  // ── Derived unpack preview ────────────────────────────────────────────────
-  const unpackPreviewPkts = (parseFloat(bagsToUnpack) || 0) * (parseInt(packetsPerBagRatio) || 0);
-  const unpackPreviewCost = unpackProduct
-    ? ((parseFloat(unpackProduct.stock?.average_landed_cost || 0) / (parseInt(packetsPerBagRatio) || 1))).toFixed(4)
-    : '0.0000';
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -165,7 +134,6 @@ export default function ProductsPage() {
             ) : (
               filteredProducts.map((p: any) => {
                 const currentStock = p.stock?.current_stock ?? 0;
-                const isBagProduct = p.unit === 'BAG' || (p.packets_per_bag && p.packets_per_bag > 0);
                 return (
                   <div key={p.id} className="glass-card p-6 rounded-3xl space-y-4 hover:shadow-xl transition-all duration-300 border border-slate-200/80 bg-white flex flex-col justify-between">
                     <div className="flex items-start justify-between gap-3">
@@ -176,8 +144,8 @@ export default function ProductsPage() {
                         </span>
                         <h3 className="font-extrabold text-slate-900 text-base leading-snug mt-2 truncate">{p.name}</h3>
                         {p.packets_per_bag > 0 && (
-                          <span className="text-[10px] font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-lg border border-violet-200">
-                            {p.packets_per_bag} pkts/bag
+                          <span className="inline-block text-[10px] font-extrabold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-lg border border-violet-200">
+                            1 Bag = {p.packets_per_bag} PKT (Auto-Unpacked)
                           </span>
                         )}
                       </div>
@@ -197,7 +165,7 @@ export default function ProductsPage() {
                         <span className="font-extrabold text-emerald-800 text-sm">₹{formatCurrency(p.default_selling_price)}</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-indigo-50/50 border border-indigo-100">
-                        <span className="text-[10px] font-bold text-indigo-700 block uppercase">Avg Landed Cost</span>
+                        <span className="text-[10px] font-bold text-indigo-700 block uppercase">Avg Landed Cost / PKT</span>
                         <span className="font-extrabold text-indigo-800 text-sm">₹{formatCurrency(p.stock?.average_landed_cost)}</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
@@ -206,22 +174,14 @@ export default function ProductsPage() {
                       </div>
                     </div>
 
-                    {/* Action buttons */}
-                    <div className="flex gap-2 pt-1">
+                    {/* Action button */}
+                    <div className="pt-1">
                       <button
                         onClick={() => openEdit(p)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-colors"
+                        className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-colors shadow-2xs"
                       >
-                        <Pencil className="h-3.5 w-3.5" /> Edit Item
+                        <Pencil className="h-3.5 w-3.5" /> Edit Item Details
                       </button>
-                      {isBagProduct && (
-                        <button
-                          onClick={() => openUnpack(p)}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-xl transition-colors"
-                        >
-                          <Package className="h-3.5 w-3.5" /> Unpack Bags
-                        </button>
-                      )}
                     </div>
                   </div>
                 );
@@ -371,87 +331,7 @@ export default function ProductsPage() {
           </form>
         </Modal>
       )}
-
-      {/* ── Unpack Bags Modal ─────────────────────────────────────────────────── */}
-      {unpackProduct && (
-        <Modal isOpen={!!unpackProduct} onClose={() => setUnpackProduct(null)} title={`Unpack Bags → Packets — ${unpackProduct.name}`}>
-          <div className="space-y-4 text-xs">
-            {unpackError && <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl font-medium">{unpackError}</div>}
-            {unpackSuccess && <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl font-bold">{unpackSuccess}</div>}
-
-            {/* Current Stock Info */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-2 gap-3">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Current Bag Stock</span>
-                <span className="font-extrabold text-slate-900 text-lg">{unpackProduct.stock?.current_stock ?? 0} {unpackProduct.unit}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Avg Landed Cost / Bag</span>
-                <span className="font-extrabold text-indigo-800 text-lg">₹{formatCurrency(unpackProduct.stock?.average_landed_cost)}</span>
-              </div>
-            </div>
-
-            {/* Preset Ratios */}
-            <div>
-              <label className="font-bold text-violet-700 block mb-2">Packets per Bag Ratio</label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {PACKET_PRESETS.map((pr) => (
-                  <button key={pr.ratio} type="button" onClick={() => setPacketsPerBagRatio(String(pr.ratio))}
-                    className={`px-3 py-1.5 font-bold rounded-xl border transition-colors text-[11px] ${packetsPerBagRatio === String(pr.ratio) ? 'bg-violet-600 text-white border-violet-600' : 'bg-violet-50 text-violet-800 border-violet-200 hover:bg-violet-100'}`}>
-                    {pr.label}: {pr.ratio} pkts
-                  </button>
-                ))}
-              </div>
-              <input type="number" value={packetsPerBagRatio} onChange={(e) => setPacketsPerBagRatio(e.target.value)}
-                className="glass-input w-full p-2.5 rounded-xl" placeholder="e.g. 480" min="1" />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">How many bags to unpack?</label>
-              <input type="number" value={bagsToUnpack} onChange={(e) => setBagsToUnpack(e.target.value)}
-                className="glass-input w-full p-2.5 rounded-xl text-lg font-extrabold text-indigo-900" min="0.01" step="0.01" />
-            </div>
-
-            {/* Live Calculation Preview */}
-            <div className="p-4 rounded-2xl bg-indigo-950 text-white space-y-2">
-              <div className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Conversion Preview</div>
-              <div className="flex justify-between">
-                <span className="text-indigo-300">Bags to unpack</span>
-                <span className="font-bold">{bagsToUnpack} bags</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-indigo-300">Packets per bag</span>
-                <span className="font-bold">{packetsPerBagRatio} pkts</span>
-              </div>
-              <div className="flex justify-between border-t border-indigo-700 pt-2 font-extrabold text-base">
-                <span className="text-emerald-400">Total Packets Added</span>
-                <span className="text-emerald-400">{unpackPreviewPkts.toLocaleString()} PKT</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-indigo-300">Packet Landed Cost</span>
-                <span className="font-bold text-amber-300">₹{unpackPreviewCost} / pkt</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-1">
-              <button type="button" onClick={() => setUnpackProduct(null)} className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
-              <button
-                disabled={unpackMutation.isPending}
-                onClick={() => {
-                  setUnpackError(''); setUnpackSuccess('');
-                  unpackMutation.mutate({ id: unpackProduct.id, data: {
-                    bags_to_unpack: parseFloat(bagsToUnpack),
-                    packets_per_bag: parseInt(packetsPerBagRatio),
-                  }});
-                }}
-                className="px-6 py-2 font-bold bg-violet-600 hover:bg-violet-700 text-white rounded-xl shadow-md transition-colors disabled:opacity-60"
-              >
-                {unpackMutation.isPending ? 'Processing...' : '⬇ Unpack Bags'}
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }
+
