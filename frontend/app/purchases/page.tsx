@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -44,6 +44,22 @@ export default function PurchasesPage() {
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [supplierId, setSupplierId] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // ── Pre-fill supplier from URL (e.g. from Parties page) ───────────────────
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const suppId = params.get('supplierId') || params.get('supplier_id');
+      const shouldOpen = params.get('openModal') === 'true' || !!suppId;
+
+      if (suppId) {
+        setSupplierId(suppId);
+      }
+      if (shouldOpen && suppId) {
+        setIsModalOpen(true);
+      }
+    }
+  }, []);
   
   // Itemized Expenses & Deductions
   const [lrCharges, setLrCharges] = useState('');
