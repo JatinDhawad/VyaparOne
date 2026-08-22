@@ -169,23 +169,52 @@ async def seed_data():
             await session.commit()
             logger.info("Ledger balances reconciled successfully.")
 
-            # 4. Auto-correct MOUTH FRESHNER @1/- stock for 240 packets/bag
+            # 4. Clean up demo products, normalize product names, and sync real inventory stock dynamically
             from app.models.company import Product, GodownStock
-            mf_res = await session.execute(
-                select(Product).where(Product.name.ilike("%MOUTH FRESHNER%"))
-            )
-            mf_prod = mf_res.scalars().first()
-            if mf_prod:
-                mf_prod.packets_per_bag = 240
-                stock_res = await session.execute(
-                    select(GodownStock).where(GodownStock.product_id == mf_prod.id)
-                )
-                mf_stock = stock_res.scalars().first()
-                if mf_stock:
-                    mf_stock.current_stock = Decimal("1332.00")
-                    mf_stock.average_landed_cost = Decimal("20.49")
-                    logger.info("Auto-corrected MOUTH FRESHNER @1/- stock to 1332.00 PKT at ₹20.49 landed cost.")
-                await session.commit()
+            from app.models.transactions import PurchaseItem, SalesItem
+            from sqlalchemy.orm import selectinload
+
+            prods_res = await session.execute(select(Product).options(selectinload(Product.stock)))
+            for p in prods_res.scalars().all():
+                # Delete demo products if they still exist
+                if "Everest Spices" in p.name or "Raja Sweet Supari" in p.name:
+                    if p.stock:
+                        await session.delete(p.stock)
+                    await session.delete(p)
+                    continue
+
+                # Clean product names (remove brackets/nicknames)
+                if "Special Gold" in p.name:
+                    p.name = "Mouth Freshener @ 5"
+                elif "Silver Mint" in p.name:
+                    p.name = "Mouth Freshener @ 1"
+                elif "Royal Diamond" in p.name:
+                    p.name = "Sweet Supari @ 1"
+
+                # Dynamic stock sync from actual purchase and sales items
+                ppb = p.packets_per_bag or 1
+                if ppb > 1:
+                    p.unit = "PKT"
+
+                p_items_res = await session.execute(select(PurchaseItem).where(PurchaseItem.product_id == p.id))
+                p_items = p_items_res.scalars().all()
+                total_purchased_units = sum(Decimal(str(it.billed_quantity or 0)) + Decimal(str(it.free_quantity or 0)) for it in p_items)
+                total_purchased_cost = sum(Decimal(str(it.line_total or 0)) for it in p_items)
+
+                s_items_res = await session.execute(select(SalesItem).where(SalesItem.product_id == p.id))
+                s_items = s_items_res.scalars().all()
+                total_sold_pkts = sum(Decimal(str(it.quantity or 0)) for it in s_items)
+
+                total_pkts = total_purchased_units * Decimal(str(ppb))
+                cost_per_pkt = (total_purchased_cost / total_pkts) if total_pkts > 0 else Decimal("0")
+                new_stock_qty = max(Decimal("0"), total_pkts - total_sold_pkts)
+
+                if p.stock:
+                    p.stock.current_stock = new_stock_qty
+                    p.stock.average_landed_cost = round(cost_per_pkt, 4)
+
+            await session.commit()
+            logger.info("Stock and product names synced dynamically from actual transactions.")
         except Exception as e:
             logger.error(f"Auto-backfill/reconciliation warning: {e}")
 
