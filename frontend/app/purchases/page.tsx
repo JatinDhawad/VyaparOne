@@ -142,12 +142,58 @@ export default function PurchasesPage() {
     mutationFn: ({ id, data }: { id: string; data: any }) => api.editPurchase(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['parties'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       setEditInvoice(null);
       setSuccessMessage('Purchase bill updated successfully.');
       setTimeout(() => setSuccessMessage(''), 5000);
     },
     onError: (err: any) => setEditError(err.message || 'Failed to update purchase bill.'),
   });
+
+  // ── Record Payment State & Mutation ───────────────────────────────────────
+  const [payInvoice, setPayInvoice] = useState<any>(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payMode, setPayMode] = useState('CASH');
+  const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
+  const [payRef, setPayRef] = useState('');
+  const [payRemarks, setPayRemarks] = useState('');
+  const [payError, setPayError] = useState('');
+
+  const payMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.payPurchase(id, data),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['parties'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+      setPayInvoice(null);
+      setSuccessMessage(`Payment of ₹${formatCurrency(parseFloat(payAmount) || 0)} recorded for Bill #${payInvoice?.invoice_number || res.invoice_number}!`);
+      setTimeout(() => setSuccessMessage(''), 6000);
+      setPayAmount('');
+      setPayRef('');
+      setPayRemarks('');
+      setPayError('');
+    },
+    onError: (err: any) => {
+      setPayError(err.message || 'Failed to record supplier payment.');
+    },
+  });
+
+  const openPayModal = (p: any) => {
+    setPayInvoice(p);
+    const bTotal = parseFloat(p.grand_total || 0);
+    const unbilled = parseFloat(p.unbilled_nongst_amount || 0);
+    const payable = parseFloat(p.total_payable_amount || bTotal + unbilled);
+    const paid = parseFloat(p.amount_paid || 0);
+    const pending = parseFloat(p.pending_amount || Math.max(0, payable - paid));
+
+    setPayAmount(pending > 0 ? String(pending) : '');
+    setPayMode('CASH');
+    setPayDate(new Date().toISOString().split('T')[0]);
+    setPayRef('');
+    setPayRemarks('');
+    setPayError('');
+  };
 
   const resetForm = () => {
     setInvoiceNumber('');
@@ -502,6 +548,16 @@ export default function PurchasesPage() {
                           </td>
                           <td className="p-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              {pending > 0 && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openPayModal(p); }}
+                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-extrabold text-xs transition-all inline-flex items-center gap-1.5 shadow-xs"
+                                  title="Record Part or Full Payment to Supplier"
+                                >
+                                  <CreditCard className="h-3.5 w-3.5" />
+                                  Pay
+                                </button>
+                              )}
                               <button 
                                 onClick={(e) => { e.stopPropagation(); setSelectedInvoiceForView(p); }} 
                                 className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-extrabold text-xs transition-colors inline-flex items-center gap-1.5 border border-indigo-200"
@@ -667,6 +723,31 @@ export default function PurchasesPage() {
                     ₹{parseFloat(selectedInvoiceForView.pending_amount || 0).toFixed(2)}
                   </span>
                 </div>
+              </div>
+
+              {/* Action buttons inside View Modal */}
+              <div className="flex justify-end gap-3 pt-2">
+                {parseFloat(selectedInvoiceForView.pending_amount || 0) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const inv = selectedInvoiceForView;
+                      setSelectedInvoiceForView(null);
+                      openPayModal(inv);
+                    }}
+                    className="px-4 py-2 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    Pay Supplier (₹{parseFloat(selectedInvoiceForView.pending_amount || 0).toFixed(2)})
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSelectedInvoiceForView(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>
@@ -988,6 +1069,204 @@ export default function PurchasesPage() {
           </div>
         </Modal>
       )}
+
+      {/* ── Record Supplier Payment Modal ────────────────────────────────────── */}
+      {payInvoice && (
+        <Modal
+          isOpen={!!payInvoice}
+          onClose={() => setPayInvoice(null)}
+          title={`Record Payment — Bill #${payInvoice.invoice_number}`}
+        >
+          {(() => {
+            const bTotal = parseFloat(payInvoice.grand_total || 0);
+            const unbilled = parseFloat(payInvoice.unbilled_nongst_amount || 0);
+            const payable = parseFloat(payInvoice.total_payable_amount || bTotal + unbilled);
+            const currentPaid = parseFloat(payInvoice.amount_paid || 0);
+            const currentPending = parseFloat(payInvoice.pending_amount || Math.max(0, payable - currentPaid));
+            const newPaymentNum = parseFloat(payAmount) || 0;
+            const projectedPaid = currentPaid + newPaymentNum;
+            const projectedPending = Math.max(0, payable - projectedPaid);
+
+            return (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (newPaymentNum <= 0) {
+                    setPayError('Please enter a valid payment amount greater than 0.');
+                    return;
+                  }
+                  payMutation.mutate({
+                    id: payInvoice.id,
+                    data: {
+                      amount: newPaymentNum,
+                      payment_mode: payMode,
+                      payment_date: payDate,
+                      reference_number: payRef || null,
+                      remarks: payRemarks || null,
+                    }
+                  });
+                }}
+                className="space-y-4 text-xs"
+              >
+                {payError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl font-medium">
+                    {payError}
+                  </div>
+                )}
+
+                {/* Bill Summary Banner */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 font-medium">Supplier</span>
+                    <span className="font-extrabold text-slate-900 text-sm">{payInvoice.supplier?.name || 'Vendor'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 font-medium">Total Bill Payable</span>
+                    <span className="font-extrabold text-slate-900">₹{formatCurrency(payable)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 font-medium">Already Paid</span>
+                    <span className="font-extrabold text-emerald-700">₹{formatCurrency(currentPaid)}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-2 font-black text-sm">
+                    <span className="text-rose-700">Current Pending Due</span>
+                    <span className="text-rose-700">₹{formatCurrency(currentPending)}</span>
+                  </div>
+                </div>
+
+                {/* Quick Fill Buttons */}
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1.5">Quick Payment Presets</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPayAmount(String(currentPending))}
+                      className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl font-extrabold text-[11px] transition-all"
+                    >
+                      Full Due: ₹{formatCurrency(currentPending)}
+                    </button>
+                    {currentPending > 1000 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setPayAmount(String(Math.round(currentPending / 2)))}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-[11px] transition-all"
+                        >
+                          50%: ₹{formatCurrency(Math.round(currentPending / 2))}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPayAmount(String(Math.round(currentPending / 4)))}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-[11px] transition-all"
+                        >
+                          25%: ₹{formatCurrency(Math.round(currentPending / 4))}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Amount and Mode Inputs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-extrabold text-slate-900 block mb-1">Payment Amount (₹) *</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      value={payAmount}
+                      onChange={(e) => setPayAmount(e.target.value)}
+                      className="glass-input w-full p-2.5 rounded-xl font-extrabold text-emerald-800 text-base border-emerald-300"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Payment Mode</label>
+                    <select
+                      value={payMode}
+                      onChange={(e) => setPayMode(e.target.value)}
+                      className="glass-input w-full p-2.5 rounded-xl bg-white font-bold"
+                    >
+                      <option value="CASH">CASH</option>
+                      <option value="BANK">BANK / ONLINE</option>
+                      <option value="UPI">UPI / GPAY / PHONEPE</option>
+                      <option value="CHEQUE">CHEQUE</option>
+                      <option value="NEFT">NEFT / RTGS</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Payment Date</label>
+                    <input
+                      type="date"
+                      value={payDate}
+                      onChange={(e) => setPayDate(e.target.value)}
+                      className="glass-input w-full p-2.5 rounded-xl font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Ref / Cheque # (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. UTR123456"
+                      value={payRef}
+                      onChange={(e) => setPayRef(e.target.value)}
+                      className="glass-input w-full p-2.5 rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Remarks (Optional)</label>
+                  <textarea
+                    placeholder="e.g. Part payment via HDFC Bank"
+                    value={payRemarks}
+                    onChange={(e) => setPayRemarks(e.target.value)}
+                    rows={2}
+                    className="glass-input w-full p-2.5 rounded-xl resize-none"
+                  />
+                </div>
+
+                {/* Live Preview Box */}
+                <div className="p-3.5 rounded-2xl bg-indigo-950 text-white space-y-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300 block">Balance Update Preview</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-300">New Total Paid:</span>
+                    <span className="font-bold text-emerald-400">₹{formatCurrency(projectedPaid)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs border-t border-indigo-800 pt-1">
+                    <span className="text-slate-300">Remaining Balance Due:</span>
+                    <span className={`font-black ${projectedPending <= 0 ? 'text-emerald-400' : 'text-amber-300'}`}>
+                      {projectedPending <= 0 ? '✓ Fully Settled' : `₹${formatCurrency(projectedPending)}`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setPayInvoice(null)}
+                    className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={payMutation.isPending || newPaymentNum <= 0}
+                    className="px-6 py-2.5 font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl shadow-md transition-all disabled:opacity-60 flex items-center gap-1.5"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    <span>{payMutation.isPending ? 'Recording...' : `Confirm Payment of ₹${formatCurrency(newPaymentNum)}`}</span>
+                  </button>
+                </div>
+              </form>
+            );
+          })()}
+        </Modal>
+      )}
     </div>
   );
 }
+

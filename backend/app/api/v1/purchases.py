@@ -153,3 +153,76 @@ async def edit_purchase(
 
     await db.commit()
     return await _fetch_invoice(db, purchase_id)
+
+
+# ── Record Part or Full Payment towards a Purchase Invoice ─────────────────────
+
+class PurchasePaymentIn(BaseModel):
+    amount: Decimal
+    payment_mode: str = "CASH"  # CASH, BANK, UPI, CHEQUE, NEFT
+    payment_date: Optional[date] = None
+    reference_number: Optional[str] = None
+    remarks: Optional[str] = None
+
+
+@router.post("/{purchase_id}/pay", response_model=PurchaseInvoiceResponse)
+async def record_purchase_payment(
+    purchase_id: uuid.UUID,
+    payment_in: PurchasePaymentIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Record a part or full payment against a purchase bill.
+    Automatically updates amount_paid, pending_amount, posts a double-entry PAYMENT ledger entry,
+    and updates the supplier's ledger balance.
+    """
+    invoice = await _fetch_invoice(db, purchase_id)
+
+    pay_amt = Decimal(str(payment_in.amount or 0))
+    if pay_amt <= Decimal("0.00"):
+        raise HTTPException(status_code=400, detail="Payment amount must be greater than zero.")
+
+    old_paid = Decimal(str(invoice.amount_paid or 0))
+    payable = Decimal(str(invoice.total_payable_amount or invoice.grand_total or 0))
+
+    new_paid = old_paid + pay_amt
+    new_pending = max(Decimal("0.00"), payable - new_paid)
+
+    invoice.amount_paid = round(new_paid, 2)
+    invoice.pending_amount = round(new_pending, 2)
+
+    # Post double-entry PAYMENT ledger entry
+    from app.services.ledger_service import get_party_ledger_account, get_or_create_system_account
+    from app.models.ledger import LedgerEntry, AccountType
+
+    supplier_account = await get_party_ledger_account(db, invoice.supplier_id)
+    mode_str = (payment_in.payment_mode or "CASH").upper()
+    mode_acct_name = "Bank Account" if mode_str in ["BANK", "UPI", "CHEQUE", "NEFT"] else "Cash In Hand"
+    cash_account = await get_or_create_system_account(db, mode_acct_name, AccountType.ASSET.value)
+
+    tx_date = payment_in.payment_date or date.today()
+    narration = f"Payment to supplier for Bill #{invoice.invoice_number} ({mode_str})"
+    if payment_in.reference_number:
+        narration += f" [Ref: {payment_in.reference_number}]"
+    if payment_in.remarks:
+        narration += f" - {payment_in.remarks}"
+
+    entry_payment = LedgerEntry(
+        transaction_date=tx_date,
+        voucher_type="PAYMENT",
+        reference_id=invoice.id,
+        debit_account_id=supplier_account.id,
+        credit_account_id=cash_account.id,
+        amount=pay_amt,
+        narration=narration,
+        created_by=current_user.id
+    )
+    db.add(entry_payment)
+
+    # Update ledger balances
+    supplier_account.current_balance = Decimal(str(supplier_account.current_balance or 0)) - pay_amt
+    cash_account.current_balance = Decimal(str(cash_account.current_balance or 0)) - pay_amt
+
+    await db.commit()
+    return await _fetch_invoice(db, purchase_id)
