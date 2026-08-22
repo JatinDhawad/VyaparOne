@@ -75,3 +75,31 @@ async def deduct_sales_stock(
 
     stock.current_stock = current_qty - deduct_qty
     return stock
+
+
+async def restore_sales_stock(
+    db: AsyncSession,
+    product_id: uuid.UUID,
+    quantity: Decimal
+) -> GodownStock:
+    """
+    Restores deducted quantity back to current stock when a sales invoice is deleted or cancelled.
+    """
+    result = await db.execute(select(GodownStock).where(GodownStock.product_id == product_id))
+    stock = result.scalars().first()
+
+    if not stock:
+        stock = GodownStock(
+            product_id=product_id,
+            current_stock=Decimal("0.00"),
+            damaged_stock=Decimal("0.00"),
+            average_landed_cost=Decimal("0.00")
+        )
+        db.add(stock)
+        await db.flush()
+
+    current_qty = Decimal(str(stock.current_stock or 0))
+    restore_qty = Decimal(str(quantity))
+    stock.current_stock = current_qty + restore_qty
+    return stock
+

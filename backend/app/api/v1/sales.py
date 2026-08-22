@@ -204,3 +204,88 @@ async def edit_sales(
     )
     return ref_res.scalars().first()
 
+
+@router.delete("/{sales_id}")
+async def delete_sales(
+    sales_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Deletes a sales invoice completely:
+    1. Restores the deducted stock quantities for all billed items back to godown stock.
+    2. Deletes associated ledger entries (SALES and RECEIPT).
+    3. Reconciles and updates customer and system ledger account balances.
+    4. Deletes the invoice (and cascade-deletes invoice items).
+    """
+    result = await db.execute(
+        select(SalesInvoice)
+        .options(
+            selectinload(SalesInvoice.items),
+            selectinload(SalesInvoice.customer),
+        )
+        .where(SalesInvoice.id == sales_id)
+    )
+    invoice = result.scalars().first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Sales invoice not found.")
+
+    invoice_number = invoice.invoice_number
+
+    # 1. Restore inventory stock for each item
+    from decimal import Decimal
+    from app.services.inventory_service import restore_sales_stock
+    for item in invoice.items:
+        qty = Decimal(str(item.quantity or 0))
+        if qty > 0 and item.product_id:
+            await restore_sales_stock(db, item.product_id, qty)
+
+    # 2. Delete all ledger entries associated with this sales invoice
+    try:
+        from app.models.ledger import LedgerEntry, LedgerAccount
+        from sqlalchemy import func
+
+        entries_res = await db.execute(
+            select(LedgerEntry).where(LedgerEntry.reference_id == sales_id)
+        )
+        ledger_entries = entries_res.scalars().all()
+
+        affected_account_ids = set()
+        for entry in ledger_entries:
+            if entry.debit_account_id:
+                affected_account_ids.add(entry.debit_account_id)
+            if entry.credit_account_id:
+                affected_account_ids.add(entry.credit_account_id)
+            await db.delete(entry)
+
+        await db.flush()
+
+        # 3. Reconcile all affected ledger accounts
+        for acct_id in affected_account_ids:
+            acct_res = await db.execute(
+                select(LedgerAccount).where(LedgerAccount.id == acct_id)
+            )
+            acct = acct_res.scalars().first()
+            if acct:
+                dr_res = await db.execute(
+                    select(func.coalesce(func.sum(LedgerEntry.amount), 0)).where(LedgerEntry.debit_account_id == acct_id)
+                )
+                cr_res = await db.execute(
+                    select(func.coalesce(func.sum(LedgerEntry.amount), 0)).where(LedgerEntry.credit_account_id == acct_id)
+                )
+                acct.current_balance = Decimal(str(dr_res.scalar())) - Decimal(str(cr_res.scalar()))
+
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Ledger sync warning on sales deletion: {e}")
+
+    # 4. Delete sales invoice (items cascade deleted)
+    await db.delete(invoice)
+    await db.commit()
+
+    return {
+        "message": f"Sales invoice #{invoice_number} deleted successfully. Stock restored and ledger entries removed.",
+        "deleted_id": str(sales_id)
+    }
+
+

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
@@ -44,6 +44,10 @@ export default function SalesPage() {
   const [amountPaid, setAmountPaid]   = useState('');
   const [paymentMode, setPaymentMode] = useState('CASH');
   const [notes, setNotes]             = useState('');
+
+  // ── Delete State ─────────────────────────────────────────────────────────
+  const [deleteInvoice, setDeleteInvoice] = useState<any>(null);
+  const [deleteSuccessMessage, setDeleteSuccessMessage] = useState('');
 
   // ── Edit Invoice State ───────────────────────────────────────────────────
   const [editInvoice, setEditInvoice] = useState<any>(null);
@@ -163,6 +167,21 @@ export default function SalesPage() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.deleteSale(id),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      setDeleteInvoice(null);
+      setDeleteSuccessMessage(res?.message || 'Sales invoice deleted and stock restored successfully.');
+      setTimeout(() => setDeleteSuccessMessage(''), 6000);
+    },
+    onError: (err: any) => {
+      alert(err.message || 'Failed to delete sales invoice.');
+    },
+  });
+
   const resetForm = () => {
     setInvoiceNumber('');
     setInvoiceDate(new Date().toISOString().split('T')[0]);
@@ -251,6 +270,13 @@ export default function SalesPage() {
 
         {/* ── Invoice Table ────────────────────────────────────────────── */}
         <main className="p-8 space-y-6 flex-1 overflow-y-auto">
+          {deleteSuccessMessage && (
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-sm animate-in fade-in slide-in-from-top-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+              <span>{deleteSuccessMessage}</span>
+            </div>
+          )}
+
           <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
             {/* Table header + sort controls */}
             <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -308,13 +334,23 @@ export default function SalesPage() {
                       </td>
                       <td className="p-4 text-right text-emerald-700 font-bold">₹{formatCurrency(s.net_profit)}</td>
                       <td className="p-4 text-right">
-                        <button
-                          onClick={() => openEditModal(s)}
-                          className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-extrabold text-xs border border-indigo-200 transition-all inline-flex items-center gap-1.5 shadow-2xs"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Edit
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => openEditModal(s)}
+                            className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-extrabold text-xs border border-indigo-200 transition-all inline-flex items-center gap-1.5 shadow-2xs"
+                            title="Edit Sales Bill"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setDeleteInvoice(s)}
+                            className="p-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-xs border border-rose-200 transition-all inline-flex items-center shadow-2xs"
+                            title="Delete Sales Bill & Restore Stock"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -324,6 +360,7 @@ export default function SalesPage() {
           </div>
         </main>
       </div>
+
 
       {/* ── POS Billing Modal ──────────────────────────────────────────────── */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Generate Sales Invoice (POS)">
@@ -874,7 +911,54 @@ export default function SalesPage() {
           </div>
         </Modal>
       )}
+
+      {/* ── Delete Confirmation Modal ────────────────────────────────────────── */}
+      {deleteInvoice && (
+        <Modal
+          isOpen={!!deleteInvoice}
+          onClose={() => setDeleteInvoice(null)}
+          title={`Delete Sales Invoice #${deleteInvoice.invoice_number}`}
+          maxWidth="max-w-md"
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 space-y-2 text-rose-900">
+              <div className="flex items-center gap-2 font-black text-rose-800 text-sm">
+                <AlertTriangle className="h-5 w-5 text-rose-600 shrink-0" />
+                Confirm Deletion & Stock Reversal
+              </div>
+              <p className="font-medium text-slate-700 leading-relaxed">
+                Are you sure you want to permanently delete sales invoice <strong className="text-slate-900 font-mono">#{deleteInvoice.invoice_number}</strong>?
+              </p>
+              <ul className="list-disc pl-4 space-y-1 font-semibold text-rose-950">
+                <li>All billed items will be <strong>restored back to godown stock</strong>.</li>
+                <li>Ledger debit/credit entries will be <strong>removed</strong>.</li>
+                <li>Customer balance of <strong className="text-slate-900">₹{formatCurrency(deleteInvoice.grand_total)}</strong> will be <strong>reconciled</strong>.</li>
+              </ul>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteInvoice(null)}
+                className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate(deleteInvoice.id)}
+                className="px-5 py-2 font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-md transition-colors disabled:opacity-60 flex items-center gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                {deleteMutation.isPending ? 'Reversing & Deleting...' : 'Yes, Delete & Restore Stock'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
+
 
