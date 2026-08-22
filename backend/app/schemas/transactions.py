@@ -167,3 +167,19 @@ class SalesInvoiceResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class SalesInvoiceEdit(BaseModel):
+    customer_id: Optional[uuid.UUID] = None
+    invoice_date: Optional[date] = None
+    location: Optional[str] = None
+    gst_billed_amount: Optional[Decimal] = None
+    without_gst_amount: Optional[Decimal] = None
+    lr_charges: Optional[Decimal] = None
+    local_freight: Optional[Decimal] = None
+    salesman_commission: Optional[Decimal] = None
+    scheme_money: Optional[Decimal] = None
+    delivery_charges: Optional[Decimal] = None
+    amount_paid: Optional[Decimal] = None
+    payment_mode: Optional[str] = None
+    notes: Optional[str] = None
