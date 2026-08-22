@@ -3,12 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Phone, Mail, MapPin, Pencil, Users, Building2, UserCheck, Plus, ShoppingCart, Receipt } from 'lucide-react';
+import { 
+  Search, Phone, Mail, MapPin, Pencil, Users, Building2, UserCheck, 
+  Plus, ShoppingCart, Receipt, FileText, ExternalLink, Calendar, 
+  DollarSign, Eye, ArrowUpRight, CheckCircle2, Clock 
+} from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { formatCurrency } from '@/lib/utils';
 
 export default function PartiesPage() {
   const queryClient = useQueryClient();
@@ -20,6 +25,8 @@ export default function PartiesPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingParty, setEditingParty] = useState<any>(null);
+  const [viewingParty, setViewingParty] = useState<any>(null);
+  const [partyTab, setPartyTab] = useState<'SALES' | 'PURCHASES'>('SALES');
   const [formError, setFormError] = useState('');
 
   // Form State for Create & Edit
@@ -34,6 +41,16 @@ export default function PartiesPage() {
   const { data: parties = [], isLoading } = useQuery({
     queryKey: ['parties', filterType],
     queryFn: () => api.getParties(filterType),
+  });
+
+  const { data: allSales = [] } = useQuery({
+    queryKey: ['sales'],
+    queryFn: () => api.getSales(),
+  });
+
+  const { data: allPurchases = [] } = useQuery({
+    queryKey: ['purchases'],
+    queryFn: () => api.getPurchases(),
   });
 
   const createMutation = useMutation({
@@ -235,17 +252,30 @@ export default function PartiesPage() {
                 const isSupplier = party.party_type === 'SUPPLIER';
                 const isCustomer = party.party_type === 'CUSTOMER';
                 const isBoth = party.party_type === 'BOTH';
-
-                // For customers: positive balance = they owe us (to collect)
-                // For suppliers: positive balance = we owe them (to pay) — backend stores as positive too
                 const isCleared = Math.abs(balance) < 0.01;
 
+                const partySales = allSales.filter((s: any) => s.customer_id === party.id);
+                const partyPurchases = allPurchases.filter((p: any) => p.supplier_id === party.id);
+                const billsCount = (isCustomer ? partySales.length : isSupplier ? partyPurchases.length : partySales.length + partyPurchases.length);
+
                 return (
-                  <div key={party.id} className="glass-card p-6 rounded-3xl space-y-4 border-slate-200 flex flex-col justify-between">
+                  <div
+                    key={party.id}
+                    onClick={() => {
+                      setViewingParty(party);
+                      setPartyTab(isSupplier ? 'PURCHASES' : 'SALES');
+                    }}
+                    className="glass-card p-6 rounded-3xl space-y-4 border-slate-200 hover:border-indigo-300 hover:shadow-xl transition-all duration-200 flex flex-col justify-between cursor-pointer group bg-white"
+                  >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <h3 className="font-extrabold text-slate-900 text-lg leading-snug">{party.name}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-extrabold text-slate-900 text-lg leading-snug group-hover:text-indigo-600 transition-colors">
+                              {party.name}
+                            </h3>
+                            <ArrowUpRight className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
                           <span className={`inline-block text-[11px] font-extrabold uppercase px-3 py-1 rounded-xl mt-1.5 border ${
                             party.party_type === 'SUPPLIER' 
                               ? 'bg-amber-50 text-amber-800 border-amber-200'
@@ -257,16 +287,29 @@ export default function PartiesPage() {
                           </span>
                         </div>
 
-                        {/* Edit Button */}
-                        {isAdmin && (
+                        {/* Top Right Action Pill */}
+                        <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => handleOpenEditModal(party)}
-                            className="px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5 shadow-xs shrink-0"
+                            onClick={() => {
+                              setViewingParty(party);
+                              setPartyTab(isSupplier ? 'PURCHASES' : 'SALES');
+                            }}
+                            className="px-2.5 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-all flex items-center gap-1 shadow-2xs"
+                            title="View all bills for this party"
                           >
-                            <Pencil className="h-3.5 w-3.5" />
-                            Edit
+                            <FileText className="h-3.5 w-3.5" />
+                            <span>{billsCount} Bills</span>
                           </button>
-                        )}
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleOpenEditModal(party)}
+                              className="p-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200 transition-all flex items-center shadow-2xs"
+                              title="Edit Party Details"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div className="space-y-2 pt-3 border-t border-slate-100 text-xs text-slate-600">
@@ -325,7 +368,7 @@ export default function PartiesPage() {
                     </div>
 
                     {/* Quick Billing Action Row */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                    <div className="pt-2 border-t border-slate-100 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       {(isCustomer || isBoth) && (
                         <Link
                           href={`/sales?customerId=${party.id}&location=${encodeURIComponent(party.city ? (party.state ? `${party.city}, ${party.state}` : party.city) : '')}&openModal=true`}
@@ -473,6 +516,243 @@ export default function PartiesPage() {
           </button>
         </form>
       </Modal>
+
+      {/* ── Party Invoices & Statement Modal ───────────────────────────────── */}
+      {viewingParty && (
+        <Modal
+          isOpen={!!viewingParty}
+          onClose={() => setViewingParty(null)}
+          title={`Invoices & History — ${viewingParty.name}`}
+          maxWidth="max-w-4xl"
+        >
+          {(() => {
+            const isCust = viewingParty.party_type === 'CUSTOMER';
+            const isSupp = viewingParty.party_type === 'SUPPLIER';
+            const isBoth = viewingParty.party_type === 'BOTH';
+            const curSales = allSales.filter((s: any) => s.customer_id === viewingParty.id);
+            const curPurchases = allPurchases.filter((p: any) => p.supplier_id === viewingParty.id);
+
+            const totalSalesBilled = curSales.reduce((acc: number, s: any) => acc + parseFloat(s.grand_total || 0), 0);
+            const totalSalesPaid   = curSales.reduce((acc: number, s: any) => acc + parseFloat(s.amount_paid || 0), 0);
+            const totalSalesPending = curSales.reduce((acc: number, s: any) => acc + parseFloat(s.pending_amount || 0), 0);
+
+            const totalPurchBilled = curPurchases.reduce((acc: number, p: any) => acc + parseFloat(p.total_payable_amount || p.grand_total || 0), 0);
+            const totalPurchPaid   = curPurchases.reduce((acc: number, p: any) => acc + parseFloat(p.amount_paid || 0), 0);
+            const totalPurchPending = curPurchases.reduce((acc: number, p: any) => acc + parseFloat(p.pending_amount || 0), 0);
+
+            const balance = parseFloat(viewingParty.ledger_balance || 0);
+            const isCleared = Math.abs(balance) < 0.01;
+
+            return (
+              <div className="space-y-5 text-xs">
+                {/* 1. Header Profile & Balance Banner */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base font-extrabold text-slate-900">{viewingParty.name}</h4>
+                      <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-lg border ${
+                        isSupp ? 'bg-amber-50 text-amber-800 border-amber-200' : isCust ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                      }`}>
+                        {viewingParty.party_type}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-slate-600 font-medium text-[11px]">
+                      {viewingParty.phone && <span>📞 {viewingParty.phone}</span>}
+                      {viewingParty.city && <span>📍 {viewingParty.city}{viewingParty.state ? `, ${viewingParty.state}` : ''}</span>}
+                      {viewingParty.gstin && <span className="font-mono">GSTIN: {viewingParty.gstin}</span>}
+                    </div>
+                  </div>
+
+                  {/* Balance Badge */}
+                  <div className={`p-3 px-4 rounded-xl border flex items-center gap-3 shrink-0 ${
+                    isCleared ? 'bg-white border-slate-200' : isSupp ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  }`}>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider block opacity-75">
+                        {isCleared ? 'Balance Status' : isSupp ? 'To Pay (Vendor Balance)' : 'To Collect (Customer Balance)'}
+                      </span>
+                      <span className="text-base font-black">
+                        {isCleared ? '✓ All Settled' : `₹${Math.abs(balance).toLocaleString('en-IN')}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Quick Billing Actions inside modal */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  {/* Tab Selector if BOTH */}
+                  {isBoth ? (
+                    <div className="flex gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setPartyTab('SALES')}
+                        className={`px-3 py-1.5 rounded-lg font-extrabold text-xs transition-all ${
+                          partyTab === 'SALES' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Sales Invoices ({curSales.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPartyTab('PURCHASES')}
+                        className={`px-3 py-1.5 rounded-lg font-extrabold text-xs transition-all ${
+                          partyTab === 'PURCHASES' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Purchase Bills ({curPurchases.length})
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="font-extrabold text-slate-800 text-sm">
+                      {isCust ? `Sales Invoices (${curSales.length})` : `Purchase Bills (${curPurchases.length})`}
+                    </span>
+                  )}
+
+                  {/* Create New Bill Button */}
+                  <div className="flex items-center gap-2">
+                    {(isCust || (isBoth && partyTab === 'SALES')) && (
+                      <Link
+                        href={`/sales?customerId=${viewingParty.id}&location=${encodeURIComponent(viewingParty.city ? (viewingParty.state ? `${viewingParty.city}, ${viewingParty.state}` : viewingParty.city) : '')}&openModal=true`}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                      >
+                        <ShoppingCart className="h-3.5 w-3.5" />
+                        <span>+ New Sale for {viewingParty.name}</span>
+                      </Link>
+                    )}
+                    {(isSupp || (isBoth && partyTab === 'PURCHASES')) && (
+                      <Link
+                        href={`/purchases?supplierId=${viewingParty.id}&openModal=true`}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                      >
+                        <Receipt className="h-3.5 w-3.5" />
+                        <span>+ New Purchase from {viewingParty.name}</span>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Summary Cards for this Party */}
+                {(partyTab === 'SALES' || isCust) && !isSupp ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 rounded-2xl bg-indigo-50/60 border border-indigo-100">
+                      <span className="text-[10px] font-bold text-indigo-700 uppercase block">Total Sales Billed</span>
+                      <span className="text-base font-black text-indigo-900">₹{formatCurrency(totalSalesBilled)}</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+                      <span className="text-[10px] font-bold text-emerald-700 uppercase block">Total Received</span>
+                      <span className="text-base font-black text-emerald-900">₹{formatCurrency(totalSalesPaid)}</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-rose-50/60 border border-rose-100">
+                      <span className="text-[10px] font-bold text-rose-700 uppercase block">Pending Balance</span>
+                      <span className={`text-base font-black ${totalSalesPending > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                        ₹{formatCurrency(totalSalesPending)}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 rounded-2xl bg-indigo-50/60 border border-indigo-100">
+                      <span className="text-[10px] font-bold text-indigo-700 uppercase block">Total Purchases</span>
+                      <span className="text-base font-black text-indigo-900">₹{formatCurrency(totalPurchBilled)}</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+                      <span className="text-[10px] font-bold text-emerald-700 uppercase block">Total Amount Paid</span>
+                      <span className="text-base font-black text-emerald-900">₹{formatCurrency(totalPurchPaid)}</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-rose-50/60 border border-rose-100">
+                      <span className="text-[10px] font-bold text-rose-700 uppercase block">Pending Balance</span>
+                      <span className={`text-base font-black ${totalPurchPending > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                        ₹{formatCurrency(totalPurchPending)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Table of Invoices */}
+                <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200 max-h-[350px] overflow-y-auto">
+                  {(partyTab === 'SALES' || isCust) && !isSupp ? (
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-100/90 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold sticky top-0 bg-slate-100">
+                        <tr>
+                          <th className="p-3">Invoice #</th>
+                          <th className="p-3">Date</th>
+                          <th className="p-3">Location</th>
+                          <th className="p-3 text-right">Grand Total (₹)</th>
+                          <th className="p-3 text-right">Paid (₹)</th>
+                          <th className="p-3 text-right">Pending (₹)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {curSales.length === 0 ? (
+                          <tr><td colSpan={6} className="p-6 text-center text-slate-400">No sales invoices found for this customer.</td></tr>
+                        ) : (
+                          curSales.map((s: any) => (
+                            <tr key={s.id} className="hover:bg-slate-50">
+                              <td className="p-3 font-mono font-bold text-indigo-700">#{s.invoice_number}</td>
+                              <td className="p-3 font-medium">{s.invoice_date}</td>
+                              <td className="p-3 text-slate-500">{s.location || '—'}</td>
+                              <td className="p-3 text-right font-bold text-slate-900">₹{formatCurrency(s.grand_total)}</td>
+                              <td className="p-3 text-right text-emerald-700 font-semibold">₹{formatCurrency(s.amount_paid)}</td>
+                              <td className={`p-3 text-right font-bold ${s.pending_amount > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                                ₹{formatCurrency(s.pending_amount)}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-100/90 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold sticky top-0 bg-slate-100">
+                        <tr>
+                          <th className="p-3">Bill #</th>
+                          <th className="p-3">Date</th>
+                          <th className="p-3 text-right">Billed (₹)</th>
+                          <th className="p-3 text-right">Unbilled (₹)</th>
+                          <th className="p-3 text-right">Total Payable (₹)</th>
+                          <th className="p-3 text-right">Paid (₹)</th>
+                          <th className="p-3 text-right">Pending (₹)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {curPurchases.length === 0 ? (
+                          <tr><td colSpan={7} className="p-6 text-center text-slate-400">No purchase bills found from this supplier.</td></tr>
+                        ) : (
+                          curPurchases.map((p: any) => (
+                            <tr key={p.id} className="hover:bg-slate-50">
+                              <td className="p-3 font-mono font-bold text-amber-800">#{p.invoice_number}</td>
+                              <td className="p-3 font-medium">{p.invoice_date}</td>
+                              <td className="p-3 text-right font-medium text-slate-900">₹{formatCurrency(p.grand_total)}</td>
+                              <td className="p-3 text-right text-slate-500">₹{formatCurrency(p.unbilled_nongst_amount)}</td>
+                              <td className="p-3 text-right font-bold text-slate-900">₹{formatCurrency(p.total_payable_amount || p.grand_total)}</td>
+                              <td className="p-3 text-right text-emerald-700 font-semibold">₹{formatCurrency(p.amount_paid)}</td>
+                              <td className={`p-3 text-right font-bold ${p.pending_amount > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                                ₹{formatCurrency(p.pending_amount)}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                {/* Footer Action */}
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setViewingParty(null)}
+                    className="px-5 py-2.5 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+        </Modal>
+      )}
     </div>
   );
 }
+
