@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Phone, Mail, MapPin, Pencil, Users, Building2, UserCheck, Plus } from 'lucide-react';
+import { Search, Phone, Mail, MapPin, Pencil, Users, Building2, UserCheck, Plus, ShoppingCart, Receipt } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
@@ -321,6 +322,30 @@ export default function PartiesPage() {
                       }`}>
                         {isCleared ? '✓' : isSupplier ? '↑' : '↓'}
                       </div>
+                    </div>
+
+                    {/* Quick Billing Action Row */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                      {(isCustomer || isBoth) && (
+                        <Link
+                          href={`/sales?customerId=${party.id}&location=${encodeURIComponent(party.city ? (party.state ? `${party.city}, ${party.state}` : party.city) : '')}&openModal=true`}
+                          className="flex-1 py-2 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-[11px] rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+                          title="Open POS billing for this customer"
+                        >
+                          <ShoppingCart className="h-3.5 w-3.5" />
+                          <span>Generate Sale</span>
+                        </Link>
+                      )}
+                      {(isSupplier || isBoth) && (
+                        <Link
+                          href={`/purchases?supplierId=${party.id}&openModal=true`}
+                          className="flex-1 py-2 px-3 bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 text-white font-extrabold text-[11px] rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+                          title="Open Purchase Entry for this supplier"
+                        >
+                          <Receipt className="h-3.5 w-3.5" />
+                          <span>Purchase Bill</span>
+                        </Link>
+                      )}
                     </div>
                   </div>
                 );

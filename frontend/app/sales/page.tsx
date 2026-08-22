@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
@@ -48,6 +48,26 @@ export default function SalesPage() {
   // ── Delete State ─────────────────────────────────────────────────────────
   const [deleteInvoice, setDeleteInvoice] = useState<any>(null);
   const [deleteSuccessMessage, setDeleteSuccessMessage] = useState('');
+
+  // ── Pre-fill customer and location from URL (e.g. from Parties page) ──────
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const custId = params.get('customerId') || params.get('customer_id');
+      const loc = params.get('location');
+      const shouldOpen = params.get('openModal') === 'true' || !!custId;
+
+      if (custId) {
+        setCustomerId(custId);
+      }
+      if (loc) {
+        setLocation(decodeURIComponent(loc));
+      }
+      if (shouldOpen && custId) {
+        setIsModalOpen(true);
+      }
+    }
+  }, []);
 
   // ── Edit Invoice State ───────────────────────────────────────────────────
   const [editInvoice, setEditInvoice] = useState<any>(null);
