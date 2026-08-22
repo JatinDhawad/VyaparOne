@@ -11,9 +11,9 @@ import { formatCurrency } from '@/lib/utils';
 
 // ── Preset conversion ratios ──────────────────────────────────────────────────
 const PACKET_PRESETS = [
-  { label: 'Mouth Freshener @5', ratio: 480 },
-  { label: 'Mouth Freshener @1', ratio: 240 },
+  { label: 'Sweet Supari @5', ratio: 480 },
   { label: 'Sweet Supari @1', ratio: 300 },
+  { label: 'Mouth Freshener @1', ratio: 240 },
   { label: 'Mouth Freshener @2', ratio: 360 },
 ];
 
