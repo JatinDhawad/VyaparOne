@@ -167,11 +167,24 @@ async def create_purchase_invoice(
     db.add(db_invoice)
     await db.flush()
 
-    # 3. Associate items and update inventory stock directly
+    # 3. Associate items and update inventory stock directly (auto-unpacking bags to packets if packets_per_bag > 1)
     for db_item, prod_id, total_qty, unit_cost in db_items:
         db_item.purchase_invoice_id = db_invoice.id
         db.add(db_item)
-        await add_purchase_stock(db, prod_id, total_qty, unit_cost)
+
+        # Check product packets_per_bag ratio
+        p_res = await db.execute(select(Product).where(Product.id == prod_id))
+        prod = p_res.scalars().first()
+        ppb = Decimal(str(prod.packets_per_bag or 0)) if prod else Decimal("0")
+
+        if ppb > 1:
+            stock_qty = total_qty * ppb
+            stock_cost = unit_cost / ppb
+        else:
+            stock_qty = total_qty
+            stock_cost = unit_cost
+
+        await add_purchase_stock(db, prod_id, stock_qty, stock_cost)
 
     # 4. Post Double-Entry Ledger Entries
     await post_purchase_ledger(
