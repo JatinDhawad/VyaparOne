@@ -356,53 +356,53 @@ export default function ProductsPage() {
                     </div>
 
                     {/* 4 Dynamic Metric Boxes */}
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
+                    <div className="grid grid-cols-2 gap-2.5 pt-3 border-t border-slate-100 text-xs">
                       {/* Box 1: Inward Purchase Rate */}
-                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                        <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">Latest Inward Rate</span>
-                        <div className="font-extrabold text-slate-900 text-sm mt-0.5">
+                      <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                        <span className="section-label block text-slate-500">Inward Rate</span>
+                        <div className="font-bold text-slate-900 text-sm mt-0.5">
                           ₹{formatCurrency(displayPurchRateBag)} {ppb > 1 ? '/ Bag' : ''}
                         </div>
                         {ppb > 1 && (
-                          <span className="text-[10px] font-semibold text-slate-500 block">
+                          <span className="text-[10px] font-normal text-slate-500 block">
                             ≈ ₹{formatCurrency(displayPurchRatePkt)} / pkt
                           </span>
                         )}
                       </div>
 
                       {/* Box 2: Realized Selling Rate */}
-                      <div className="p-3 rounded-2xl bg-emerald-50/60 border border-emerald-200/80">
-                        <span className="text-[10px] font-bold text-emerald-700 block uppercase tracking-wider">Selling Rate</span>
-                        <div className="font-extrabold text-emerald-900 text-sm mt-0.5">
+                      <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                        <span className="section-label block text-slate-500">Selling Rate</span>
+                        <div className="font-bold text-slate-900 text-sm mt-0.5">
                           ₹{formatCurrency(displaySellRatePkt)} / PKT
                         </div>
                         {ppb > 1 && (
-                          <span className="text-[10px] font-semibold text-emerald-700 block">
+                          <span className="text-[10px] font-normal text-slate-500 block">
                             ≈ ₹{formatCurrency(displaySellRateBag)} / Bag
                           </span>
                         )}
                       </div>
 
                       {/* Box 3: Real Avg Landed Cost */}
-                      <div className="p-3 rounded-2xl bg-indigo-50/60 border border-indigo-200/80">
-                        <span className="text-[10px] font-bold text-indigo-700 block uppercase tracking-wider">Avg Landed Cost</span>
-                        <div className="font-extrabold text-indigo-900 text-sm mt-0.5">
+                      <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                        <span className="section-label block text-slate-500">Avg Landed Cost</span>
+                        <div className="font-bold text-slate-900 text-sm mt-0.5">
                           ₹{formatCurrency(avgLandedCost)} / PKT
                         </div>
                         {ppb > 1 && (
-                          <span className="text-[10px] font-semibold text-indigo-600 block">
+                          <span className="text-[10px] font-normal text-slate-500 block">
                             ₹{formatCurrency(avgLandedCost * ppb)} / Bag
                           </span>
                         )}
                       </div>
 
                       {/* Box 4: Margin & Stock Value */}
-                      <div className="p-3 rounded-2xl bg-violet-50/60 border border-violet-200/80">
-                        <span className="text-[10px] font-bold text-violet-700 block uppercase tracking-wider">Live Margin</span>
-                        <div className={`font-extrabold text-sm mt-0.5 ${insights.profitMarginPercent >= 0 ? 'text-violet-900' : 'text-rose-700'}`}>
+                      <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                        <span className="section-label block text-slate-500">Live Margin</span>
+                        <div className={`font-bold text-sm mt-0.5 ${insights.profitMarginPercent >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
                           {insights.profitMarginPercent >= 0 ? '+' : ''}{insights.profitMarginPercent.toFixed(1)}% Margin
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-500 block">
+                        <span className="text-[10px] font-normal text-slate-500 block">
                           Val: ₹{formatCurrency(stockValuation)}
                         </span>
                       </div>

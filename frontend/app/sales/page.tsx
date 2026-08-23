@@ -370,14 +370,14 @@ export default function SalesPage() {
 
                 {/* Sort by */}
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Sort:</span>
+                  <span className="section-label">Sort:</span>
                   {([['date','Date'],['invoice','Invoice #'],['total','Total'],['paid','Paid'],['pending','Pending']] as const).map(([f, label]) => (
                     <button
                       key={f}
                       onClick={() => toggleSort(f)}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-extrabold border transition-all ${
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-all ${
                         sortField === f
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                           : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-700'
                       }`}
                     >
@@ -394,7 +394,7 @@ export default function SalesPage() {
             {/* Active Filter Chips */}
             {(searchTerm.trim() !== '' || statusFilter !== 'ALL' || sortField !== 'date' || sortDir !== 'desc') && (
               <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-slate-100 animate-in fade-in slide-in-from-top-1">
-                <span className="text-[11px] font-bold text-slate-400">Active Filters:</span>
+                <span className="section-label">Active:</span>
                 {searchTerm.trim() !== '' && (
                   <FilterChip
                     label="Search"

@@ -168,88 +168,73 @@ export default function PartiesPage() {
 
         <main className="p-4 sm:p-8 space-y-6 sm:space-y-8 flex-1 overflow-y-auto">
           {/* Top Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-indigo-100 glow-indigo">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-700">Total Directory</span>
-                <div className="h-11 w-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
-                  <Users className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
+              <span className="section-label">Total Directory</span>
+              <div className="mt-2">
                 {isLoading ? (
-                  <Skeleton className="h-9 w-28 rounded-xl" />
+                  <Skeleton className="h-8 w-28 rounded-md" />
                 ) : (
-                  <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                    {parties.length} <span className="text-sm font-bold text-slate-500">Parties</span>
+                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    {parties.length} <span className="text-sm font-normal text-slate-500">Parties</span>
                   </h3>
                 )}
-                <p className="text-xs font-semibold text-slate-500 mt-1">Active trading accounts</p>
+                <p className="text-xs font-normal text-slate-500 mt-1">Active trading accounts</p>
               </div>
             </div>
 
-            <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-emerald-100 glow-emerald">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">Customers (Buyers)</span>
-                <div className="h-11 w-11 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm">
-                  <UserCheck className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="mt-4">
+            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
+              <span className="section-label">Customers (Buyers)</span>
+              <div className="mt-2">
                 {isLoading ? (
-                  <Skeleton className="h-9 w-28 rounded-xl" />
+                  <Skeleton className="h-8 w-28 rounded-md" />
                 ) : (
-                  <h3 className="text-3xl font-extrabold text-emerald-800 tracking-tight">
-                    {customerCount} <span className="text-sm font-bold text-slate-500 font-medium">Accounts</span>
+                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    {customerCount} <span className="text-sm font-normal text-slate-500">Accounts</span>
                   </h3>
                 )}
-                <p className="text-xs font-semibold text-emerald-700/80 mt-1">Sales tax invoice buyers</p>
+                <p className="text-xs font-normal text-slate-500 mt-1">Sales tax invoice buyers</p>
               </div>
             </div>
 
-            <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-amber-100 glow-amber">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-amber-800">Suppliers (Vendors)</span>
-                <div className="h-11 w-11 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-700 shadow-sm">
-                  <Building2 className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="mt-4">
+            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
+              <span className="section-label">Suppliers (Vendors)</span>
+              <div className="mt-2">
                 {isLoading ? (
-                  <Skeleton className="h-9 w-28 rounded-xl" />
+                  <Skeleton className="h-8 w-28 rounded-md" />
                 ) : (
-                  <h3 className="text-3xl font-extrabold text-amber-800 tracking-tight">
-                    {supplierCount} <span className="text-sm font-bold text-slate-500 font-medium">Vendors</span>
+                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    {supplierCount} <span className="text-sm font-normal text-slate-500">Vendors</span>
                   </h3>
                 )}
-                <p className="text-xs font-semibold text-amber-700/80 mt-1">Inbound stock manufacturers</p>
+                <p className="text-xs font-normal text-slate-500 mt-1">Inbound stock manufacturers</p>
               </div>
             </div>
           </div>
 
           {/* Controls Bar */}
-          <div className="glass-panel p-4 sm:p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 border border-slate-200">
+          <div className="glass-panel p-4 sm:p-5 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 border border-slate-200">
             <div className="relative w-full md:w-96">
-              <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search parties by name, phone, or city..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full glass-input pl-11 pr-4 py-2.5 rounded-2xl text-xs font-medium"
+                className="w-full glass-input pl-10 pr-4 py-2 rounded-lg text-xs font-normal"
               />
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
-              <span className="text-xs font-extrabold text-slate-600">Filter Type:</span>
-              <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 overflow-x-auto max-w-full">
+              <span className="section-label">Filter Type:</span>
+              <div className="flex gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 overflow-x-auto max-w-full">
                 {['', 'CUSTOMER', 'SUPPLIER', 'BOTH'].map((type) => (
                   <button
                     key={type}
                     onClick={() => setFilterType(type)}
-                    className={`px-3 sm:px-4 py-1.5 text-xs font-extrabold rounded-xl transition-all whitespace-nowrap ${
+                    className={`px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap ${
                       filterType === type 
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
+                        ? 'bg-indigo-600 text-white shadow-xs' 
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
