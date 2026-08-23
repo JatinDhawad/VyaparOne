@@ -15,3 +15,6 @@ export type { ConfirmDialogProps } from './ConfirmDialog';
 
 export { default as FilterChip } from './FilterChip';
 export type { FilterChipProps } from './FilterChip';
+
+export { default as PageTransition } from './PageTransition';
+export type { PageTransitionProps } from './PageTransition';
