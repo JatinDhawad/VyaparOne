@@ -7,7 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { api } from '@/lib/api';
 import { formatCurrency, formatCompactCurrency } from '@/lib/utils';
-import { Skeleton, EmptyState } from '@/components/ui';
+import { Skeleton, EmptyState, FilterChip } from '@/components/ui';
 import {
   ResponsiveContainer,
   BarChart,
@@ -153,31 +153,68 @@ export default function ReportsPage() {
 
         <main className="p-8 space-y-6 flex-1 overflow-y-auto">
           {/* Report Tab Selector */}
-          <div className="glass-panel p-2 rounded-2xl flex flex-wrap gap-2">
-            {[
-              { id: 'LEDGER', label: 'General Ledger Statement', icon: FileText },
-              { id: 'RECEIVABLES', label: 'Customer Receivables', icon: CreditCard },
-              { id: 'PAYABLES', label: 'Supplier Payables', icon: CreditCard },
-              { id: 'PROFITABILITY', label: 'Profitability & Margins', icon: TrendingUp },
-              { id: 'GST', label: 'GST Tax Return', icon: Landmark },
-            ].map((t) => {
-              const Icon = t.icon;
-              const isActive = activeTab === t.id;
-              return (
+          <div className="space-y-3">
+            <div className="glass-panel p-2 rounded-2xl flex flex-wrap gap-2">
+              {[
+                { id: 'LEDGER', label: 'General Ledger Statement', icon: FileText },
+                { id: 'RECEIVABLES', label: 'Customer Receivables', icon: CreditCard },
+                { id: 'PAYABLES', label: 'Supplier Payables', icon: CreditCard },
+                { id: 'PROFITABILITY', label: 'Profitability & Margins', icon: TrendingUp },
+                { id: 'GST', label: 'GST Tax Return', icon: Landmark },
+              ].map((t) => {
+                const Icon = t.icon;
+                const isActive = activeTab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTab(t.id as any)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active Report Filters */}
+            {(activeTab !== 'LEDGER' || selectedAccountId !== '') && (
+              <div className="flex items-center gap-2 flex-wrap animate-in fade-in slide-in-from-top-1">
+                <span className="text-[11px] font-bold text-slate-400">Active Filter:</span>
+                {activeTab !== 'LEDGER' && (
+                  <FilterChip
+                    label="Report View"
+                    value={
+                      activeTab === 'RECEIVABLES' ? 'Customer Receivables' :
+                      activeTab === 'PAYABLES' ? 'Supplier Payables' :
+                      activeTab === 'PROFITABILITY' ? 'Profitability & Margins' :
+                      'GST Tax Return'
+                    }
+                    onRemove={() => setActiveTab('LEDGER')}
+                  />
+                )}
+                {selectedAccountId !== '' && (
+                  <FilterChip
+                    label="Account"
+                    value={accounts.find((a: any) => a.id === selectedAccountId)?.account_name || 'Selected'}
+                    onRemove={() => setSelectedAccountId('')}
+                  />
+                )}
                 <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id as any)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive
-                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
+                  onClick={() => {
+                    setActiveTab('LEDGER');
+                    setSelectedAccountId('');
+                  }}
+                  className="text-xs font-bold text-slate-400 hover:text-rose-600 underline ml-1 transition-colors"
                 >
-                  <Icon className="h-4 w-4" />
-                  {t.label}
+                  Reset to Ledger
                 </button>
-              );
-            })}
+              </div>
+            )}
           </div>
 
           {/* TAB 1: LEDGER STATEMENT */}

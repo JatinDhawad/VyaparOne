@@ -2,14 +2,14 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, AlertTriangle, CheckCircle2, ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Plus, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, CheckCircle2, Search, AlertTriangle } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Skeleton, EmptyState, Badge } from '@/components/ui';
+import { Skeleton, EmptyState, Badge, FilterChip } from '@/components/ui';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 const n = (v: string) => parseFloat(v) || 0;
@@ -103,6 +103,10 @@ export default function SalesPage() {
     setEditError('');
   };
 
+  // ── Search & Filter State ───────────────────────────────────────────────
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
+
   // ── Sort state ───────────────────────────────────────────────────────────
   const [sortField, setSortField] = useState<'date' | 'invoice' | 'total' | 'paid' | 'pending'>('date');
   const [sortDir, setSortDir]     = useState<'asc' | 'desc'>('desc');
@@ -126,9 +130,25 @@ export default function SalesPage() {
     queryFn: () => api.getProducts(),
   });
 
-  // ── Sorted sales list ────────────────────────────────────────────────────
+  // ── Filtered & Sorted sales list ─────────────────────────────────────────
+  const filteredSales = useMemo(() => {
+    return sales.filter((s: any) => {
+      const pending = parseFloat(s.pending_amount || 0);
+      if (statusFilter === 'PAID' && pending > 0) return false;
+      if (statusFilter === 'PENDING' && pending <= 0) return false;
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase();
+        const invMatch = (s.invoice_number || '').toLowerCase().includes(q);
+        const custMatch = (s.customer?.name || '').toLowerCase().includes(q);
+        const locMatch = (s.location || '').toLowerCase().includes(q);
+        if (!invMatch && !custMatch && !locMatch) return false;
+      }
+      return true;
+    });
+  }, [sales, statusFilter, searchTerm]);
+
   const sortedSales = useMemo(() => {
-    return [...sales].sort((a: any, b: any) => {
+    return [...filteredSales].sort((a: any, b: any) => {
       let valA: any, valB: any;
       if (sortField === 'date')    { valA = a.invoice_date;   valB = b.invoice_date; }
       if (sortField === 'invoice') { valA = a.invoice_number; valB = b.invoice_number; }
@@ -139,7 +159,7 @@ export default function SalesPage() {
       if (valA > valB) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [sales, sortField, sortDir]);
+  }, [filteredSales, sortField, sortDir]);
 
   // ── Derived totals (Create live preview) ──────────────────────────────────
   const grossGoodsAmount = useMemo(
@@ -314,30 +334,107 @@ export default function SalesPage() {
             </div>
           )}
 
-          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
-            {/* Table header + sort controls */}
-            <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <span className="font-bold text-slate-900 text-sm">Recent Sales Invoices</span>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Sort by:</span>
-                {([['date','Date'],['invoice','Invoice #'],['total','Total'],['paid','Paid'],['pending','Pending']] as const).map(([f, label]) => (
-                  <button
-                    key={f}
-                    onClick={() => toggleSort(f)}
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-extrabold border transition-all ${
-                      sortField === f
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-700'
-                    }`}
-                  >
-                    {label}
-                    {sortField === f
-                      ? sortDir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
-                      : <ArrowUpDown className="h-3 w-3 opacity-40" />}
-                  </button>
-                ))}
+          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200 space-y-4 p-4">
+            {/* Search, Filter & Sort Controls */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              {/* Search Bar */}
+              <div className="relative w-full md:w-72">
+                <Search className="absolute left-3.5 top-3 h-3.5 w-3.5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search invoice, customer, city..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full glass-input pl-9 pr-3 py-2 rounded-xl text-xs font-medium"
+                />
+              </div>
+
+              {/* Status Filter and Sort Controls */}
+              <div className="flex items-center gap-2 flex-wrap w-full md:w-auto justify-between md:justify-end">
+                {/* Status Toggles */}
+                <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs">
+                  {(['ALL', 'PAID', 'PENDING'] as const).map((st) => (
+                    <button
+                      key={st}
+                      onClick={() => setStatusFilter(st)}
+                      className={`px-2.5 py-1 font-bold rounded-lg text-[11px] transition-all ${
+                        statusFilter === st
+                          ? 'bg-white text-indigo-700 shadow-2xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {st === 'ALL' ? 'All' : st === 'PAID' ? 'Paid' : 'Pending'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sort by */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Sort:</span>
+                  {([['date','Date'],['invoice','Invoice #'],['total','Total'],['paid','Paid'],['pending','Pending']] as const).map(([f, label]) => (
+                    <button
+                      key={f}
+                      onClick={() => toggleSort(f)}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-extrabold border transition-all ${
+                        sortField === f
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-700'
+                      }`}
+                    >
+                      {label}
+                      {sortField === f
+                        ? sortDir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+                        : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+
+            {/* Active Filter Chips */}
+            {(searchTerm.trim() !== '' || statusFilter !== 'ALL' || sortField !== 'date' || sortDir !== 'desc') && (
+              <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-slate-100 animate-in fade-in slide-in-from-top-1">
+                <span className="text-[11px] font-bold text-slate-400">Active Filters:</span>
+                {searchTerm.trim() !== '' && (
+                  <FilterChip
+                    label="Search"
+                    value={`"${searchTerm}"`}
+                    onRemove={() => setSearchTerm('')}
+                  />
+                )}
+                {statusFilter !== 'ALL' && (
+                  <FilterChip
+                    label="Status"
+                    value={statusFilter === 'PAID' ? 'Paid' : 'Pending Dues'}
+                    onRemove={() => setStatusFilter('ALL')}
+                  />
+                )}
+                {(sortField !== 'date' || sortDir !== 'desc') && (
+                  <FilterChip
+                    label="Sort"
+                    value={`${sortField.toUpperCase()} (${sortDir.toUpperCase()})`}
+                    onRemove={() => {
+                      setSortField('date');
+                      setSortDir('desc');
+                    }}
+                  />
+                )}
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('ALL');
+                    setSortField('date');
+                    setSortDir('desc');
+                  }}
+                  className="text-xs font-bold text-slate-400 hover:text-rose-600 underline ml-1 transition-colors"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
             <div className="max-h-[700px] overflow-y-auto">
               <table className="w-full text-left text-xs">
                 <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">

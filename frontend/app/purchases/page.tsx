@@ -30,7 +30,7 @@ import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Skeleton, EmptyState, Badge } from '@/components/ui';
+import { Skeleton, EmptyState, Badge, FilterChip } from '@/components/ui';
 
 export default function PurchasesPage() {
   const queryClient = useQueryClient();
@@ -38,6 +38,7 @@ export default function PurchasesPage() {
   const [selectedInvoiceForView, setSelectedInvoiceForView] = useState<any>(null);
   const [editInvoice, setEditInvoice] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
   const [formError, setFormError] = useState('');
   const [editError, setEditError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -376,9 +377,26 @@ export default function PurchasesPage() {
     else { setSortField(field); setSortDir('desc'); }
   };
 
-  const filteredPurchases = purchases.filter((p: any) =>
-    (p.invoice_number && p.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredPurchases = useMemo(() => {
+    return purchases.filter((p: any) => {
+      const bTotal = parseFloat(p.grand_total || 0);
+      const unbilled = parseFloat(p.unbilled_nongst_amount || 0);
+      const payable = parseFloat(p.total_payable_amount || bTotal + unbilled);
+      const paid = parseFloat(p.amount_paid || 0);
+      const pending = parseFloat(p.pending_amount || payable - paid);
+
+      if (statusFilter === 'PAID' && pending > 0) return false;
+      if (statusFilter === 'PENDING' && pending <= 0) return false;
+
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase();
+        const invMatch = (p.invoice_number || '').toLowerCase().includes(q);
+        const suppMatch = (p.supplier?.name || '').toLowerCase().includes(q);
+        if (!invMatch && !suppMatch) return false;
+      }
+      return true;
+    });
+  }, [purchases, statusFilter, searchTerm]);
 
   const sortedPurchases = useMemo(() => {
     return [...filteredPurchases].sort((a: any, b: any) => {
@@ -479,39 +497,101 @@ export default function PurchasesPage() {
 
           {/* Table Panel */}
           <div className="glass-panel p-6 rounded-3xl space-y-6 border border-slate-200">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="relative w-full md:w-96">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="relative w-full md:w-80">
                 <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search by Invoice Number..."
+                  placeholder="Search invoice number or supplier..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full glass-input pl-11 pr-4 py-2.5 rounded-2xl text-xs font-medium"
                 />
               </div>
 
-              {/* Sort controls */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Sort:</span>
-                {([['date','Date'],['invoice','Invoice #'],['billed','Billed'],['unbilled','Unbilled'],['payable','Payable'],['pending','Pending']] as const).map(([f, label]) => (
-                  <button
-                    key={f}
-                    onClick={() => toggleSort(f)}
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-extrabold border transition-all ${
-                      sortField === f
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-700'
-                    }`}
-                  >
-                    {label}
-                    {sortField === f
-                      ? sortDir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
-                      : <ArrowUpDown className="h-3 w-3 opacity-40" />}
-                  </button>
-                ))}
+              {/* Status and Sort Controls */}
+              <div className="flex items-center gap-2 flex-wrap w-full md:w-auto justify-between md:justify-end">
+                {/* Status Toggles */}
+                <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs">
+                  {(['ALL', 'PAID', 'PENDING'] as const).map((st) => (
+                    <button
+                      key={st}
+                      onClick={() => setStatusFilter(st)}
+                      className={`px-2.5 py-1 font-bold rounded-lg text-[11px] transition-all ${
+                        statusFilter === st
+                          ? 'bg-white text-indigo-700 shadow-2xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {st === 'ALL' ? 'All' : st === 'PAID' ? 'Paid' : 'Pending'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sort controls */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Sort:</span>
+                  {([['date','Date'],['invoice','Invoice #'],['billed','Billed'],['unbilled','Unbilled'],['payable','Payable'],['pending','Pending']] as const).map(([f, label]) => (
+                    <button
+                      key={f}
+                      onClick={() => toggleSort(f)}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-extrabold border transition-all ${
+                        sortField === f
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-700'
+                      }`}
+                    >
+                      {label}
+                      {sortField === f
+                        ? sortDir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />
+                        : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+
+            {/* Active Filter Chips */}
+            {(searchTerm.trim() !== '' || statusFilter !== 'ALL' || sortField !== 'date' || sortDir !== 'desc') && (
+              <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-slate-100 animate-in fade-in slide-in-from-top-1">
+                <span className="text-[11px] font-bold text-slate-400">Active Filters:</span>
+                {searchTerm.trim() !== '' && (
+                  <FilterChip
+                    label="Search"
+                    value={`"${searchTerm}"`}
+                    onRemove={() => setSearchTerm('')}
+                  />
+                )}
+                {statusFilter !== 'ALL' && (
+                  <FilterChip
+                    label="Status"
+                    value={statusFilter === 'PAID' ? 'Paid Bills' : 'Pending Dues'}
+                    onRemove={() => setStatusFilter('ALL')}
+                  />
+                )}
+                {(sortField !== 'date' || sortDir !== 'desc') && (
+                  <FilterChip
+                    label="Sort"
+                    value={`${sortField.toUpperCase()} (${sortDir.toUpperCase()})`}
+                    onRemove={() => {
+                      setSortField('date');
+                      setSortDir('desc');
+                    }}
+                  />
+                )}
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('ALL');
+                    setSortField('date');
+                    setSortDir('desc');
+                  }}
+                  className="text-xs font-bold text-slate-400 hover:text-rose-600 underline ml-1 transition-colors"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
 
             {/* New purchase button row */}
             <div className="flex justify-end">

@@ -27,7 +27,7 @@ import Header from '@/components/Header';
 import { api } from '@/lib/api';
 import { formatCurrency, formatCompactCurrency } from '@/lib/utils';
 import Link from 'next/link';
-import { Skeleton } from '@/components/ui';
+import { Skeleton, FilterChip } from '@/components/ui';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -260,44 +260,64 @@ export default function DashboardPage() {
         <main className="p-8 space-y-8 flex-1 overflow-y-auto">
 
           {/* Period Selector & Quick Actions Top Row */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-4 w-4 text-slate-500" />
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">View Period:</span>
-              <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-xs">
-                {PERIOD_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setPeriod(opt.value)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      period === opt.value
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-                        : 'text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="h-4 w-4 text-slate-500" />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">View Period:</span>
+                <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-xs">
+                  {PERIOD_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setPeriod(opt.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        period === opt.value
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                          : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Action Pills */}
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/sales"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>New Sale POS</span>
+                </Link>
+                <Link
+                  href="/purchases"
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>New Purchase</span>
+                </Link>
               </div>
             </div>
 
-            {/* Quick Action Pills */}
-            <div className="flex items-center gap-2">
-              <Link
-                href="/sales"
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>New Sale POS</span>
-              </Link>
-              <Link
-                href="/purchases"
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>New Purchase</span>
-              </Link>
-            </div>
+            {/* Active Period Filter Chip */}
+            {period !== 'all' && (
+              <div className="flex items-center gap-2 flex-wrap animate-in fade-in slide-in-from-top-1">
+                <span className="text-[11px] font-bold text-slate-400">Active Filter:</span>
+                <FilterChip
+                  label="Period"
+                  value={PERIOD_OPTIONS.find(o => o.value === period)?.label}
+                  onRemove={() => setPeriod('all')}
+                />
+                <button
+                  onClick={() => setPeriod('all')}
+                  className="text-xs font-bold text-slate-400 hover:text-rose-600 underline ml-1 transition-colors"
+                >
+                  Reset
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Top 4 KPI Cards */}
@@ -609,6 +629,36 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Active Transaction Filters */}
+              {(txFilter !== 'ALL' || txLimit !== 5) && (
+                <div className="flex items-center gap-2 flex-wrap pb-1 animate-in fade-in slide-in-from-top-1">
+                  <span className="text-[11px] font-bold text-slate-400">Active:</span>
+                  {txFilter !== 'ALL' && (
+                    <FilterChip
+                      label="Type"
+                      value={txFilter === 'SALES' ? 'Sales' : 'Purchases'}
+                      onRemove={() => setTxFilter('ALL')}
+                    />
+                  )}
+                  {txLimit !== 5 && (
+                    <FilterChip
+                      label="Showing"
+                      value={`${txLimit} entries`}
+                      onRemove={() => setTxLimit(5)}
+                    />
+                  )}
+                  <button
+                    onClick={() => {
+                      setTxFilter('ALL');
+                      setTxLimit(5);
+                    }}
+                    className="text-xs font-bold text-slate-400 hover:text-rose-600 underline ml-1 transition-colors"
+                  >
+                    Reset
+                  </button>
+                </div>
+              )}
 
               {/* Transaction List */}
               <div className="space-y-3">
