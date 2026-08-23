@@ -394,10 +394,10 @@ export default function DashboardPage() {
             </div>
 
             {/* Net Profit Card */}
-            <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white glow-emerald flex flex-col justify-between min-h-[140px]">
+            <div className="glass-card p-6 rounded-xl relative overflow-hidden border-slate-200 bg-white flex flex-col justify-between min-h-[140px]">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Net Profit</span>
-                <div className="h-10 w-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                <div className="h-10 w-10 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
                   <TrendingUp className="h-5 w-5" />
                 </div>
               </div>
@@ -413,10 +413,10 @@ export default function DashboardPage() {
             </div>
 
             {/* Operational Expenses Card */}
-            <div className="glass-card p-6 rounded-2xl relative overflow-hidden border-rose-100 flex flex-col justify-between min-h-[140px] bg-white">
+            <div className="glass-card p-6 rounded-xl relative overflow-hidden border-slate-200 flex flex-col justify-between min-h-[140px] bg-white">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-rose-700">Expenses</span>
-                <div className="h-10 w-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
+                <div className="h-10 w-10 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
                   <TrendingDown className="h-5 w-5" />
                 </div>
               </div>
@@ -434,11 +434,11 @@ export default function DashboardPage() {
 
           {/* ── Guided First-Run Setup Checklist ── */}
           {isFirstRunSetup && (
-            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-indigo-200/90 bg-gradient-to-br from-indigo-50/70 via-white to-emerald-50/50 shadow-xl space-y-6 animate-in fade-in slide-in-from-top-2">
+            <div className="glass-card p-6 sm:p-8 rounded-xl border border-slate-200 bg-white shadow-xs space-y-6 animate-in fade-in slide-in-from-top-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
                 <div className="flex items-start gap-3.5">
-                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
-                    <Sparkles className="h-6 w-6 text-white" />
+                  <div className="h-12 w-12 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                    <Sparkles className="h-6 w-6 text-indigo-600" />
                   </div>
                   <div>
                     <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
@@ -457,9 +457,9 @@ export default function DashboardPage() {
                       {completedStepsCount} of 4 Completed
                     </Badge>
                   </div>
-                  <div className="w-44 h-2.5 bg-slate-200/80 rounded-full overflow-hidden mt-2">
+                  <div className="w-44 h-2 bg-slate-100 rounded-full overflow-hidden mt-2 border border-slate-200">
                     <div
-                      className="h-full bg-gradient-to-r from-indigo-600 to-emerald-500 rounded-full transition-all duration-500"
+                      className="h-full bg-indigo-600 rounded-full transition-all duration-500"
                       style={{ width: `${Math.max(8, (completedStepsCount / 4) * 100)}%` }}
                     />
                   </div>
@@ -1029,7 +1029,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Inventory Summary Note */}
-              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-900 to-slate-900 text-white space-y-1">
+              <div className="p-3.5 rounded-lg bg-slate-900 text-white space-y-1">
                 <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300 block">Auto-Unpack Active</span>
                 <p className="text-[11px] text-slate-300 font-medium">All new purchases automatically convert bag counts directly to packet stock.</p>
               </div>

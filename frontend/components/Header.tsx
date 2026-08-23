@@ -60,7 +60,7 @@ export default function Header({ title, subtitle, onActionClick, actionLabel }: 
         {onActionClick && actionLabel && (
           <button
             onClick={onActionClick}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/15 border border-indigo-400/30 transition-all duration-200 active:scale-95 shrink-0"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-all duration-200 active:scale-95 shrink-0"
             title={actionLabel}
           >
             <Plus className="h-4 w-4" />
