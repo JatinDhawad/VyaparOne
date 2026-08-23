@@ -3,6 +3,7 @@
 import './globals.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Toaster } from 'sonner';
 
 export default function RootLayout({
   children,
@@ -27,6 +28,7 @@ export default function RootLayout({
       <body className="antialiased min-h-screen bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white">
         <QueryClientProvider client={queryClient}>
           {children}
+          <Toaster position="top-right" richColors />
         </QueryClientProvider>
       </body>
     </html>

@@ -1,3 +1,10 @@
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 export function formatCurrency(amount: number | string | undefined | null): string {
   if (amount === undefined || amount === null || amount === '') return '0';
   const num = Number(amount);
