@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Menu } from 'lucide-react';
+import { Plus, Menu, Search } from 'lucide-react';
 import { useSidebarStore } from '@/lib/sidebar-store';
 
 interface HeaderProps {
@@ -11,7 +11,7 @@ interface HeaderProps {
 }
 
 export default function Header({ title, subtitle, onActionClick, actionLabel }: HeaderProps) {
-  const { toggleMobile } = useSidebarStore();
+  const { toggleMobile, openCommand } = useSidebarStore();
 
   return (
     <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between sticky top-0 z-20 shadow-xs">
@@ -33,6 +33,19 @@ export default function Header({ title, subtitle, onActionClick, actionLabel }: 
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
+        {/* Global Command Palette Trigger Button */}
+        <button
+          onClick={openCommand}
+          className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 bg-slate-100/90 hover:bg-slate-200/70 border border-slate-200 text-slate-500 hover:text-slate-900 rounded-xl text-xs font-semibold transition-all shadow-2xs group"
+          title="Search or jump to... (Cmd+K)"
+        >
+          <Search className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+          <span className="text-slate-500 font-medium">Search or jump to...</span>
+          <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-bold bg-white text-slate-600 border border-slate-200 rounded-md shadow-2xs">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </button>
+
         {/* Quick Action Button if supplied */}
         {onActionClick && actionLabel && (
           <button
