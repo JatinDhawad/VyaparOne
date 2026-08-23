@@ -25,9 +25,21 @@ import {
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { api } from '@/lib/api';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatCompactCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 
 type Period = '30d' | '90d' | '6m' | '1y' | 'all';
 type TxFilter = 'ALL' | 'SALES' | 'PURCHASES' | 'PAYMENTS';
@@ -138,6 +150,106 @@ export default function DashboardPage() {
 
   const recentTransactions = filteredTransactions.slice(0, txLimit);
   const isTxLoading = isSalesLoading || isPurchasesLoading;
+
+  // ── Derived Time-Series Trend Chart Data ──────────────────────────────────
+  const trendData = useMemo(() => {
+    const now = new Date();
+    let cutoff = 0;
+    if (period === '30d') cutoff = now.getTime() - 30 * 86400000;
+    else if (period === '90d') cutoff = now.getTime() - 90 * 86400000;
+    else if (period === '6m') cutoff = now.getTime() - 180 * 86400000;
+    else if (period === '1y') cutoff = now.getTime() - 365 * 86400000;
+
+    const dateMap: Record<string, { date: string; label: string; rawDate: Date; sales: number; purchases: number }> = {};
+
+    sales.forEach((s: any) => {
+      const d = new Date(s.invoice_date || s.created_at);
+      if (isNaN(d.getTime())) return;
+      if (cutoff > 0 && d.getTime() < cutoff) return;
+      const key = d.toISOString().split('T')[0];
+      if (!dateMap[key]) {
+        dateMap[key] = {
+          date: key,
+          label: d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+          rawDate: d,
+          sales: 0,
+          purchases: 0,
+        };
+      }
+      dateMap[key].sales += parseFloat(s.grand_total || 0);
+    });
+
+    purchases.forEach((p: any) => {
+      const d = new Date(p.invoice_date || p.created_at);
+      if (isNaN(d.getTime())) return;
+      if (cutoff > 0 && d.getTime() < cutoff) return;
+      const key = d.toISOString().split('T')[0];
+      if (!dateMap[key]) {
+        dateMap[key] = {
+          date: key,
+          label: d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+          rawDate: d,
+          sales: 0,
+          purchases: 0,
+        };
+      }
+      dateMap[key].purchases += parseFloat(p.total_payable_amount || p.grand_total || 0);
+    });
+
+    return Object.values(dateMap).sort((a, b) => a.rawDate.getTime() - b.rawDate.getTime());
+  }, [sales, purchases, period]);
+
+  // ── Derived Receivables vs Payables Donut Data ───────────────────────────
+  const donutData = useMemo(() => {
+    const rec = parseFloat(summary?.total_receivables || 0);
+    const pay = parseFloat(summary?.total_payables || 0);
+    if (rec === 0 && pay === 0) return [];
+    return [
+      { name: 'Receivables (Owed to You)', value: rec, color: '#10b981' },
+      { name: 'Payables (You Owe)', value: pay, color: '#6366f1' },
+    ];
+  }, [summary]);
+
+  const netDues = (parseFloat(summary?.total_receivables || 0) - parseFloat(summary?.total_payables || 0));
+  const isChartLoading = isSalesLoading || isPurchasesLoading;
+
+  // ── Custom Tooltips for Recharts ──────────────────────────────────────────
+  const CustomTrendTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="glass-card p-3 rounded-2xl border border-slate-200/80 shadow-xl bg-white/95 backdrop-blur-md text-xs space-y-1.5 min-w-[170px]">
+          <p className="font-extrabold text-slate-900 border-b border-slate-100 pb-1">{label}</p>
+          {payload.map((entry: any) => (
+            <div key={entry.dataKey} className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-1.5 text-slate-600 font-semibold">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                {entry.name}
+              </span>
+              <span className="font-extrabold text-slate-900">
+                ₹{formatCurrency(entry.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CustomDonutTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      return (
+        <div className="glass-card p-3 rounded-2xl border border-slate-200/80 shadow-xl bg-white/95 backdrop-blur-md text-xs space-y-1 min-w-[160px]">
+          <p className="font-extrabold text-slate-900">{data.name}</p>
+          <p className="font-extrabold text-base" style={{ color: data.payload.color }}>
+            ₹{formatCurrency(data.value)}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -278,6 +390,170 @@ export default function DashboardPage() {
                     ₹{formatCurrency(summary?.total_operational_expenses)}
                   </h3>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Visual Analytics & Performance Charts ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Sales Revenue vs Purchase Cost Area Chart (2 Cols) */}
+            <div className="lg:col-span-2 glass-card p-6 rounded-3xl border border-slate-200/80 bg-white space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-9 w-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs">
+                    <TrendingUp className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-slate-900 leading-none">Revenue vs Purchase Cost</h3>
+                    <p className="text-[11px] text-slate-500 font-medium mt-1">Inward purchasing expenses compared against sales turnover</p>
+                  </div>
+                </div>
+
+                {/* Legend Pills */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-indigo-50/70 border border-indigo-100 px-2.5 py-1 rounded-xl">
+                    <span className="h-2.5 w-2.5 rounded-full bg-indigo-600" />
+                    <span>Sales Revenue</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-emerald-50/70 border border-emerald-100 px-2.5 py-1 rounded-xl">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    <span>Purchase Cost</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chart Container */}
+              <div className="h-[280px] w-full pt-2">
+                {isChartLoading ? (
+                  <Skeleton className="h-full w-full rounded-2xl" />
+                ) : trendData.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs space-y-1.5 border border-dashed border-slate-200 rounded-2xl p-6">
+                    <TrendingUp className="h-8 w-8 text-slate-300" />
+                    <p className="font-bold text-slate-600 text-sm">No transaction activity for this period</p>
+                    <p className="text-slate-400 text-[11px]">Record sales or purchase bills to generate trend graphs</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
+                        </linearGradient>
+                        <linearGradient id="colorPurchases" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        stroke="#94a3b8"
+                        fontSize={11}
+                        tickLine={false}
+                        axisLine={false}
+                        dy={5}
+                      />
+                      <YAxis
+                        stroke="#94a3b8"
+                        fontSize={11}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(v) => '₹' + formatCompactCurrency(v)}
+                        dx={-5}
+                      />
+                      <RechartsTooltip content={<CustomTrendTooltip />} />
+                      <Area
+                        type="monotone"
+                        dataKey="sales"
+                        name="Sales Revenue"
+                        stroke="#6366f1"
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill="url(#colorSales)"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="purchases"
+                        name="Purchase Cost"
+                        stroke="#10b981"
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill="url(#colorPurchases)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+
+            {/* Receivables vs Payables Split Donut Chart (1 Col) */}
+            <div className="glass-card p-6 rounded-3xl border border-slate-200/80 bg-white space-y-4 flex flex-col justify-between">
+              <div className="flex items-center gap-2.5 border-b border-slate-100 pb-4">
+                <div className="h-9 w-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-2xs">
+                  <CreditCard className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 leading-none">Receivables vs Payables</h3>
+                  <p className="text-[11px] text-slate-500 font-medium mt-1">Working capital &amp; liquidity split</p>
+                </div>
+              </div>
+
+              {/* Donut Chart or Skeleton */}
+              <div className="h-[200px] w-full relative flex items-center justify-center">
+                {isSummaryLoading ? (
+                  <Skeleton className="h-full w-full rounded-2xl" />
+                ) : donutData.length === 0 ? (
+                  <div className="text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-2xl p-6 w-full">
+                    <p className="font-bold text-slate-600">No outstanding dues</p>
+                    <p className="text-[11px]">All receivables and payables are settled</p>
+                  </div>
+                ) : (
+                  <>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <RechartsTooltip content={<CustomDonutTooltip />} />
+                        <Pie
+                          data={donutData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={80}
+                          paddingAngle={4}
+                          dataKey="value"
+                        >
+                          {donutData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Net Working</span>
+                      <span className="text-sm font-black text-slate-900">
+                        ₹{formatCompactCurrency(netDues)}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Bottom Breakdown Pills */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 font-bold text-emerald-800">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    Receivables (Owed to You)
+                  </span>
+                  <span className="font-extrabold text-emerald-700">₹{formatCurrency(summary?.total_receivables)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 font-bold text-indigo-800">
+                    <span className="h-2.5 w-2.5 rounded-full bg-indigo-600" />
+                    Payables (You Owe)
+                  </span>
+                  <span className="font-extrabold text-indigo-700">₹{formatCurrency(summary?.total_payables)}</span>
+                </div>
               </div>
             </div>
           </div>
