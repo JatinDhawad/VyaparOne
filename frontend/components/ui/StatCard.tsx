@@ -24,33 +24,33 @@ export interface StatCardProps {
 
 const variantStyles = {
   indigo: {
-    card: 'border-indigo-100 bg-white hover:border-indigo-300',
+    card: 'border-slate-200 bg-white hover:border-slate-300',
     iconBg: 'bg-indigo-50 border-indigo-100 text-indigo-600',
     label: 'text-indigo-700',
   },
   emerald: {
-    card: 'border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white hover:border-emerald-300',
-    iconBg: 'bg-emerald-100 border-emerald-200 text-emerald-600',
+    card: 'border-slate-200 bg-white hover:border-slate-300',
+    iconBg: 'bg-emerald-50 border-emerald-100 text-emerald-600',
     label: 'text-emerald-700',
   },
   amber: {
-    card: 'border-amber-200 bg-gradient-to-br from-amber-50/40 to-white hover:border-amber-300',
-    iconBg: 'bg-amber-100 border-amber-200 text-amber-700',
+    card: 'border-slate-200 bg-white hover:border-slate-300',
+    iconBg: 'bg-amber-50 border-amber-100 text-amber-700',
     label: 'text-amber-800',
   },
   rose: {
-    card: 'border-rose-200 bg-gradient-to-br from-rose-50/40 to-white hover:border-rose-300',
-    iconBg: 'bg-rose-100 border-rose-200 text-rose-700',
+    card: 'border-slate-200 bg-white hover:border-slate-300',
+    iconBg: 'bg-rose-50 border-rose-100 text-rose-700',
     label: 'text-rose-800',
   },
   violet: {
-    card: 'border-violet-200 bg-gradient-to-br from-violet-50/40 to-white hover:border-violet-300',
-    iconBg: 'bg-violet-100 border-violet-200 text-violet-700',
+    card: 'border-slate-200 bg-white hover:border-slate-300',
+    iconBg: 'bg-violet-50 border-violet-100 text-violet-700',
     label: 'text-violet-800',
   },
   neutral: {
     card: 'border-slate-200 bg-white hover:border-slate-300',
-    iconBg: 'bg-slate-100 border-slate-200 text-slate-700',
+    iconBg: 'bg-slate-50 border-slate-200 text-slate-700',
     label: 'text-slate-600',
   },
 };
