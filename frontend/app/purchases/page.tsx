@@ -30,7 +30,7 @@ import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Skeleton, EmptyState } from '@/components/ui';
+import { Skeleton, EmptyState, Badge } from '@/components/ui';
 
 export default function PurchasesPage() {
   const queryClient = useQueryClient();
@@ -525,9 +525,9 @@ export default function PurchasesPage() {
             </div>
 
             {/* Purchase List Table */}
-            <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm">
+            <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm max-h-[700px] overflow-y-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100/90 text-slate-600 border-b border-slate-200 uppercase text-[10px] font-extrabold tracking-wider">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-600 border-b border-slate-200 uppercase text-[10px] font-extrabold tracking-wider">
                   <tr>
                     <th className="p-4">Invoice #</th>
                     <th className="p-4">Date</th>
@@ -568,7 +568,6 @@ export default function PurchasesPage() {
                       </td>
                     </tr>
                   ) : (
-
                     sortedPurchases.map((p: any) => {
                       const bTotal = parseFloat(p.grand_total || 0);
                       const unbilled = parseFloat(p.unbilled_nongst_amount || 0);
@@ -580,7 +579,7 @@ export default function PurchasesPage() {
                       return (
                         <tr 
                           key={p.id} 
-                          className="hover:bg-indigo-50/40 transition-colors"
+                          className="hover:bg-slate-50 transition-colors border-b border-slate-100"
                         >
                           <td className="p-4 font-mono font-extrabold text-indigo-700 text-sm">{p.invoice_number}</td>
                           <td className="p-4 font-medium text-slate-600">{p.invoice_date}</td>
@@ -590,13 +589,9 @@ export default function PurchasesPage() {
                           <td className="p-4 text-right font-extrabold text-slate-900">₹{formatCurrency(payable)}</td>
                           <td className="p-4 text-right text-emerald-700 font-extrabold">₹{formatCurrency(paid)}</td>
                           <td className="p-4 text-right">
-                            <span className={`px-2.5 py-1 rounded-xl text-xs font-extrabold border ${
-                              pending <= 0 
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                                : 'bg-rose-50 text-rose-700 border-rose-200'
-                            }`}>
+                            <Badge variant={pending <= 0 ? 'success' : 'danger'} size="sm">
                               {pending <= 0 ? 'Paid' : `₹${formatCurrency(pending)}`}
-                            </span>
+                            </Badge>
                           </td>
                           <td className="p-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">

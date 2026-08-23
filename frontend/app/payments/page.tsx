@@ -9,7 +9,7 @@ import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Skeleton, EmptyState } from '@/components/ui';
+import { Skeleton, EmptyState, Badge } from '@/components/ui';
 
 export default function PaymentsPage() {
   const queryClient = useQueryClient();
@@ -84,61 +84,62 @@ export default function PaymentsPage() {
         <main className="p-8 space-y-6 flex-1 overflow-y-auto">
           <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
             <div className="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm">Voucher History</div>
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
-                <tr>
-                  <th className="p-4">Voucher #</th>
-                  <th className="p-4">Type</th>
-                  <th className="p-4">Date</th>
-                  <th className="p-4">Mode</th>
-                  <th className="p-4 text-right">Amount (₹)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
-                {isLoading ? (
-                  [...Array(5)].map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="p-4"><Skeleton className="h-5 w-24 rounded-lg" /></td>
-                      <td className="p-4"><Skeleton className="h-6 w-16 rounded-xl" /></td>
-                      <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
-                      <td className="p-4"><Skeleton className="h-5 w-16 rounded-lg" /></td>
-                      <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
-                    </tr>
-                  ))
-                ) : payments.length === 0 ? (
+            <div className="max-h-[700px] overflow-y-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
                   <tr>
-                    <td colSpan={5} className="p-8">
-                      <EmptyState
-                        icon={ArrowUpRight}
-                        title="No Vouchers Recorded"
-                        description="Record incoming customer collections or outgoing supplier disbursements."
-                        actionLabel="New Voucher Entry"
-                        onAction={() => setIsModalOpen(true)}
-                      />
-                    </td>
+                    <th className="p-4">Voucher #</th>
+                    <th className="p-4">Type</th>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Mode</th>
+                    <th className="p-4 text-right">Amount (₹)</th>
                   </tr>
-                ) : (
-                  payments.map((p: any) => (
-                    <tr key={p.id} className="hover:bg-slate-100/50 transition-colors">
-                      <td className="p-4 font-mono font-bold text-indigo-700">{p.voucher_number}</td>
-                      <td className="p-4">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded border ${
-                          p.payment_type === 'RECEIPT'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-rose-50 text-rose-700 border-rose-200'
-                        }`}>
-                          {p.payment_type === 'RECEIPT' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
-                          {p.payment_type}
-                        </span>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                  {isLoading ? (
+                    [...Array(5)].map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="p-4"><Skeleton className="h-5 w-24 rounded-lg" /></td>
+                        <td className="p-4"><Skeleton className="h-6 w-16 rounded-xl" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-16 rounded-lg" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                      </tr>
+                    ))
+                  ) : payments.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-8">
+                        <EmptyState
+                          icon={ArrowUpRight}
+                          title="No Vouchers Recorded"
+                          description="Record incoming customer collections or outgoing supplier disbursements."
+                          actionLabel="New Voucher Entry"
+                          onAction={() => setIsModalOpen(true)}
+                        />
                       </td>
-                      <td className="p-4 font-medium">{p.payment_date}</td>
-                      <td className="p-4 font-bold text-slate-700">{p.payment_mode}</td>
-                      <td className="p-4 text-right font-bold text-slate-900">₹{formatCurrency(p.amount)}</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    payments.map((p: any) => (
+                      <tr key={p.id} className="hover:bg-slate-50 transition-colors border-b border-slate-100">
+                        <td className="p-4 font-mono font-bold text-indigo-700">{p.voucher_number}</td>
+                        <td className="p-4">
+                          <Badge
+                            variant={p.payment_type === 'RECEIPT' ? 'success' : 'danger'}
+                            size="sm"
+                          >
+                            {p.payment_type === 'RECEIPT' ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
+                            {p.payment_type}
+                          </Badge>
+                        </td>
+                        <td className="p-4 font-medium">{p.payment_date}</td>
+                        <td className="p-4 font-bold text-slate-700">{p.payment_mode}</td>
+                        <td className="p-4 text-right font-bold text-slate-900">₹{formatCurrency(p.amount)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </main>
       </div>
