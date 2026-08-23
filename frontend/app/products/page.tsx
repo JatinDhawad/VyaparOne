@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Search, PackageCheck, Layers, Tag, Pencil, Package, 
@@ -31,6 +31,16 @@ export default function ProductsPage() {
 
   // ── Create Product modal ──────────────────────────────────────────────────
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('openModal') === 'true') {
+        setIsCreateOpen(true);
+      }
+    }
+  }, []);
+
   const [createError, setCreateError] = useState('');
   const [name, setName] = useState('');
   const [hsnCode, setHsnCode] = useState('');

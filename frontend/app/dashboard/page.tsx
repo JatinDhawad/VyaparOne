@@ -20,14 +20,16 @@ import {
   Layers,
   ArrowRight,
   CheckCircle2,
-  Filter
+  Filter,
+  Users,
+  Sparkles
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { api } from '@/lib/api';
 import { formatCurrency, formatCompactCurrency } from '@/lib/utils';
 import Link from 'next/link';
-import { Skeleton, FilterChip } from '@/components/ui';
+import { Skeleton, FilterChip, Badge } from '@/components/ui';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -81,6 +83,20 @@ export default function DashboardPage() {
     queryKey: ['products'],
     queryFn: () => api.getProducts(),
   });
+
+  const { data: parties = [], isLoading: isPartiesLoading } = useQuery({
+    queryKey: ['parties'],
+    queryFn: () => api.getParties(),
+  });
+
+  // ── First-Run Onboarding Step Completion ──────────────────────────────────
+  const hasParties = parties.length > 0;
+  const hasProducts = products.length > 0;
+  const hasPurchases = purchases.length > 0;
+  const hasSales = sales.length > 0;
+
+  const completedStepsCount = (hasParties ? 1 : 0) + (hasProducts ? 1 : 0) + (hasPurchases ? 1 : 0) + (hasSales ? 1 : 0);
+  const isFirstRunSetup = !isSalesLoading && !isPurchasesLoading && !isProductsLoading && !isPartiesLoading && (sales.length === 0 && purchases.length === 0);
 
   // Combine and normalize recent transactions
   const normalizedTransactions = useMemo(() => {
@@ -413,6 +429,197 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* ── Guided First-Run Setup Checklist ── */}
+          {isFirstRunSetup && (
+            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-indigo-200/90 bg-gradient-to-br from-indigo-50/70 via-white to-emerald-50/50 shadow-xl space-y-6 animate-in fade-in slide-in-from-top-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                <div className="flex items-start gap-3.5">
+                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
+                    <Sparkles className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+                      Getting Started with VyaparOne ERP
+                    </h2>
+                    <p className="text-xs font-semibold text-slate-500 mt-1">
+                      Complete these 4 fundamental steps to configure your trading inventory and activate live double-entry ledgers.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-start sm:items-end shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-600">Setup Progress:</span>
+                    <Badge variant={completedStepsCount === 4 ? 'success' : 'info'} size="sm">
+                      {completedStepsCount} of 4 Completed
+                    </Badge>
+                  </div>
+                  <div className="w-44 h-2.5 bg-slate-200/80 rounded-full overflow-hidden mt-2">
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-600 to-emerald-500 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.max(8, (completedStepsCount / 4) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 4 Guided Step Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Step 1: Parties */}
+                <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-4 ${
+                  hasParties
+                    ? 'bg-emerald-50/50 border-emerald-200/80 shadow-2xs'
+                    : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'
+                }`}>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                        hasParties ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                      }`}>
+                        <Users className="h-5 w-5" />
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase text-slate-400">Step 1</span>
+                    </div>
+                    <h4 className="font-extrabold text-slate-900 text-sm">Add First Party</h4>
+                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                      Create customer accounts for sales billing or supplier profiles for purchases.
+                    </p>
+                  </div>
+
+                  <div>
+                    {hasParties ? (
+                      <Badge variant="success" size="sm" dot className="w-full justify-center">
+                        Party Created
+                      </Badge>
+                    ) : (
+                      <Link
+                        href="/parties?openModal=true"
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <span>+ Add Party</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* Step 2: Products */}
+                <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-4 ${
+                  hasProducts
+                    ? 'bg-emerald-50/50 border-emerald-200/80 shadow-2xs'
+                    : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'
+                }`}>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                        hasProducts ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                      }`}>
+                        <Package className="h-5 w-5" />
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase text-slate-400">Step 2</span>
+                    </div>
+                    <h4 className="font-extrabold text-slate-900 text-sm">Add a Product</h4>
+                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                      Define items with bag-to-packet auto-unpacking ratios and HSN tax codes.
+                    </p>
+                  </div>
+
+                  <div>
+                    {hasProducts ? (
+                      <Badge variant="success" size="sm" dot className="w-full justify-center">
+                        Product Added
+                      </Badge>
+                    ) : (
+                      <Link
+                        href="/products?openModal=true"
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <span>+ Add Product</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* Step 3: Purchases */}
+                <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-4 ${
+                  hasPurchases
+                    ? 'bg-emerald-50/50 border-emerald-200/80 shadow-2xs'
+                    : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'
+                }`}>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                        hasPurchases ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                      }`}>
+                        <ShoppingBag className="h-5 w-5" />
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase text-slate-400">Step 3</span>
+                    </div>
+                    <h4 className="font-extrabold text-slate-900 text-sm">Record Purchase</h4>
+                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                      Inward inventory bags with freight, unbilled non-GST costs, and GST.
+                    </p>
+                  </div>
+
+                  <div>
+                    {hasPurchases ? (
+                      <Badge variant="success" size="sm" dot className="w-full justify-center">
+                        Purchase Recorded
+                      </Badge>
+                    ) : (
+                      <Link
+                        href="/purchases?openModal=true"
+                        className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <span>+ Record Purchase</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* Step 4: Sales */}
+                <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-4 ${
+                  hasSales
+                    ? 'bg-emerald-50/50 border-emerald-200/80 shadow-2xs'
+                    : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'
+                }`}>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                        hasSales ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                      }`}>
+                        <ShoppingCart className="h-5 w-5" />
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase text-slate-400">Step 4</span>
+                    </div>
+                    <h4 className="font-extrabold text-slate-900 text-sm">Make First Sale</h4>
+                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                      Generate sales POS bills with real-time landed cost margins.
+                    </p>
+                  </div>
+
+                  <div>
+                    {hasSales ? (
+                      <Badge variant="success" size="sm" dot className="w-full justify-center">
+                        Sale Completed
+                      </Badge>
+                    ) : (
+                      <Link
+                        href="/sales?openModal=true"
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <span>+ Make Sale POS</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── Visual Analytics & Performance Charts ── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
