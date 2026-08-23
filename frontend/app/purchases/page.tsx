@@ -592,18 +592,18 @@ export default function PurchasesPage() {
             </div>
 
             {/* Purchase List Table */}
-            <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm max-h-[700px] overflow-y-auto overflow-x-auto">
+            <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm max-h-[700px] overflow-y-auto overflow-x-auto">
               <table className="w-full min-w-[780px] text-left text-xs">
-                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-600 border-b border-slate-200 uppercase text-[10px] font-extrabold tracking-wider">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-semibold tracking-wider">
                   <tr>
                     <th className="p-4">Invoice #</th>
                     <th className="p-4">Date</th>
                     <th className="p-4">Supplier</th>
-                    <th className="p-4 text-right text-indigo-900">Billed Total (₹)</th>
-                    <th className="p-4 text-right text-amber-800">Unbilled Amount (₹)</th>
+                    <th className="p-4 text-right">Billed Total (₹)</th>
+                    <th className="p-4 text-right">Unbilled Amount (₹)</th>
                     <th className="p-4 text-right">Total Payable (₹)</th>
-                    <th className="p-4 text-right text-emerald-800">Amount Paid (₹)</th>
-                    <th className="p-4 text-right text-rose-800">Pending Balance (₹)</th>
+                    <th className="p-4 text-right">Amount Paid (₹)</th>
+                    <th className="p-4 text-right">Pending Balance (₹)</th>
                     <th className="p-4 text-right">Details</th>
                   </tr>
                 </thead>

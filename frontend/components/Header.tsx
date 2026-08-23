@@ -27,8 +27,8 @@ export default function Header({ title, subtitle, onActionClick, actionLabel }: 
         </button>
 
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 truncate">{title}</h1>
-          {subtitle && <p className="text-xs font-medium text-slate-500 mt-0.5 truncate">{subtitle}</p>}
+          <h1 className="page-title truncate">{title}</h1>
+          {subtitle && <p className="text-xs font-normal text-slate-500 mt-0.5 truncate">{subtitle}</p>}
         </div>
       </div>
 

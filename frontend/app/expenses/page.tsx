@@ -72,11 +72,11 @@ export default function ExpensesPage() {
         />
 
         <main className="p-4 sm:p-8 space-y-6 flex-1 overflow-y-auto">
-          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
+          <div className="glass-panel rounded-xl overflow-hidden border border-slate-200">
             <div className="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm">Expense Log</div>
             <div className="max-h-[700px] overflow-y-auto overflow-x-auto">
               <table className="w-full min-w-[500px] text-left text-xs">
-                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-semibold tracking-wider">
                   <tr>
                     <th className="p-4">Date</th>
                     <th className="p-4">Category</th>

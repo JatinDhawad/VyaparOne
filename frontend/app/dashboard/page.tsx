@@ -342,7 +342,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {/* Sales Card */}
             <div className="glass-card p-5 rounded-xl border-slate-200 flex flex-col justify-between min-h-[125px] bg-white">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Sales</span>
+              <span className="section-label">Total Sales</span>
               <div className="mt-2">
                 {isSummaryLoading ? (
                   <Skeleton className="h-8 w-36 rounded-md" />
@@ -356,7 +356,7 @@ export default function DashboardPage() {
 
             {/* Purchases Card — with billed/unbilled breakdown */}
             <div className="glass-card p-5 rounded-xl border-slate-200 flex flex-col justify-between min-h-[125px] bg-white">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Purchases</span>
+              <span className="section-label">Total Purchases</span>
               <div className="mt-2">
                 {isSummaryLoading ? (
                   <div className="space-y-2">
@@ -385,7 +385,7 @@ export default function DashboardPage() {
 
             {/* Net Profit Card */}
             <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Net Profit</span>
+              <span className="section-label">Net Profit</span>
               <div className="mt-2">
                 {isSummaryLoading ? (
                   <Skeleton className="h-8 w-36 rounded-md" />
@@ -399,7 +399,7 @@ export default function DashboardPage() {
 
             {/* Operational Expenses Card */}
             <div className="glass-card p-5 rounded-xl border-slate-200 flex flex-col justify-between min-h-[125px] bg-white">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Expenses</span>
+              <span className="section-label">Expenses</span>
               <div className="mt-2">
                 {isSummaryLoading ? (
                   <Skeleton className="h-8 w-36 rounded-md" />

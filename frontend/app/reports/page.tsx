@@ -586,32 +586,32 @@ export default function ReportsPage() {
                 </div>
               ) : gst ? (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="glass-card p-6 rounded-2xl border-indigo-100 bg-white">
-                      <span className="text-xs font-bold uppercase text-indigo-700">Output GST (Sales)</span>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div className="glass-card p-5 rounded-xl border-slate-200 bg-white">
+                      <span className="section-label block text-slate-500">Output GST (Sales)</span>
                       <h3 className="text-2xl font-bold text-slate-900 mt-2">₹{formatCurrency(gst.output_gst_amount)}</h3>
-                      <p className="text-[11px] font-medium text-slate-500 mt-1">Taxable Turnover: ₹{formatCurrency(gst.sales_taxable_amount)}</p>
+                      <p className="text-xs font-normal text-slate-500 mt-1">Taxable: ₹{formatCurrency(gst.sales_taxable_amount)}</p>
                     </div>
 
-                    <div className="glass-card p-6 rounded-2xl border-emerald-100 bg-white">
-                      <span className="text-xs font-bold uppercase text-emerald-700">Input Tax Credit (ITC)</span>
+                    <div className="glass-card p-5 rounded-xl border-slate-200 bg-white">
+                      <span className="section-label block text-slate-500">Input Tax Credit (ITC)</span>
                       <h3 className="text-2xl font-bold text-slate-900 mt-2">₹{formatCurrency(gst.input_gst_amount)}</h3>
-                      <p className="text-[11px] font-medium text-slate-500 mt-1">Purchase Taxable: ₹{formatCurrency(gst.purchase_taxable_amount)}</p>
+                      <p className="text-xs font-normal text-slate-500 mt-1">Taxable: ₹{formatCurrency(gst.purchase_taxable_amount)}</p>
                     </div>
 
-                    <div className="glass-card p-6 rounded-2xl border-amber-200 bg-amber-50/50 glow-amber">
-                      <span className="text-xs font-bold uppercase text-amber-800">Net GST Liability</span>
-                      <h3 className="text-2xl font-extrabold text-amber-800 mt-2">₹{formatCurrency(gst.net_gst_payable)}</h3>
-                      <p className="text-[11px] font-medium text-slate-500 mt-1">Output GST minus Input Tax Credit</p>
+                    <div className="glass-card p-5 rounded-xl border-slate-200 bg-white">
+                      <span className="section-label block text-slate-500">Net GST Liability</span>
+                      <h3 className="text-2xl font-bold text-amber-800 mt-2">₹{formatCurrency(gst.net_gst_payable)}</h3>
+                      <p className="text-xs font-normal text-slate-500 mt-1">Output GST minus Input Tax Credit</p>
                     </div>
                   </div>
 
                   {/* GST Tax Comparison Bar Chart */}
-                  <div className="glass-card p-6 rounded-2xl border border-slate-200/80 bg-white space-y-4">
+                  <div className="glass-card p-6 rounded-xl border border-slate-200 bg-white space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <div>
-                        <h4 className="font-extrabold text-slate-900 text-sm">GST Tax Settlement Summary</h4>
-                        <p className="text-[11px] text-slate-500 font-medium mt-0.5">Comparison of tax collected on sales vs input tax credit paid on inward purchases</p>
+                        <h4 className="font-bold text-slate-900 text-sm">GST Tax Settlement Summary</h4>
+                        <p className="text-xs text-slate-500 font-normal mt-0.5">Comparison of tax collected on sales vs input tax credit paid on inward purchases</p>
                       </div>
                     </div>
 
