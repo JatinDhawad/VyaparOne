@@ -13,6 +13,7 @@ import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 // ── Preset conversion ratios ──────────────────────────────────────────────────
 const PACKET_PRESETS = [
@@ -181,22 +182,32 @@ export default function ProductsPage() {
   // ── Mutations ─────────────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: (data: any) => api.createProduct(data),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setIsCreateOpen(false);
+      toast.success(`Product "${name || res?.name || 'SKU'}" created successfully!`);
       resetCreate();
     },
-    onError: (err: any) => setCreateError(err.message || 'Failed to create product'),
+    onError: (err: any) => {
+      const msg = err.message || 'Failed to create product';
+      setCreateError(msg);
+      toast.error(msg);
+    },
   });
 
   const editMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => api.updateProduct(id, data),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success(`Product "${editProduct?.name || res?.name || 'Product'}" updated successfully!`);
       setEditProduct(null);
       setEditError('');
     },
-    onError: (err: any) => setEditError(err.message || 'Failed to update product'),
+    onError: (err: any) => {
+      const msg = err.message || 'Failed to update product';
+      setEditError(msg);
+      toast.error(msg);
+    },
   });
 
   const resetCreate = () => {

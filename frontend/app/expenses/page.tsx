@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function ExpensesPage() {
   const queryClient = useQueryClient();
@@ -27,11 +28,15 @@ export default function ExpensesPage() {
     mutationFn: (data: any) => api.createExpense(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       setIsModalOpen(false);
+      toast.success(`Expense of ₹${formatCurrency(amount)} (${category}) recorded successfully!`);
       resetForm();
     },
     onError: (err: any) => {
-      setFormError(err.message || 'Failed to record expense.');
+      const msg = err.message || 'Failed to record expense.';
+      setFormError(msg);
+      toast.error(msg);
     },
   });
 

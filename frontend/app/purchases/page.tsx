@@ -29,6 +29,7 @@ import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function PurchasesPage() {
   const queryClient = useQueryClient();
@@ -106,12 +107,16 @@ export default function PurchasesPage() {
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setIsModalOpen(false);
-      setSuccessMessage(`Purchase invoice #${invoiceNumber || res.invoice_number} saved successfully.`);
+      const msg = `Purchase invoice #${invoiceNumber || res.invoice_number} saved successfully!`;
+      setSuccessMessage(msg);
+      toast.success(msg);
       setTimeout(() => setSuccessMessage(''), 6000);
       resetForm();
     },
     onError: (err: any) => {
-      setFormError(err.message || 'Failed to record purchase bill.');
+      const msg = err.message || 'Failed to record purchase bill.';
+      setFormError(msg);
+      toast.error(msg);
     },
   });
 
@@ -140,15 +145,21 @@ export default function PurchasesPage() {
 
   const editMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => api.editPurchase(id, data),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
       queryClient.invalidateQueries({ queryKey: ['parties'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       setEditInvoice(null);
-      setSuccessMessage('Purchase bill updated successfully.');
+      const msg = `Purchase bill #${editInvoice?.invoice_number || res?.invoice_number} updated successfully!`;
+      setSuccessMessage(msg);
+      toast.success(msg);
       setTimeout(() => setSuccessMessage(''), 5000);
     },
-    onError: (err: any) => setEditError(err.message || 'Failed to update purchase bill.'),
+    onError: (err: any) => {
+      const msg = err.message || 'Failed to update purchase bill.';
+      setEditError(msg);
+      toast.error(msg);
+    },
   });
 
   // ── Record Payment State & Mutation ───────────────────────────────────────
@@ -166,8 +177,10 @@ export default function PurchasesPage() {
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
       queryClient.invalidateQueries({ queryKey: ['parties'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+      const msg = `Payment of ₹${formatCurrency(parseFloat(payAmount) || 0)} recorded for Bill #${payInvoice?.invoice_number || res.invoice_number}!`;
       setPayInvoice(null);
-      setSuccessMessage(`Payment of ₹${formatCurrency(parseFloat(payAmount) || 0)} recorded for Bill #${payInvoice?.invoice_number || res.invoice_number}!`);
+      setSuccessMessage(msg);
+      toast.success(msg);
       setTimeout(() => setSuccessMessage(''), 6000);
       setPayAmount('');
       setPayRef('');
@@ -175,7 +188,9 @@ export default function PurchasesPage() {
       setPayError('');
     },
     onError: (err: any) => {
-      setPayError(err.message || 'Failed to record supplier payment.');
+      const msg = err.message || 'Failed to record supplier payment.';
+      setPayError(msg);
+      toast.error(msg);
     },
   });
 
