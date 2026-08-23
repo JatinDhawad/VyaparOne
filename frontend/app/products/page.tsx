@@ -272,7 +272,7 @@ export default function ProductsPage() {
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <button
                 onClick={() => { resetCreate(); setIsCreateOpen(true); }}
-                className="flex-1 sm:flex-initial px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-indigo-500/20 transition-all flex items-center justify-center gap-1.5"
+                className="flex-1 sm:flex-initial px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5"
               >
                 + Add Product SKU
               </button>
