@@ -8,7 +8,7 @@ import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
-
+import { toast } from 'sonner';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 const n = (v: string) => parseFloat(v) || 0;
@@ -163,27 +163,38 @@ export default function SalesPage() {
   // ── Mutations ────────────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: (data: any) => api.createSale(data),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['parties'] });
       setIsModalOpen(false);
+      const invNum = invoiceNumber || res?.invoice_number || 'Sale';
+      toast.success(`Sales invoice #${invNum} created successfully!`);
       resetForm();
     },
     onError: (err: any) => {
-      setFormError(err.message || 'Failed to create sales invoice.');
+      const msg = err.message || 'Failed to create sales invoice.';
+      setFormError(msg);
+      toast.error(msg);
     },
   });
 
   const editMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => api.editSale(id, data),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['parties'] });
+      toast.success(`Sales invoice #${editInvoice?.invoice_number || res?.invoice_number} updated successfully!`);
       setEditInvoice(null);
     },
     onError: (err: any) => {
-      setEditError(err.message || 'Failed to update sales invoice.');
+      const msg = err.message || 'Failed to update sales invoice.';
+      setEditError(msg);
+      toast.error(msg);
     },
   });
 
@@ -193,12 +204,17 @@ export default function SalesPage() {
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['parties'] });
       setDeleteInvoice(null);
-      setDeleteSuccessMessage(res?.message || 'Sales invoice deleted and stock restored successfully.');
+      const msg = res?.message || 'Sales invoice deleted and stock restored successfully!';
+      setDeleteSuccessMessage(msg);
+      toast.success(msg);
       setTimeout(() => setDeleteSuccessMessage(''), 6000);
     },
     onError: (err: any) => {
-      alert(err.message || 'Failed to delete sales invoice.');
+      const msg = err.message || 'Failed to delete sales invoice.';
+      toast.error(msg);
     },
   });
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Building2, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,9 +26,12 @@ export default function LoginPage() {
       localStorage.setItem('vyaparone_token', res.access_token);
       const userRes = await api.getMe();
       setAuth(res.access_token, userRes);
+      toast.success(`Welcome back, ${userRes?.full_name || 'Admin'}!`);
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check credentials.');
+      const msg = err.message || 'Login failed. Please check credentials.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

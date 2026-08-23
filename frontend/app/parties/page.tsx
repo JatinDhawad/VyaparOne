@@ -14,6 +14,7 @@ import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function PartiesPage() {
   const queryClient = useQueryClient();
@@ -55,26 +56,32 @@ export default function PartiesPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.createParty(data),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['parties'] });
       setIsCreateModalOpen(false);
+      toast.success(`Party "${name || res?.name || 'New Party'}" created successfully!`);
       resetForm();
     },
     onError: (err: any) => {
-      setFormError(err.message || 'Failed to create party.');
+      const msg = err.message || 'Failed to create party.';
+      setFormError(msg);
+      toast.error(msg);
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => api.updateParty(id, data),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['parties'] });
       setIsEditModalOpen(false);
+      toast.success(`Party "${editingParty?.name || res?.name || 'Party'}" updated successfully!`);
       setEditingParty(null);
       resetForm();
     },
     onError: (err: any) => {
-      setFormError(err.message || 'Failed to update party details.');
+      const msg = err.message || 'Failed to update party details.';
+      setFormError(msg);
+      toast.error(msg);
     },
   });
 

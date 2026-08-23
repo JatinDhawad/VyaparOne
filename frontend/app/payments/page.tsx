@@ -8,6 +8,7 @@ import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function PaymentsPage() {
   const queryClient = useQueryClient();
@@ -32,13 +33,19 @@ export default function PaymentsPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.createPayment(data),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['parties'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       setIsModalOpen(false);
+      const vNum = voucherNumber || res?.voucher_number || 'Voucher';
+      toast.success(`${paymentType === 'RECEIPT' ? 'Receipt' : 'Payment'} voucher #${vNum} of ₹${formatCurrency(amount)} recorded successfully!`);
       resetForm();
     },
     onError: (err: any) => {
-      setFormError(err.message || 'Failed to record payment voucher.');
+      const msg = err.message || 'Failed to record payment voucher.';
+      setFormError(msg);
+      toast.error(msg);
     },
   });
 
