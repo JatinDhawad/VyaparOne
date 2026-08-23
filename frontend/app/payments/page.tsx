@@ -9,6 +9,7 @@ import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Skeleton, EmptyState } from '@/components/ui';
 
 export default function PaymentsPage() {
   const queryClient = useQueryClient();
@@ -93,11 +94,29 @@ export default function PaymentsPage() {
                   <th className="p-4 text-right">Amount (₹)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
                 {isLoading ? (
-                  <tr><td colSpan={5} className="p-8 text-center text-slate-500">Loading vouchers...</td></tr>
+                  [...Array(5)].map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="p-4"><Skeleton className="h-5 w-24 rounded-lg" /></td>
+                      <td className="p-4"><Skeleton className="h-6 w-16 rounded-xl" /></td>
+                      <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
+                      <td className="p-4"><Skeleton className="h-5 w-16 rounded-lg" /></td>
+                      <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                    </tr>
+                  ))
                 ) : payments.length === 0 ? (
-                  <tr><td colSpan={5} className="p-8 text-center text-slate-500">No vouchers recorded.</td></tr>
+                  <tr>
+                    <td colSpan={5} className="p-8">
+                      <EmptyState
+                        icon={ArrowUpRight}
+                        title="No Vouchers Recorded"
+                        description="Record incoming customer collections or outgoing supplier disbursements."
+                        actionLabel="New Voucher Entry"
+                        onAction={() => setIsModalOpen(true)}
+                      />
+                    </td>
+                  </tr>
                 ) : (
                   payments.map((p: any) => (
                     <tr key={p.id} className="hover:bg-slate-100/50 transition-colors">

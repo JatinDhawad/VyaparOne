@@ -8,6 +8,8 @@ import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Skeleton, EmptyState } from '@/components/ui';
+import { TrendingDown } from 'lucide-react';
 
 export default function ExpensesPage() {
   const queryClient = useQueryClient();
@@ -81,11 +83,28 @@ export default function ExpensesPage() {
                   <th className="p-4 text-right">Amount (₹)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
                 {isLoading ? (
-                  <tr><td colSpan={4} className="p-8 text-center text-slate-500">Loading expenses...</td></tr>
+                  [...Array(5)].map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="p-4"><Skeleton className="h-5 w-24 rounded-lg" /></td>
+                      <td className="p-4"><Skeleton className="h-5 w-32 rounded-lg" /></td>
+                      <td className="p-4"><Skeleton className="h-5 w-16 rounded-lg" /></td>
+                      <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                    </tr>
+                  ))
                 ) : expenses.length === 0 ? (
-                  <tr><td colSpan={4} className="p-8 text-center text-slate-500">No operational expenses recorded.</td></tr>
+                  <tr>
+                    <td colSpan={4} className="p-8">
+                      <EmptyState
+                        icon={TrendingDown}
+                        title="No Expenses Logged"
+                        description="Track your daily store and warehouse operational expenses."
+                        actionLabel="Record Expense"
+                        onAction={() => setIsModalOpen(true)}
+                      />
+                    </td>
+                  </tr>
                 ) : (
                   expenses.map((e: any) => (
                     <tr key={e.id} className="hover:bg-slate-100/50 transition-colors">
