@@ -427,7 +427,7 @@ export default function PurchasesPage() {
           actionLabel="New Purchase Entry"
         />
 
-        <main className="p-8 space-y-8 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-8 space-y-6 sm:space-y-8 flex-1 overflow-y-auto">
           {successMessage && (
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm font-bold shadow-sm flex items-center gap-3 animate-in fade-in duration-300">
               <PackageCheck className="h-6 w-6 text-emerald-600 shrink-0" />
@@ -605,8 +605,8 @@ export default function PurchasesPage() {
             </div>
 
             {/* Purchase List Table */}
-            <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm max-h-[700px] overflow-y-auto">
-              <table className="w-full text-left text-xs">
+            <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm max-h-[700px] overflow-y-auto overflow-x-auto">
+              <table className="w-full min-w-[780px] text-left text-xs">
                 <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-600 border-b border-slate-200 uppercase text-[10px] font-extrabold tracking-wider">
                   <tr>
                     <th className="p-4">Invoice #</th>

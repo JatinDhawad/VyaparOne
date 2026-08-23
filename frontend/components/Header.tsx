@@ -32,8 +32,8 @@ export default function Header({ title, subtitle, onActionClick, actionLabel }: 
         </div>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
-        {/* Global Command Palette Trigger Button */}
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Global Command Palette Trigger Button (Desktop & Tablet) */}
         <button
           onClick={openCommand}
           className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 bg-slate-100/90 hover:bg-slate-200/70 border border-slate-200 text-slate-500 hover:text-slate-900 rounded-xl text-xs font-semibold transition-all shadow-2xs group"
@@ -46,14 +46,25 @@ export default function Header({ title, subtitle, onActionClick, actionLabel }: 
           </kbd>
         </button>
 
+        {/* Mobile Search Icon Button (< 640px) */}
+        <button
+          onClick={openCommand}
+          className="sm:hidden p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition-colors shrink-0"
+          title="Search or jump to..."
+          aria-label="Open Command Palette"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+
         {/* Quick Action Button if supplied */}
         {onActionClick && actionLabel && (
           <button
             onClick={onActionClick}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/15 border border-indigo-400/30 transition-all duration-200 active:scale-95"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/15 border border-indigo-400/30 transition-all duration-200 active:scale-95 shrink-0"
+            title={actionLabel}
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden xs:inline">{actionLabel}</span>
+            <span className="hidden sm:inline">{actionLabel}</span>
           </button>
         )}
 

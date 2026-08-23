@@ -151,7 +151,7 @@ export default function ReportsPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header title="Financial Reports & Analytics" />
 
-        <main className="p-8 space-y-6 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-8 space-y-6 flex-1 overflow-y-auto">
           {/* Report Tab Selector */}
           <div className="space-y-3">
             <div className="glass-panel p-2 rounded-2xl flex flex-wrap gap-2">
@@ -168,7 +168,7 @@ export default function ReportsPage() {
                   <button
                     key={t.id}
                     onClick={() => setActiveTab(t.id as any)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all ${
                       isActive
                         ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -220,12 +220,12 @@ export default function ReportsPage() {
           {/* TAB 1: LEDGER STATEMENT */}
           {activeTab === 'LEDGER' && (
             <div className="space-y-4">
-              <div className="glass-panel p-4 rounded-2xl flex items-center gap-4">
-                <label className="text-xs font-bold text-slate-700">Select Ledger Account:</label>
+              <div className="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                <label className="text-xs font-bold text-slate-700 shrink-0">Select Ledger Account:</label>
                 <select
                   value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(e.target.value)}
-                  className="glass-input p-2 rounded-xl text-xs bg-white w-80 font-semibold border border-slate-200"
+                  className="glass-input p-2.5 rounded-xl text-xs bg-white w-full sm:w-80 font-semibold border border-slate-200"
                 >
                   <option value="">-- Select Account --</option>
                   {accounts.map((a: any) => (
@@ -259,32 +259,34 @@ export default function ReportsPage() {
                     </div>
                   </div>
 
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
-                      <tr>
-                        <th className="p-3">Date</th>
-                        <th className="p-3">Voucher</th>
-                        <th className="p-3 text-right">Debit (₹)</th>
-                        <th className="p-3 text-right">Credit (₹)</th>
-                        <th className="p-3 text-right">Running Balance (₹)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {statement.lines.map((line: any) => (
-                        <tr key={line.id} className="hover:bg-slate-100/50">
-                          <td className="p-3 font-medium">{line.transaction_date}</td>
-                          <td className="p-3 font-mono font-bold text-indigo-700">{line.voucher_type}</td>
-                          <td className="p-3 text-right text-emerald-700 font-bold">
-                            {parseFloat(line.debit_amount) > 0 ? `₹${formatCurrency(line.debit_amount)}` : '-'}
-                          </td>
-                          <td className="p-3 text-right text-rose-700 font-bold">
-                            {parseFloat(line.credit_amount) > 0 ? `₹${formatCurrency(line.credit_amount)}` : '-'}
-                          </td>
-                          <td className="p-3 text-right font-extrabold text-slate-900">₹{formatCurrency(line.running_balance)}</td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[550px] text-left text-xs">
+                      <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
+                        <tr>
+                          <th className="p-3">Date</th>
+                          <th className="p-3">Voucher</th>
+                          <th className="p-3 text-right">Debit (₹)</th>
+                          <th className="p-3 text-right">Credit (₹)</th>
+                          <th className="p-3 text-right">Running Balance (₹)</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {statement.lines.map((line: any) => (
+                          <tr key={line.id} className="hover:bg-slate-100/50">
+                            <td className="p-3 font-medium">{line.transaction_date}</td>
+                            <td className="p-3 font-mono font-bold text-indigo-700">{line.voucher_type}</td>
+                            <td className="p-3 text-right text-emerald-700 font-bold">
+                              {parseFloat(line.debit_amount) > 0 ? `₹${formatCurrency(line.debit_amount)}` : '-'}
+                            </td>
+                            <td className="p-3 text-right text-rose-700 font-bold">
+                              {parseFloat(line.credit_amount) > 0 ? `₹${formatCurrency(line.credit_amount)}` : '-'}
+                            </td>
+                            <td className="p-3 text-right font-extrabold text-slate-900">₹{formatCurrency(line.running_balance)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -531,42 +533,44 @@ export default function ReportsPage() {
                     )}
                   </div>
                 </div>
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
-                    <tr>
-                      <th className="p-3">Customer</th>
-                      <th className="p-3 text-right">Revenue (₹)</th>
-                      <th className="p-3 text-right">COGS (₹)</th>
-                      <th className="p-3 text-right">Net Profit (₹)</th>
-                      <th className="p-3 text-right">Margin %</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
-                    {isProfLoading ? (
-                      [...Array(4)].map((_, i) => (
-                        <tr key={i} className="animate-pulse">
-                          <td className="p-3"><Skeleton className="h-5 w-32 rounded-lg" /></td>
-                          <td className="p-3 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
-                          <td className="p-3 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
-                          <td className="p-3 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
-                          <td className="p-3 text-right"><Skeleton className="h-5 w-16 rounded-lg ml-auto" /></td>
-                        </tr>
-                      ))
-                    ) : partyProf?.parties?.length === 0 ? (
-                      <tr><td colSpan={5} className="p-8 text-center text-slate-500">No party sales recorded yet.</td></tr>
-                    ) : (
-                      partyProf?.parties?.map((pt: any) => (
-                        <tr key={pt.party_id} className="hover:bg-slate-50">
-                          <td className="p-3 font-bold text-slate-900">{pt.party_name}</td>
-                          <td className="p-3 text-right">₹{formatCurrency(pt.total_revenue)}</td>
-                          <td className="p-3 text-right text-slate-500">₹{formatCurrency(pt.total_cogs)}</td>
-                          <td className="p-3 text-right text-emerald-700 font-bold">₹{formatCurrency(pt.net_profit)}</td>
-                          <td className="p-3 text-right font-bold text-indigo-700">{pt.profit_margin_percent}%</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[550px] text-left text-xs">
+                    <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
+                      <tr>
+                        <th className="p-3">Customer</th>
+                        <th className="p-3 text-right">Revenue (₹)</th>
+                        <th className="p-3 text-right">COGS (₹)</th>
+                        <th className="p-3 text-right">Net Profit (₹)</th>
+                        <th className="p-3 text-right">Margin %</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                      {isProfLoading ? (
+                        [...Array(4)].map((_, i) => (
+                          <tr key={i} className="animate-pulse">
+                            <td className="p-3"><Skeleton className="h-5 w-32 rounded-lg" /></td>
+                            <td className="p-3 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                            <td className="p-3 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                            <td className="p-3 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                            <td className="p-3 text-right"><Skeleton className="h-5 w-16 rounded-lg ml-auto" /></td>
+                          </tr>
+                        ))
+                      ) : partyProf?.parties?.length === 0 ? (
+                        <tr><td colSpan={5} className="p-8 text-center text-slate-500">No party sales recorded yet.</td></tr>
+                      ) : (
+                        partyProf?.parties?.map((pt: any) => (
+                          <tr key={pt.party_id} className="hover:bg-slate-50">
+                            <td className="p-3 font-bold text-slate-900">{pt.party_name}</td>
+                            <td className="p-3 text-right">₹{formatCurrency(pt.total_revenue)}</td>
+                            <td className="p-3 text-right text-slate-500">₹{formatCurrency(pt.total_cogs)}</td>
+                            <td className="p-3 text-right text-emerald-700 font-bold">₹{formatCurrency(pt.net_profit)}</td>
+                            <td className="p-3 text-right font-bold text-indigo-700">{pt.profit_margin_percent}%</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
