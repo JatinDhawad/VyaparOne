@@ -81,11 +81,11 @@ export default function PaymentsPage() {
           actionLabel="New Voucher Entry"
         />
 
-        <main className="p-8 space-y-6 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-8 space-y-6 flex-1 overflow-y-auto">
           <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
             <div className="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm">Voucher History</div>
-            <div className="max-h-[700px] overflow-y-auto">
-              <table className="w-full text-left text-xs">
+            <div className="max-h-[700px] overflow-y-auto overflow-x-auto">
+              <table className="w-full min-w-[550px] text-left text-xs">
                 <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
                   <tr>
                     <th className="p-4">Voucher #</th>

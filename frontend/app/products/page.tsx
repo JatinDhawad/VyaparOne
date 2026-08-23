@@ -256,7 +256,7 @@ export default function ProductsPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header title="Product Catalog & Inventory" />
 
-        <main className="p-8 space-y-6 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-8 space-y-6 flex-1 overflow-y-auto">
           {/* Top Action Bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="relative flex-1 max-w-md w-full">
@@ -269,10 +269,10 @@ export default function ProductsPage() {
                 className="glass-input pl-10 pr-4 py-2.5 w-full text-xs rounded-2xl"
               />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <button
                 onClick={() => { resetCreate(); setIsCreateOpen(true); }}
-                className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1.5"
+                className="flex-1 sm:flex-initial px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-indigo-500/20 transition-all flex items-center justify-center gap-1.5"
               >
                 + Add Product SKU
               </button>

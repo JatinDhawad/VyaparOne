@@ -166,7 +166,7 @@ export default function PartiesPage() {
           actionLabel="Add New Party"
         />
 
-        <main className="p-8 space-y-8 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-8 space-y-6 sm:space-y-8 flex-1 overflow-y-auto">
           {/* Top Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-indigo-100 glow-indigo">
@@ -228,7 +228,7 @@ export default function PartiesPage() {
           </div>
 
           {/* Controls Bar */}
-          <div className="glass-panel p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 border border-slate-200">
+          <div className="glass-panel p-4 sm:p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 border border-slate-200">
             <div className="relative w-full md:w-96">
               <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
               <input
@@ -240,14 +240,14 @@ export default function PartiesPage() {
               />
             </div>
 
-            <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
               <span className="text-xs font-extrabold text-slate-600">Filter Type:</span>
-              <div className="flex gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+              <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 overflow-x-auto max-w-full">
                 {['', 'CUSTOMER', 'SUPPLIER', 'BOTH'].map((type) => (
                   <button
                     key={type}
                     onClick={() => setFilterType(type)}
-                    className={`px-4 py-1.5 text-xs font-extrabold rounded-xl transition-all ${
+                    className={`px-3 sm:px-4 py-1.5 text-xs font-extrabold rounded-xl transition-all whitespace-nowrap ${
                       filterType === type 
                         ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
                         : 'text-slate-600 hover:text-slate-900'

@@ -326,7 +326,7 @@ export default function SalesPage() {
         />
 
         {/* ── Invoice Table ────────────────────────────────────────────── */}
-        <main className="p-8 space-y-6 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-8 space-y-6 flex-1 overflow-y-auto">
           {deleteSuccessMessage && (
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-sm animate-in fade-in slide-in-from-top-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
@@ -435,8 +435,8 @@ export default function SalesPage() {
           </div>
 
           <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
-            <div className="max-h-[700px] overflow-y-auto">
-              <table className="w-full text-left text-xs">
+            <div className="max-h-[700px] overflow-y-auto overflow-x-auto">
+              <table className="w-full min-w-[700px] text-left text-xs">
                 <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
                   <tr>
                     <th className="p-4">Invoice #</th>
