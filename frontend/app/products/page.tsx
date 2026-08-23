@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Search, PackageCheck, Layers, Tag, Pencil, Package, 
   History, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft,
-  DollarSign, BarChart3, FileText, CheckCircle2, ShoppingBag, ShoppingCart
+  DollarSign, BarChart3, FileText, CheckCircle2, ShoppingBag, ShoppingCart, Loader2
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -496,8 +496,13 @@ export default function ProductsPage() {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setIsCreateOpen(false)} className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Cancel</button>
-            <button type="submit" disabled={createMutation.isPending} className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all">
-              {createMutation.isPending ? 'Saving...' : 'Save Product SKU'}
+            <button 
+              type="submit" 
+              disabled={createMutation.isPending} 
+              className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              <span>{createMutation.isPending ? 'Saving...' : 'Save Product SKU'}</span>
             </button>
           </div>
         </form>
@@ -571,8 +576,13 @@ export default function ProductsPage() {
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={() => setEditProduct(null)} className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Cancel</button>
-              <button type="submit" disabled={editMutation.isPending} className="px-4 py-2 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all">
-                {editMutation.isPending ? 'Updating...' : 'Update Details'}
+              <button 
+                type="submit" 
+                disabled={editMutation.isPending} 
+                className="px-4 py-2 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {editMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                <span>{editMutation.isPending ? 'Updating...' : 'Update Details'}</span>
               </button>
             </div>
           </form>

@@ -22,7 +22,8 @@ import {
   Tag,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Loader2
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -1121,9 +1122,10 @@ export default function PurchasesPage() {
           <button
             type="submit"
             disabled={createPurchaseMutation.isPending}
-            className="w-full py-4 bg-gradient-to-r from-indigo-600 via-teal-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-500/25 transition-all text-sm uppercase tracking-wider mt-4"
+            className="w-full py-4 bg-gradient-to-r from-indigo-600 via-teal-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-500/25 transition-all text-sm uppercase tracking-wider mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {createPurchaseMutation.isPending ? 'Saving Purchase Invoice...' : 'Save Purchase Invoice'}
+            {createPurchaseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            <span>{createPurchaseMutation.isPending ? 'Saving Purchase Invoice...' : 'Save Purchase Invoice'}</span>
           </button>
         </form>
       </Modal>
@@ -1177,6 +1179,7 @@ export default function PurchasesPage() {
             <div className="flex justify-end gap-3 pt-1">
               <button type="button" onClick={() => setEditInvoice(null)} className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
               <button
+                type="button"
                 disabled={editMutation.isPending}
                 onClick={() => editMutation.mutate({ id: editInvoice.id, data: {
                   lr_charges:              parseFloat(editLr) || 0,
@@ -1188,9 +1191,10 @@ export default function PurchasesPage() {
                   amount_paid:             parseFloat(editAmountPaid) || 0,
                   notes: editNotes,
                 }})}
-                className="px-6 py-2 font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-md transition-colors disabled:opacity-60"
+                className="px-6 py-2 font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {editMutation.isPending ? 'Saving...' : '✓ Save Changes'}
+                {editMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                <span>{editMutation.isPending ? 'Saving...' : '✓ Save Changes'}</span>
               </button>
             </div>
           </div>
@@ -1248,31 +1252,31 @@ export default function PurchasesPage() {
                     <span className="font-extrabold text-slate-900 text-sm">{payInvoice.supplier?.name || 'Vendor'}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500 font-medium">Total Bill Payable</span>
+                    <span className="text-slate-500 font-medium">Total Payable Amount</span>
                     <span className="font-extrabold text-slate-900">₹{formatCurrency(payable)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500 font-medium">Already Paid</span>
-                    <span className="font-extrabold text-emerald-700">₹{formatCurrency(currentPaid)}</span>
+                    <span className="text-slate-500 font-medium">Currently Paid</span>
+                    <span className="font-bold text-emerald-700">₹{formatCurrency(currentPaid)}</span>
                   </div>
-                  <div className="flex items-center justify-between border-t border-slate-200 pt-2 font-black text-sm">
-                    <span className="text-rose-700">Current Pending Due</span>
-                    <span className="text-rose-700">₹{formatCurrency(currentPending)}</span>
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-1.5">
+                    <span className="font-bold text-slate-700">Current Outstanding Due</span>
+                    <span className="font-extrabold text-rose-700 text-sm">₹{formatCurrency(currentPending)}</span>
                   </div>
                 </div>
 
                 {/* Quick Fill Buttons */}
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1.5">Quick Payment Presets</label>
-                  <div className="flex flex-wrap gap-2">
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Quick Fill Presets</span>
+                  <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => setPayAmount(String(currentPending))}
-                      className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl font-extrabold text-[11px] transition-all"
+                      className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl font-bold text-[11px] transition-all"
                     >
-                      Full Due: ₹{formatCurrency(currentPending)}
+                      Full Balance: ₹{formatCurrency(currentPending)}
                     </button>
-                    {currentPending > 1000 && (
+                    {currentPending > 0 && (
                       <>
                         <button
                           type="button"
@@ -1382,9 +1386,13 @@ export default function PurchasesPage() {
                   <button
                     type="submit"
                     disabled={payMutation.isPending || newPaymentNum <= 0}
-                    className="px-6 py-2.5 font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl shadow-md transition-all disabled:opacity-60 flex items-center gap-1.5"
+                    className="px-6 py-2.5 font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <CreditCard className="h-4 w-4" />
+                    {payMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CreditCard className="h-4 w-4" />
+                    )}
                     <span>{payMutation.isPending ? 'Recording...' : `Confirm Payment of ₹${formatCurrency(newPaymentNum)}`}</span>
                   </button>
                 </div>

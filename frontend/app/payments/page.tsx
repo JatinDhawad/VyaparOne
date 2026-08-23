@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Loader2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
@@ -243,9 +243,10 @@ export default function PaymentsPage() {
             <button 
               type="submit" 
               disabled={createMutation.isPending} 
-              className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all"
+              className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {createMutation.isPending ? 'Recording...' : 'Record Voucher'}
+              {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              <span>{createMutation.isPending ? 'Recording...' : 'Record Voucher'}</span>
             </button>
           </div>
         </form>

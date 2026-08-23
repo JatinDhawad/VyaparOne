@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Search, Phone, Mail, MapPin, Pencil, Users, Building2, UserCheck, 
   Plus, ShoppingCart, Receipt, FileText, ExternalLink, Calendar, 
-  DollarSign, Eye, ArrowUpRight, CheckCircle2, Clock 
+  DollarSign, Eye, ArrowUpRight, CheckCircle2, Clock, Loader2 
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -481,9 +481,10 @@ export default function PartiesPage() {
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="w-full py-4 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-500/20 transition-all text-xs uppercase tracking-wider mt-4"
+            className="w-full py-4 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-500/20 transition-all text-xs uppercase tracking-wider mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {createMutation.isPending ? 'Saving...' : 'Save Party'}
+            {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            <span>{createMutation.isPending ? 'Saving Party...' : 'Save Party'}</span>
           </button>
         </form>
       </Modal>
@@ -540,9 +541,10 @@ export default function PartiesPage() {
           <button
             type="submit"
             disabled={updateMutation.isPending}
-            className="w-full py-4 bg-gradient-to-r from-indigo-600 via-teal-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-500/20 transition-all text-xs uppercase tracking-wider mt-4"
+            className="w-full py-4 bg-gradient-to-r from-indigo-600 via-teal-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-500/20 transition-all text-xs uppercase tracking-wider mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {updateMutation.isPending ? 'Updating...' : 'Update Party Details'}
+            {updateMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            <span>{updateMutation.isPending ? 'Updating...' : 'Update Party Details'}</span>
           </button>
         </form>
       </Modal>
