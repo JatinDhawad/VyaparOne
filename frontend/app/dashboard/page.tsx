@@ -27,6 +27,7 @@ import Header from '@/components/Header';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui';
 
 type Period = '30d' | '90d' | '6m' | '1y' | 'all';
 type TxFilter = 'ALL' | 'SALES' | 'PURCHASES' | 'PAYMENTS';
@@ -64,7 +65,7 @@ export default function DashboardPage() {
     queryFn: () => api.getPayments(),
   });
 
-  const { data: products = [] } = useQuery({
+  const { data: products = [], isLoading: isProductsLoading } = useQuery({
     queryKey: ['products'],
     queryFn: () => api.getProducts(),
   });
@@ -198,9 +199,13 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                  ₹{isSummaryLoading ? '...' : formatCurrency(summary?.total_sales)}
-                </h3>
+                {isSummaryLoading ? (
+                  <Skeleton className="h-8 w-36 rounded-xl" />
+                ) : (
+                  <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                    ₹{formatCurrency(summary?.total_sales)}
+                  </h3>
+                )}
               </div>
             </div>
 
@@ -213,19 +218,28 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                  ₹{isSummaryLoading ? '...' : formatCurrency(summary?.total_purchases)}
-                </h3>
-                <div className="mt-3 space-y-1 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-600">Billed (GST Invoice)</span>
-                    <span className="font-bold text-slate-900">₹{isSummaryLoading ? '...' : formatCurrency(summary?.total_billed_purchases)}</span>
+                {isSummaryLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-8 w-36 rounded-xl" />
+                    <Skeleton className="h-4 w-full rounded-lg" />
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-amber-700">+ Unbilled (Non-GST)</span>
-                    <span className="font-bold text-amber-800">₹{isSummaryLoading ? '...' : formatCurrency(summary?.total_unbilled_purchases)}</span>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                      ₹{formatCurrency(summary?.total_purchases)}
+                    </h3>
+                    <div className="mt-3 space-y-1 pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-600">Billed (GST Invoice)</span>
+                        <span className="font-bold text-slate-900">₹{formatCurrency(summary?.total_billed_purchases)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-amber-700">+ Unbilled (Non-GST)</span>
+                        <span className="font-bold text-amber-800">₹{formatCurrency(summary?.total_unbilled_purchases)}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -238,9 +252,13 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-2xl font-extrabold text-emerald-700 tracking-tight">
-                  ₹{isSummaryLoading ? '...' : formatCurrency(summary?.net_profit)}
-                </h3>
+                {isSummaryLoading ? (
+                  <Skeleton className="h-8 w-36 rounded-xl" />
+                ) : (
+                  <h3 className="text-2xl font-extrabold text-emerald-700 tracking-tight">
+                    ₹{formatCurrency(summary?.net_profit)}
+                  </h3>
+                )}
               </div>
             </div>
 
@@ -253,9 +271,13 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                  ₹{isSummaryLoading ? '...' : formatCurrency(summary?.total_operational_expenses)}
-                </h3>
+                {isSummaryLoading ? (
+                  <Skeleton className="h-8 w-36 rounded-xl" />
+                ) : (
+                  <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                    ₹{formatCurrency(summary?.total_operational_expenses)}
+                  </h3>
+                )}
               </div>
             </div>
           </div>
@@ -315,7 +337,11 @@ export default function DashboardPage() {
               {/* Transaction List */}
               <div className="space-y-3">
                 {isTxLoading ? (
-                  <div className="py-12 text-center text-slate-400 text-xs">Loading transaction feed...</div>
+                  <div className="space-y-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+                    ))}
+                  </div>
                 ) : recentTransactions.length === 0 ? (
                   <div className="py-12 text-center text-slate-400 text-xs">No transactions recorded yet.</div>
                 ) : (
@@ -431,31 +457,39 @@ export default function DashboardPage() {
 
                 {/* Stock Items List */}
                 <div className="space-y-3">
-                  {products.map((prod: any) => {
-                    const stock = prod.stock?.current_stock ?? 0;
-                    const ppb = prod.packets_per_bag || 1;
-                    const bags = ppb > 1 ? (stock / ppb).toFixed(1) : null;
+                  {isProductsLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(4)].map((_, i) => (
+                        <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+                      ))}
+                    </div>
+                  ) : (
+                    products.map((prod: any) => {
+                      const stock = prod.stock?.current_stock ?? 0;
+                      const ppb = prod.packets_per_bag || 1;
+                      const bags = ppb > 1 ? (stock / ppb).toFixed(1) : null;
 
-                    return (
-                      <div key={prod.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="font-extrabold text-slate-900 text-xs leading-snug">{prod.name}</span>
-                          <span className="text-[10px] font-extrabold text-slate-500 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shrink-0">
-                            1 Bag = {ppb} PKT
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
-                          <span className="text-[11px] text-slate-500 font-medium">Available Stock</span>
-                          <div className="text-right">
-                            <span className="font-black text-indigo-900 text-sm">{stock.toLocaleString()} {prod.unit}</span>
-                            {bags && (
-                              <span className="text-[10px] font-bold text-slate-500 block">({bags} Bags)</span>
-                            )}
+                      return (
+                        <div key={prod.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-extrabold text-slate-900 text-xs leading-snug">{prod.name}</span>
+                            <span className="text-[10px] font-extrabold text-slate-500 bg-white px-2 py-0.5 rounded-lg border border-slate-200 shrink-0">
+                              1 Bag = {ppb} PKT
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
+                            <span className="text-[11px] text-slate-500 font-medium">Available Stock</span>
+                            <div className="text-right">
+                              <span className="font-black text-indigo-900 text-sm">{stock.toLocaleString()} {prod.unit}</span>
+                              {bags && (
+                                <span className="text-[10px] font-bold text-slate-500 block">({bags} Bags)</span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
@@ -482,9 +516,13 @@ export default function DashboardPage() {
                 </Link>
               </div>
               <div>
-                <p className="text-3xl font-extrabold text-slate-900">
-                  ₹{isSummaryLoading ? '...' : formatCurrency(summary?.total_receivables)}
-                </p>
+                {isSummaryLoading ? (
+                  <Skeleton className="h-9 w-40 rounded-xl" />
+                ) : (
+                  <p className="text-3xl font-extrabold text-slate-900">
+                    ₹{formatCurrency(summary?.total_receivables)}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -500,9 +538,13 @@ export default function DashboardPage() {
                 </Link>
               </div>
               <div>
-                <p className="text-3xl font-extrabold text-slate-900">
-                  ₹{isSummaryLoading ? '...' : formatCurrency(summary?.total_payables)}
-                </p>
+                {isSummaryLoading ? (
+                  <Skeleton className="h-9 w-40 rounded-xl" />
+                ) : (
+                  <p className="text-3xl font-extrabold text-slate-900">
+                    ₹{formatCurrency(summary?.total_payables)}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -519,7 +561,11 @@ export default function DashboardPage() {
               </div>
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-extrabold text-amber-700">{isSummaryLoading ? '...' : summary?.low_stock_items_count || 0}</span>
+                  {isSummaryLoading ? (
+                    <Skeleton className="h-9 w-16 rounded-xl" />
+                  ) : (
+                    <span className="text-3xl font-extrabold text-amber-700">{summary?.low_stock_items_count || 0}</span>
+                  )}
                   <span className="text-xs font-bold text-slate-700">Out-of-Stock Items</span>
                 </div>
               </div>

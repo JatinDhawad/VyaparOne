@@ -30,6 +30,7 @@ import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Skeleton, EmptyState } from '@/components/ui';
 
 export default function PurchasesPage() {
   const queryClient = useQueryClient();
@@ -40,6 +41,12 @@ export default function PurchasesPage() {
   const [formError, setFormError] = useState('');
   const [editError, setEditError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // ── Queries ────────────────────────────────────────────────────────────────
+  const { data: purchases = [], isLoading } = useQuery({
+    queryKey: ['purchases'],
+    queryFn: () => api.getPurchases(),
+  });
 
   // Main Form State
   const [invoiceNumber, setInvoiceNumber] = useState('');
@@ -85,11 +92,6 @@ export default function PurchasesPage() {
 
   // Items Array
   const [items, setItems] = useState<any[]>([]);
-
-  const { data: purchases = [], isLoading } = useQuery({
-    queryKey: ['purchases'],
-    queryFn: () => api.getPurchases(),
-  });
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ['suppliers'],
@@ -425,9 +427,13 @@ export default function PurchasesPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  ₹{isLoading ? '...' : formatCurrency(totalBilledPurchases)}
-                </h3>
+                {isLoading ? (
+                  <Skeleton className="h-9 w-36 rounded-xl" />
+                ) : (
+                  <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                    ₹{formatCurrency(totalBilledPurchases)}
+                  </h3>
+                )}
                 <p className="text-xs font-semibold text-slate-500 mt-1">Official GST Vendor Invoices</p>
               </div>
             </div>
@@ -440,9 +446,13 @@ export default function PurchasesPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {isLoading ? '...' : purchases.length} <span className="text-sm font-bold text-slate-500">Invoices</span>
-                </h3>
+                {isLoading ? (
+                  <Skeleton className="h-9 w-24 rounded-xl" />
+                ) : (
+                  <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                    {purchases.length} <span className="text-sm font-bold text-slate-500">Invoices</span>
+                  </h3>
+                )}
                 <p className="text-xs font-semibold text-slate-500 mt-1">Purchases Record</p>
               </div>
             </div>
@@ -455,9 +465,13 @@ export default function PurchasesPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-3xl font-extrabold text-rose-800 tracking-tight">
-                  ₹{isLoading ? '...' : formatCurrency(totalPendingOwed)}
-                </h3>
+                {isLoading ? (
+                  <Skeleton className="h-9 w-36 rounded-xl" />
+                ) : (
+                  <h3 className="text-3xl font-extrabold text-rose-800 tracking-tight">
+                    ₹{formatCurrency(totalPendingOwed)}
+                  </h3>
+                )}
                 <p className="text-xs font-semibold text-rose-700/80 mt-1">Outstanding Supplier Payable</p>
               </div>
             </div>
@@ -528,10 +542,33 @@ export default function PurchasesPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
                   {isLoading ? (
-                    <tr><td colSpan={9} className="p-8 text-center text-slate-500 text-sm">Loading purchase bills...</td></tr>
+                    [...Array(5)].map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="p-4"><Skeleton className="h-5 w-24 rounded-lg" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-32 rounded-lg" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-5 w-24 rounded-lg ml-auto" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-5 w-24 rounded-lg ml-auto" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-6 w-16 rounded-xl ml-auto" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-8 w-24 rounded-xl ml-auto" /></td>
+                      </tr>
+                    ))
                   ) : sortedPurchases.length === 0 ? (
-                    <tr><td colSpan={9} className="p-8 text-center text-slate-500 text-sm">No purchase invoices found.</td></tr>
+                    <tr>
+                      <td colSpan={9} className="p-8">
+                        <EmptyState
+                          icon={ShoppingBag}
+                          title="No Purchase Invoices"
+                          description={searchTerm ? "No bills matched your search query." : "Record your first inward inventory purchase bill."}
+                          actionLabel="New Purchase Entry"
+                          onAction={() => setIsModalOpen(true)}
+                        />
+                      </td>
+                    </tr>
                   ) : (
+
                     sortedPurchases.map((p: any) => {
                       const bTotal = parseFloat(p.grand_total || 0);
                       const unbilled = parseFloat(p.unbilled_nongst_amount || 0);

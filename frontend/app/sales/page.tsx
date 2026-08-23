@@ -2,13 +2,14 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, AlertTriangle, CheckCircle2, ShoppingCart } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Skeleton, EmptyState } from '@/components/ui';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 const n = (v: string) => parseFloat(v) || 0;
@@ -351,11 +352,33 @@ export default function SalesPage() {
                   <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
                 {isLoading ? (
-                  <tr><td colSpan={9} className="p-8 text-center text-slate-500">Loading...</td></tr>
+                  [...Array(5)].map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="p-4"><Skeleton className="h-5 w-24 rounded-lg" /></td>
+                      <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
+                      <td className="p-4"><Skeleton className="h-5 w-32 rounded-lg" /></td>
+                      <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
+                      <td className="p-4 text-right"><Skeleton className="h-5 w-24 rounded-lg ml-auto" /></td>
+                      <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                      <td className="p-4 text-right"><Skeleton className="h-6 w-16 rounded-xl ml-auto" /></td>
+                      <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                      <td className="p-4 text-right"><Skeleton className="h-8 w-20 rounded-xl ml-auto" /></td>
+                    </tr>
+                  ))
                 ) : sales.length === 0 ? (
-                  <tr><td colSpan={9} className="p-8 text-center text-slate-500">No sales invoices yet.</td></tr>
+                  <tr>
+                    <td colSpan={9} className="p-8">
+                      <EmptyState
+                        icon={ShoppingCart}
+                        title="No Sales Invoices"
+                        description="Record your first sales transaction or POS counter bill."
+                        actionLabel="New Sales Invoice"
+                        onAction={() => setIsModalOpen(true)}
+                      />
+                    </td>
+                  </tr>
                 ) : (
                   sortedSales.map((s: any) => (
                     <tr key={s.id} className="hover:bg-slate-100/50 transition-colors">

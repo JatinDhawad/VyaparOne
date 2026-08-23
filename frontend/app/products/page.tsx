@@ -14,6 +14,7 @@ import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { Skeleton, EmptyState } from '@/components/ui';
 
 // ── Preset conversion ratios ──────────────────────────────────────────────────
 const PACKET_PRESETS = [
@@ -275,10 +276,18 @@ export default function ProductsPage() {
           {/* Product Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isProductsLoading ? (
-              <div className="col-span-full py-16 text-center text-slate-500 text-xs">Loading product inventory...</div>
+              [...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-96 w-full rounded-3xl" />
+              ))
             ) : filteredProducts.length === 0 ? (
-              <div className="col-span-full glass-card p-12 text-center text-slate-500 rounded-3xl">
-                No products found. Record a Purchase Bill or click &quot;Add Product SKU&quot;.
+              <div className="col-span-full">
+                <EmptyState
+                  icon={Package}
+                  title="No Products Found"
+                  description={searchTerm ? "No products matched your search keywords." : "Your catalog is empty. Record a purchase or create a new SKU."}
+                  actionLabel="Add Product SKU"
+                  onAction={() => { resetCreate(); setIsCreateOpen(true); }}
+                />
               </div>
             ) : (
               filteredProducts.map((p: any) => {

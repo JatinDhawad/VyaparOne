@@ -7,41 +7,42 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { Skeleton, EmptyState } from '@/components/ui';
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<'LEDGER' | 'RECEIVABLES' | 'PAYABLES' | 'PROFITABILITY' | 'GST'>('LEDGER');
   const [selectedAccountId, setSelectedAccountId] = useState('');
 
-  const { data: accounts = [] } = useQuery({
+  const { data: accounts = [], isLoading: isAccountsLoading } = useQuery({
     queryKey: ['ledger-accounts'],
     queryFn: () => api.getLedgerAccounts(),
   });
 
-  const { data: statement } = useQuery({
+  const { data: statement, isLoading: isStatementLoading } = useQuery({
     queryKey: ['ledger-statement', selectedAccountId],
     queryFn: () => api.getLedgerStatement(selectedAccountId),
     enabled: !!selectedAccountId,
   });
 
-  const { data: receivables } = useQuery({
+  const { data: receivables, isLoading: isReceivablesLoading } = useQuery({
     queryKey: ['report-receivables'],
     queryFn: () => api.getReceivables(),
     enabled: activeTab === 'RECEIVABLES',
   });
 
-  const { data: payables } = useQuery({
+  const { data: payables, isLoading: isPayablesLoading } = useQuery({
     queryKey: ['report-payables'],
     queryFn: () => api.getPayables(),
     enabled: activeTab === 'PAYABLES',
   });
 
-  const { data: partyProf } = useQuery({
+  const { data: partyProf, isLoading: isProfLoading } = useQuery({
     queryKey: ['report-party-prof'],
     queryFn: () => api.getPartyProfitability(),
     enabled: activeTab === 'PROFITABILITY',
   });
 
-  const { data: gst } = useQuery({
+  const { data: gst, isLoading: isGstLoading } = useQuery({
     queryKey: ['report-gst'],
     queryFn: () => api.getGSTSummary(),
     enabled: activeTab === 'GST',
@@ -99,7 +100,19 @@ export default function ReportsPage() {
                 </select>
               </div>
 
-              {statement && (
+              {isStatementLoading ? (
+                <div className="glass-panel rounded-2xl p-6 border border-slate-200 space-y-4">
+                  <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <Skeleton className="h-7 w-48 rounded-xl" />
+                    <Skeleton className="h-7 w-32 rounded-xl" />
+                  </div>
+                  <div className="space-y-3">
+                    {[...Array(4)].map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded-xl" />
+                    ))}
+                  </div>
+                </div>
+              ) : statement ? (
                 <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200 space-y-4 p-5">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                     <div>
@@ -139,60 +152,100 @@ export default function ReportsPage() {
                     </tbody>
                   </table>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 
           {/* TAB 2: RECEIVABLES */}
-          {activeTab === 'RECEIVABLES' && receivables && (
+          {activeTab === 'RECEIVABLES' && (
             <div className="glass-panel p-6 rounded-2xl border border-slate-200 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-900 text-base">Customer Receivables Overview</h3>
-                <span className="text-xl font-extrabold text-emerald-700">Total: ₹{formatCurrency(receivables.total_receivables)}</span>
+                {isReceivablesLoading ? (
+                  <Skeleton className="h-7 w-32 rounded-xl" />
+                ) : (
+                  <span className="text-xl font-extrabold text-emerald-700">Total: ₹{formatCurrency(receivables?.total_receivables)}</span>
+                )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {receivables.parties.map((p: any) => (
-                  <div key={p.party_id} className="glass-card p-4 rounded-xl flex items-center justify-between">
-                    <div>
-                      <div className="font-bold text-slate-900">{p.party_name}</div>
-                      <div className="text-[11px] text-slate-500 font-medium">{p.city} | Credit Days: {p.credit_days}</div>
+              {isReceivablesLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+                  ))}
+                </div>
+              ) : receivables?.parties?.length === 0 ? (
+                <EmptyState
+                  icon={CreditCard}
+                  title="No Pending Receivables"
+                  description="All customer accounts are currently settled."
+                />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {receivables?.parties?.map((p: any) => (
+                    <div key={p.party_id} className="glass-card p-4 rounded-xl flex items-center justify-between">
+                      <div>
+                        <div className="font-bold text-slate-900">{p.party_name}</div>
+                        <div className="text-[11px] text-slate-500 font-medium">{p.city} | Credit Days: {p.credit_days}</div>
+                      </div>
+                      <div className="font-extrabold text-emerald-700 text-base">₹{formatCurrency(p.current_balance)}</div>
                     </div>
-                    <div className="font-extrabold text-emerald-700 text-base">₹{formatCurrency(p.current_balance)}</div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* TAB 3: PAYABLES */}
-          {activeTab === 'PAYABLES' && payables && (
+          {activeTab === 'PAYABLES' && (
             <div className="glass-panel p-6 rounded-2xl border border-slate-200 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-900 text-base">Supplier Payables Overview</h3>
-                <span className="text-xl font-extrabold text-rose-700">Total: ₹{formatCurrency(payables.total_payables)}</span>
+                {isPayablesLoading ? (
+                  <Skeleton className="h-7 w-32 rounded-xl" />
+                ) : (
+                  <span className="text-xl font-extrabold text-rose-700">Total: ₹{formatCurrency(payables?.total_payables)}</span>
+                )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {payables.parties.map((p: any) => (
-                  <div key={p.party_id} className="glass-card p-4 rounded-xl flex items-center justify-between">
-                    <div>
-                      <div className="font-bold text-slate-900">{p.party_name}</div>
-                      <div className="text-[11px] text-slate-500 font-medium">{p.city}</div>
+              {isPayablesLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+                  ))}
+                </div>
+              ) : payables?.parties?.length === 0 ? (
+                <EmptyState
+                  icon={CreditCard}
+                  title="No Pending Payables"
+                  description="All supplier dues are currently clear."
+                />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {payables?.parties?.map((p: any) => (
+                    <div key={p.party_id} className="glass-card p-4 rounded-xl flex items-center justify-between">
+                      <div>
+                        <div className="font-bold text-slate-900">{p.party_name}</div>
+                        <div className="text-[11px] text-slate-500 font-medium">{p.city}</div>
+                      </div>
+                      <div className="font-extrabold text-rose-700 text-base">₹{formatCurrency(p.current_balance)}</div>
                     </div>
-                    <div className="font-extrabold text-rose-700 text-base">₹{formatCurrency(p.current_balance)}</div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* TAB 4: PROFITABILITY */}
-          {activeTab === 'PROFITABILITY' && partyProf && (
+          {activeTab === 'PROFITABILITY' && (
             <div className="glass-panel p-6 rounded-2xl border border-slate-200 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-bold text-slate-900 text-base">Customer & Party Margins</h3>
                 <div className="text-right">
                   <span className="text-xs text-slate-500 block font-semibold uppercase">Total Net Profit</span>
-                  <span className="text-xl font-extrabold text-emerald-700">₹{formatCurrency(partyProf.total_profit)}</span>
+                  {isProfLoading ? (
+                    <Skeleton className="h-7 w-28 rounded-xl" />
+                  ) : (
+                    <span className="text-xl font-extrabold text-emerald-700">₹{formatCurrency(partyProf?.total_profit)}</span>
+                  )}
                 </div>
               </div>
               <table className="w-full text-left text-xs">
@@ -205,42 +258,64 @@ export default function ReportsPage() {
                     <th className="p-3 text-right">Margin %</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {partyProf.parties.map((pt: any) => (
-                    <tr key={pt.party_id} className="hover:bg-slate-50">
-                      <td className="p-3 font-bold text-slate-900">{pt.party_name}</td>
-                      <td className="p-3 text-right">₹{formatCurrency(pt.total_revenue)}</td>
-                      <td className="p-3 text-right text-slate-500">₹{formatCurrency(pt.total_cogs)}</td>
-                      <td className="p-3 text-right text-emerald-700 font-bold">₹{formatCurrency(pt.net_profit)}</td>
-                      <td className="p-3 text-right font-bold text-indigo-700">{pt.profit_margin_percent}%</td>
-                    </tr>
-                  ))}
+                <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                  {isProfLoading ? (
+                    [...Array(4)].map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="p-3"><Skeleton className="h-5 w-32 rounded-lg" /></td>
+                        <td className="p-3 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                        <td className="p-3 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                        <td className="p-3 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                        <td className="p-3 text-right"><Skeleton className="h-5 w-16 rounded-lg ml-auto" /></td>
+                      </tr>
+                    ))
+                  ) : partyProf?.parties?.length === 0 ? (
+                    <tr><td colSpan={5} className="p-8 text-center text-slate-500">No party sales recorded yet.</td></tr>
+                  ) : (
+                    partyProf?.parties?.map((pt: any) => (
+                      <tr key={pt.party_id} className="hover:bg-slate-50">
+                        <td className="p-3 font-bold text-slate-900">{pt.party_name}</td>
+                        <td className="p-3 text-right">₹{formatCurrency(pt.total_revenue)}</td>
+                        <td className="p-3 text-right text-slate-500">₹{formatCurrency(pt.total_cogs)}</td>
+                        <td className="p-3 text-right text-emerald-700 font-bold">₹{formatCurrency(pt.net_profit)}</td>
+                        <td className="p-3 text-right font-bold text-indigo-700">{pt.profit_margin_percent}%</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           )}
 
           {/* TAB 5: GST RETURN SUMMARY */}
-          {activeTab === 'GST' && gst && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="glass-card p-6 rounded-2xl border-indigo-100">
-                <span className="text-xs font-bold uppercase text-indigo-700">Output GST (Sales)</span>
-                <h3 className="text-2xl font-bold text-slate-900 mt-2">₹{formatCurrency(gst.output_gst_amount)}</h3>
-                <p className="text-[11px] font-medium text-slate-500 mt-1">Taxable Turnover: ₹{formatCurrency(gst.sales_taxable_amount)}</p>
+          {activeTab === 'GST' && (
+            isGstLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+                ))}
               </div>
+            ) : gst ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="glass-card p-6 rounded-2xl border-indigo-100">
+                  <span className="text-xs font-bold uppercase text-indigo-700">Output GST (Sales)</span>
+                  <h3 className="text-2xl font-bold text-slate-900 mt-2">₹{formatCurrency(gst.output_gst_amount)}</h3>
+                  <p className="text-[11px] font-medium text-slate-500 mt-1">Taxable Turnover: ₹{formatCurrency(gst.sales_taxable_amount)}</p>
+                </div>
 
-              <div className="glass-card p-6 rounded-2xl border-emerald-100">
-                <span className="text-xs font-bold uppercase text-emerald-700">Input Tax Credit (ITC)</span>
-                <h3 className="text-2xl font-bold text-slate-900 mt-2">₹{formatCurrency(gst.input_gst_amount)}</h3>
-                <p className="text-[11px] font-medium text-slate-500 mt-1">Purchase Taxable: ₹{formatCurrency(gst.purchase_taxable_amount)}</p>
-              </div>
+                <div className="glass-card p-6 rounded-2xl border-emerald-100">
+                  <span className="text-xs font-bold uppercase text-emerald-700">Input Tax Credit (ITC)</span>
+                  <h3 className="text-2xl font-bold text-slate-900 mt-2">₹{formatCurrency(gst.input_gst_amount)}</h3>
+                  <p className="text-[11px] font-medium text-slate-500 mt-1">Purchase Taxable: ₹{formatCurrency(gst.purchase_taxable_amount)}</p>
+                </div>
 
-              <div className="glass-card p-6 rounded-2xl border-amber-200 bg-amber-50/50 glow-amber">
-                <span className="text-xs font-bold uppercase text-amber-800">Net GST Liability</span>
-                <h3 className="text-2xl font-extrabold text-amber-800 mt-2">₹{formatCurrency(gst.net_gst_payable)}</h3>
-                <p className="text-[11px] font-medium text-slate-500 mt-1">Output GST minus Input Tax Credit</p>
+                <div className="glass-card p-6 rounded-2xl border-amber-200 bg-amber-50/50 glow-amber">
+                  <span className="text-xs font-bold uppercase text-amber-800">Net GST Liability</span>
+                  <h3 className="text-2xl font-extrabold text-amber-800 mt-2">₹{formatCurrency(gst.net_gst_payable)}</h3>
+                  <p className="text-[11px] font-medium text-slate-500 mt-1">Output GST minus Input Tax Credit</p>
+                </div>
               </div>
-            </div>
+            ) : null
           )}
         </main>
       </div>

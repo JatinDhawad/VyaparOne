@@ -15,6 +15,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Skeleton, EmptyState } from '@/components/ui';
 
 export default function PartiesPage() {
   const queryClient = useQueryClient();
@@ -176,9 +177,13 @@ export default function PartiesPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {isLoading ? '...' : parties.length} <span className="text-sm font-bold text-slate-500">Parties</span>
-                </h3>
+                {isLoading ? (
+                  <Skeleton className="h-9 w-28 rounded-xl" />
+                ) : (
+                  <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                    {parties.length} <span className="text-sm font-bold text-slate-500">Parties</span>
+                  </h3>
+                )}
                 <p className="text-xs font-semibold text-slate-500 mt-1">Active trading accounts</p>
               </div>
             </div>
@@ -191,9 +196,13 @@ export default function PartiesPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-3xl font-extrabold text-emerald-800 tracking-tight">
-                  {isLoading ? '...' : customerCount} <span className="text-sm font-bold text-slate-500 font-medium">Accounts</span>
-                </h3>
+                {isLoading ? (
+                  <Skeleton className="h-9 w-28 rounded-xl" />
+                ) : (
+                  <h3 className="text-3xl font-extrabold text-emerald-800 tracking-tight">
+                    {customerCount} <span className="text-sm font-bold text-slate-500 font-medium">Accounts</span>
+                  </h3>
+                )}
                 <p className="text-xs font-semibold text-emerald-700/80 mt-1">Sales tax invoice buyers</p>
               </div>
             </div>
@@ -206,9 +215,13 @@ export default function PartiesPage() {
                 </div>
               </div>
               <div className="mt-4">
-                <h3 className="text-3xl font-extrabold text-amber-800 tracking-tight">
-                  {isLoading ? '...' : supplierCount} <span className="text-sm font-bold text-slate-500 font-medium">Vendors</span>
-                </h3>
+                {isLoading ? (
+                  <Skeleton className="h-9 w-28 rounded-xl" />
+                ) : (
+                  <h3 className="text-3xl font-extrabold text-amber-800 tracking-tight">
+                    {supplierCount} <span className="text-sm font-bold text-slate-500 font-medium">Vendors</span>
+                  </h3>
+                )}
                 <p className="text-xs font-semibold text-amber-700/80 mt-1">Inbound stock manufacturers</p>
               </div>
             </div>
@@ -250,10 +263,21 @@ export default function PartiesPage() {
           {/* Party List Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading ? (
-              <div className="col-span-full py-16 text-center text-slate-500 text-sm">Loading parties directory...</div>
+              [...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-64 w-full rounded-3xl" />
+              ))
             ) : filteredParties.length === 0 ? (
-              <div className="col-span-full py-16 text-center text-slate-500 text-sm">No parties found matching criteria.</div>
+              <div className="col-span-full">
+                <EmptyState
+                  icon={Users}
+                  title="No Parties Found"
+                  description={searchTerm ? "No trading parties matched your search keyword." : "Your party directory is currently empty."}
+                  actionLabel={isAdmin ? "Create New Party" : undefined}
+                  onAction={isAdmin ? handleOpenCreateModal : undefined}
+                />
+              </div>
             ) : (
+
               filteredParties.map((party: any) => {
                 const balance = parseFloat(party.ledger_balance || 0);
                 const isSupplier = party.party_type === 'SUPPLIER';
