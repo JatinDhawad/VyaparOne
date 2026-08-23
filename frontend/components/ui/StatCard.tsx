@@ -60,7 +60,6 @@ export default function StatCard({
   value,
   prefix = '₹',
   suffix = '',
-  icon: Icon,
   trend,
   subtext,
   variant = 'neutral',
@@ -102,14 +101,11 @@ export default function StatCard({
 
   if (isLoading) {
     return (
-      <div className={cn('glass-card p-6 rounded-2xl flex flex-col justify-between min-h-[145px]', currentVariant.card, className)}>
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-28 rounded-lg" />
-          <Skeleton className="h-10 w-10 rounded-xl" />
-        </div>
+      <div className={cn('glass-card p-5 rounded-xl flex flex-col justify-between min-h-[125px]', currentVariant.card, className)}>
+        <Skeleton className="h-4 w-28 rounded-md" />
         <div className="mt-4 space-y-2">
-          <Skeleton className="h-8 w-36 rounded-xl" />
-          <Skeleton className="h-4 w-24 rounded-lg" />
+          <Skeleton className="h-8 w-36 rounded-md" />
+          <Skeleton className="h-4 w-24 rounded-md" />
         </div>
       </div>
     );
@@ -120,44 +116,37 @@ export default function StatCard({
     : `${prefix ? `${prefix}` : ''}${value}${suffix ? ` ${suffix}` : ''}`;
 
   return (
-    <div className={cn('glass-card p-6 rounded-2xl flex flex-col justify-between min-h-[145px] transition-all duration-300', currentVariant.card, className)}>
+    <div className={cn('glass-card p-5 rounded-xl flex flex-col justify-between min-h-[125px] transition-all duration-200', currentVariant.card, className)}>
       <div className="flex items-center justify-between">
-        <span className={cn('text-xs font-extrabold uppercase tracking-wider', currentVariant.label)}>
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
           {label}
         </span>
-        {Icon && (
-          <div className={cn('h-10 w-10 rounded-xl border flex items-center justify-center shadow-2xs shrink-0', currentVariant.iconBg)}>
-            <Icon className="h-5 w-5" />
-          </div>
+        {trend && (
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border',
+              trend.isPositive !== false
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-rose-50 text-rose-700 border-rose-200'
+            )}
+          >
+            {trend.isPositive !== false ? (
+              <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+            ) : (
+              <TrendingDown className="h-3.5 w-3.5 text-rose-600" />
+            )}
+            {trend.value}
+          </span>
         )}
       </div>
 
-      <div className="mt-3">
-        <div className="flex items-baseline justify-between gap-2 flex-wrap">
-          <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            {displayValue}
-          </h3>
-          {trend && (
-            <span
-              className={cn(
-                'inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-lg border',
-                trend.isPositive !== false
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : 'bg-rose-50 text-rose-800 border-rose-200'
-              )}
-            >
-              {trend.isPositive !== false ? (
-                <TrendingUp className="h-3 w-3 text-emerald-600" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-rose-600" />
-              )}
-              {trend.value}
-            </span>
-          )}
-        </div>
+      <div className="mt-2">
+        <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+          {displayValue}
+        </h3>
 
         {subtext && (
-          <div className="mt-2 text-xs font-semibold text-slate-500 border-t border-slate-100 pt-1.5">
+          <div className="mt-2 text-xs font-normal text-slate-500 border-t border-slate-100 pt-1.5">
             {subtext}
           </div>
         )}

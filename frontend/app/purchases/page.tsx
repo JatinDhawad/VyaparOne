@@ -437,61 +437,47 @@ export default function PurchasesPage() {
           )}
 
           {/* Top Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-indigo-100 glow-indigo">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-700">Total Billed Purchases</span>
-                <div className="h-11 w-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
-                  <ShoppingBag className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="mt-4">
+          {/* Top 3 KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Billed Purchases</span>
+              <div className="mt-2">
                 {isLoading ? (
-                  <Skeleton className="h-9 w-36 rounded-xl" />
+                  <Skeleton className="h-8 w-36 rounded-md" />
                 ) : (
-                  <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
                     ₹{formatCurrency(totalBilledPurchases)}
                   </h3>
                 )}
-                <p className="text-xs font-semibold text-slate-500 mt-1">Official GST Vendor Invoices</p>
+                <p className="text-xs font-normal text-slate-500 mt-1">Official GST Vendor Invoices</p>
               </div>
             </div>
 
-            <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-slate-200">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-600">Total Invoices</span>
-                <div className="h-11 w-11 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shadow-sm">
-                  <FileText className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="mt-4">
+            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Invoices</span>
+              <div className="mt-2">
                 {isLoading ? (
-                  <Skeleton className="h-9 w-24 rounded-xl" />
+                  <Skeleton className="h-8 w-24 rounded-md" />
                 ) : (
-                  <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                    {purchases.length} <span className="text-sm font-bold text-slate-500">Invoices</span>
+                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    {purchases.length} <span className="text-sm font-normal text-slate-500">Invoices</span>
                   </h3>
                 )}
-                <p className="text-xs font-semibold text-slate-500 mt-1">Purchases Record</p>
+                <p className="text-xs font-normal text-slate-500 mt-1">Purchases Record</p>
               </div>
             </div>
 
-            <div className="glass-card p-6 rounded-xl relative overflow-hidden border-slate-200 bg-white">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-rose-800">Pending Amount</span>
-                <div className="h-11 w-11 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-700 shadow-xs">
-                  <CreditCard className="h-5 w-5" />
-                </div>
-              </div>
-              <div className="mt-4">
+            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending Amount</span>
+              <div className="mt-2">
                 {isLoading ? (
-                  <Skeleton className="h-9 w-36 rounded-xl" />
+                  <Skeleton className="h-8 w-36 rounded-md" />
                 ) : (
-                  <h3 className="text-3xl font-extrabold text-rose-800 tracking-tight">
+                  <h3 className="text-2xl font-bold text-rose-700 tracking-tight">
                     ₹{formatCurrency(totalPendingOwed)}
                   </h3>
                 )}
-                <p className="text-xs font-semibold text-rose-600 mt-1">Pending Supplier Payables</p>
+                <p className="text-xs font-normal text-rose-600 mt-1">Pending Supplier Payables</p>
               </div>
             </div>
           </div>
