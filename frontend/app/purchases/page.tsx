@@ -476,10 +476,10 @@ export default function PurchasesPage() {
               </div>
             </div>
 
-            <div className="glass-card p-6 rounded-3xl relative overflow-hidden border-rose-200 bg-gradient-to-br from-rose-50/40 to-white glow-amber">
+            <div className="glass-card p-6 rounded-xl relative overflow-hidden border-slate-200 bg-white">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-rose-800">Pending Amount</span>
-                <div className="h-11 w-11 rounded-2xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-700 shadow-sm">
+                <div className="h-11 w-11 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-700 shadow-xs">
                   <CreditCard className="h-5 w-5" />
                 </div>
               </div>
@@ -491,7 +491,7 @@ export default function PurchasesPage() {
                     ₹{formatCurrency(totalPendingOwed)}
                   </h3>
                 )}
-                <p className="text-xs font-semibold text-rose-700/80 mt-1">Outstanding Supplier Payable</p>
+                <p className="text-xs font-semibold text-rose-600 mt-1">Pending Supplier Payables</p>
               </div>
             </div>
           </div>
@@ -598,7 +598,7 @@ export default function PurchasesPage() {
             <div className="flex justify-end">
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2"
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-all flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
                 New Purchase Entry
@@ -1122,7 +1122,7 @@ export default function PurchasesPage() {
           <button
             type="submit"
             disabled={createPurchaseMutation.isPending}
-            className="w-full py-4 bg-gradient-to-r from-indigo-600 via-teal-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-500/25 transition-all text-sm uppercase tracking-wider mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-xs transition-all text-xs uppercase tracking-wider mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {createPurchaseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             <span>{createPurchaseMutation.isPending ? 'Saving Purchase Invoice...' : 'Save Purchase Invoice'}</span>
@@ -1164,8 +1164,8 @@ export default function PurchasesPage() {
                 <input type="text" inputMode="decimal" placeholder="0" value={editDiscount} onChange={(e) => setEditDiscount(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
               </div>
               <div>
-                <label className="font-bold text-amber-700 block mb-1">Unbilled Non-GST Amount (₹)</label>
-                <input type="text" inputMode="decimal" placeholder="0" value={editUnbilled} onChange={(e) => setEditUnbilled(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
+                <label className="font-bold text-amber-800 block mb-1">Unbilled Non-GST (₹) +</label>
+                <input type="text" inputMode="decimal" placeholder="0" value={editUnbilled} onChange={(e) => setEditUnbilled(e.target.value)} className="glass-input w-full p-2.5 rounded-xl text-amber-950 font-bold" />
               </div>
             </div>
             <div>
@@ -1265,7 +1265,7 @@ export default function PurchasesPage() {
                   </div>
                 </div>
 
-                {/* Quick Fill Buttons */}
+                {/* Quick Payment Presets */}
                 <div className="space-y-1.5">
                   <span className="text-[10px] font-bold text-slate-500 uppercase block">Quick Fill Presets</span>
                   <div className="flex gap-2">
@@ -1386,7 +1386,7 @@ export default function PurchasesPage() {
                   <button
                     type="submit"
                     disabled={payMutation.isPending || newPaymentNum <= 0}
-                    className="px-6 py-2.5 font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="px-6 py-2.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-xs transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {payMutation.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
