@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Skeleton, EmptyState } from '@/components/ui';
+import { Skeleton, EmptyState, Badge } from '@/components/ui';
 
 // ── Preset conversion ratios ──────────────────────────────────────────────────
 const PACKET_PRESETS = [
@@ -315,10 +315,10 @@ export default function ProductsPage() {
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-indigo-700 uppercase bg-indigo-50 px-2.5 py-1 rounded-xl border border-indigo-200/80">
+                          <Badge variant="info" size="sm" className="font-mono uppercase">
                             <Tag className="h-3 w-3" />
                             HSN: {p.hsn_code || p.sku || 'N/A'}
-                          </span>
+                          </Badge>
                           <h3 className="font-extrabold text-slate-900 text-lg leading-snug mt-2 truncate">{p.name}</h3>
                           {ppb > 1 && (
                             <span className="inline-block text-[10px] font-extrabold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-lg border border-violet-200 mt-1">
@@ -329,10 +329,13 @@ export default function ProductsPage() {
 
                         {/* Current Available Stock Badge */}
                         <div className="text-right shrink-0">
-                          <span className="flex items-center gap-1.5 text-xs font-extrabold px-3 py-1.5 rounded-xl border bg-emerald-50 text-emerald-800 border-emerald-200/80 shadow-2xs">
-                            <PackageCheck className="h-4 w-4 text-emerald-600" />
+                          <Badge
+                            variant={currentStock > 0 ? 'success' : 'danger'}
+                            size="md"
+                          >
+                            <PackageCheck className="h-4 w-4" />
                             {currentStock.toLocaleString()} {ppb > 1 ? 'PKT' : p.unit}
-                          </span>
+                          </Badge>
                           {currentBags && (
                             <span className="text-[10px] font-bold text-slate-500 block mt-1">
                               ({currentBags} Bags)

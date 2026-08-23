@@ -9,7 +9,7 @@ import Modal from '@/components/Modal';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Skeleton, EmptyState } from '@/components/ui';
+import { Skeleton, EmptyState, Badge } from '@/components/ui';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 const n = (v: string) => parseFloat(v) || 0;
@@ -338,84 +338,92 @@ export default function SalesPage() {
                 ))}
               </div>
             </div>
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100/80 text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
-                <tr>
-                  <th className="p-4">Invoice #</th>
-                  <th className="p-4">Date</th>
-                  <th className="p-4">Customer</th>
-                  <th className="p-4">Location</th>
-                  <th className="p-4 text-right">Grand Total (₹)</th>
-                  <th className="p-4 text-right">Paid (₹)</th>
-                  <th className="p-4 text-right">Pending (₹)</th>
-                  <th className="p-4 text-right">Net Profit (₹)</th>
-                  <th className="p-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
-                {isLoading ? (
-                  [...Array(5)].map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="p-4"><Skeleton className="h-5 w-24 rounded-lg" /></td>
-                      <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
-                      <td className="p-4"><Skeleton className="h-5 w-32 rounded-lg" /></td>
-                      <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
-                      <td className="p-4 text-right"><Skeleton className="h-5 w-24 rounded-lg ml-auto" /></td>
-                      <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
-                      <td className="p-4 text-right"><Skeleton className="h-6 w-16 rounded-xl ml-auto" /></td>
-                      <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
-                      <td className="p-4 text-right"><Skeleton className="h-8 w-20 rounded-xl ml-auto" /></td>
-                    </tr>
-                  ))
-                ) : sales.length === 0 ? (
+            <div className="max-h-[700px] overflow-y-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
                   <tr>
-                    <td colSpan={9} className="p-8">
-                      <EmptyState
-                        icon={ShoppingCart}
-                        title="No Sales Invoices"
-                        description="Record your first sales transaction or POS counter bill."
-                        actionLabel="New Sales Invoice"
-                        onAction={() => setIsModalOpen(true)}
-                      />
-                    </td>
+                    <th className="p-4">Invoice #</th>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Customer</th>
+                    <th className="p-4">Location</th>
+                    <th className="p-4 text-right">Grand Total (₹)</th>
+                    <th className="p-4 text-right">Paid (₹)</th>
+                    <th className="p-4 text-right">Pending (₹)</th>
+                    <th className="p-4 text-right">Net Profit (₹)</th>
+                    <th className="p-4 text-right">Actions</th>
                   </tr>
-                ) : (
-                  sortedSales.map((s: any) => (
-                    <tr key={s.id} className="hover:bg-slate-100/50 transition-colors">
-                      <td className="p-4 font-mono font-bold text-indigo-700">{s.invoice_number}</td>
-                      <td className="p-4 font-medium">{s.invoice_date}</td>
-                      <td className="p-4 font-semibold text-slate-900">{s.customer?.name || '—'}</td>
-                      <td className="p-4 text-slate-500">{s.location || '—'}</td>
-                      <td className="p-4 text-right font-bold text-slate-900">₹{formatCurrency(s.grand_total)}</td>
-                      <td className="p-4 text-right text-emerald-700 font-semibold">₹{formatCurrency(s.amount_paid)}</td>
-                      <td className={`p-4 text-right font-bold ${s.pending_amount > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
-                        ₹{formatCurrency(s.pending_amount)}
-                      </td>
-                      <td className="p-4 text-right text-emerald-700 font-bold">₹{formatCurrency(s.net_profit)}</td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => openEditModal(s)}
-                            className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-extrabold text-xs border border-indigo-200 transition-all inline-flex items-center gap-1.5 shadow-2xs"
-                            title="Edit Sales Bill"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => setDeleteInvoice(s)}
-                            className="p-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-xs border border-rose-200 transition-all inline-flex items-center shadow-2xs"
-                            title="Delete Sales Bill & Restore Stock"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                  {isLoading ? (
+                    [...Array(5)].map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="p-4"><Skeleton className="h-5 w-24 rounded-lg" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-32 rounded-lg" /></td>
+                        <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-5 w-24 rounded-lg ml-auto" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-6 w-16 rounded-xl ml-auto" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                        <td className="p-4 text-right"><Skeleton className="h-8 w-20 rounded-xl ml-auto" /></td>
+                      </tr>
+                    ))
+                  ) : sales.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="p-8">
+                        <EmptyState
+                          icon={ShoppingCart}
+                          title="No Sales Invoices"
+                          description="Record your first sales transaction or POS counter bill."
+                          actionLabel="New Sales Invoice"
+                          onAction={() => setIsModalOpen(true)}
+                        />
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    sortedSales.map((s: any) => {
+                      const pending = parseFloat(s.pending_amount || 0);
+
+                      return (
+                        <tr key={s.id} className="hover:bg-slate-50 transition-colors border-b border-slate-100">
+                          <td className="p-4 font-mono font-bold text-indigo-700">{s.invoice_number}</td>
+                          <td className="p-4 font-medium">{s.invoice_date}</td>
+                          <td className="p-4 font-semibold text-slate-900">{s.customer?.name || '—'}</td>
+                          <td className="p-4 text-slate-500">{s.location || '—'}</td>
+                          <td className="p-4 text-right font-bold text-slate-900">₹{formatCurrency(s.grand_total)}</td>
+                          <td className="p-4 text-right text-emerald-700 font-semibold">₹{formatCurrency(s.amount_paid)}</td>
+                          <td className="p-4 text-right">
+                            <Badge variant={pending <= 0 ? 'success' : 'danger'} size="sm">
+                              {pending <= 0 ? 'Paid' : `₹${formatCurrency(pending)}`}
+                            </Badge>
+                          </td>
+                          <td className="p-4 text-right text-emerald-700 font-bold">₹{formatCurrency(s.net_profit)}</td>
+                          <td className="p-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => openEditModal(s)}
+                                className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-extrabold text-xs border border-indigo-200 transition-all inline-flex items-center gap-1.5 shadow-2xs"
+                                title="Edit Sales Bill"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => setDeleteInvoice(s)}
+                                className="p-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-xs border border-rose-200 transition-all inline-flex items-center shadow-2xs"
+                                title="Delete Sales Bill & Restore Stock"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </main>
       </div>

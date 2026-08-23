@@ -15,7 +15,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Skeleton, EmptyState } from '@/components/ui';
+import { Skeleton, EmptyState, Badge } from '@/components/ui';
 
 export default function PartiesPage() {
   const queryClient = useQueryClient();
@@ -307,15 +307,14 @@ export default function PartiesPage() {
                             </h3>
                             <ArrowUpRight className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
-                          <span className={`inline-block text-[11px] font-extrabold uppercase px-3 py-1 rounded-xl mt-1.5 border ${
-                            party.party_type === 'SUPPLIER' 
-                              ? 'bg-amber-50 text-amber-800 border-amber-200'
-                              : party.party_type === 'CUSTOMER'
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                              : 'bg-indigo-50 text-indigo-800 border-indigo-200'
-                          }`}>
-                            {party.party_type}
-                          </span>
+                          <div className="mt-1.5">
+                            <Badge
+                              variant={party.party_type === 'SUPPLIER' ? 'warning' : party.party_type === 'CUSTOMER' ? 'success' : 'info'}
+                              size="sm"
+                            >
+                              {party.party_type}
+                            </Badge>
+                          </div>
                         </div>
 
                         {/* Top Right Action Pill */}
