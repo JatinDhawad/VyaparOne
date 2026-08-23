@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShoppingCart, Plus, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, CheckCircle2, Search, AlertTriangle } from 'lucide-react';
+import { ShoppingCart, Plus, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2, CheckCircle2, Search, AlertTriangle, Loader2 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
@@ -812,9 +812,10 @@ export default function SalesPage() {
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="px-6 py-2.5 font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition-colors disabled:opacity-60"
+              className="px-6 py-2.5 font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {createMutation.isPending ? 'Processing...' : '✓ Complete Sale'}
+              {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              <span>{createMutation.isPending ? 'Processing...' : '✓ Complete Sale'}</span>
             </button>
           </div>
         </form>
@@ -1067,9 +1068,10 @@ export default function SalesPage() {
                     }
                   });
                 }}
-                className="px-6 py-2.5 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-colors disabled:opacity-60"
+                className="px-6 py-2.5 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {editMutation.isPending ? 'Saving...' : '✓ Save Changes'}
+                {editMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                <span>{editMutation.isPending ? 'Saving...' : '✓ Save Changes'}</span>
               </button>
             </div>
           </div>
@@ -1112,10 +1114,14 @@ export default function SalesPage() {
                 type="button"
                 disabled={deleteMutation.isPending}
                 onClick={() => deleteMutation.mutate(deleteInvoice.id)}
-                className="px-5 py-2 font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-md transition-colors disabled:opacity-60 flex items-center gap-1.5"
+                className="px-5 py-2 font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Trash2 className="h-4 w-4" />
-                {deleteMutation.isPending ? 'Reversing & Deleting...' : 'Yes, Delete & Restore Stock'}
+                {deleteMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                <span>{deleteMutation.isPending ? 'Reversing & Deleting...' : 'Yes, Delete & Restore Stock'}</span>
               </button>
             </div>
           </div>

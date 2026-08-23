@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { AlertTriangle, AlertCircle, HelpCircle, X } from 'lucide-react';
+import { AlertTriangle, AlertCircle, HelpCircle, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ConfirmDialogProps {
@@ -94,11 +94,12 @@ export default function ConfirmDialog({
             onClick={onConfirm}
             disabled={isLoading}
             className={cn(
-              'px-5 py-2.5 text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-2 active:scale-95 disabled:opacity-60',
+              'px-5 py-2.5 text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed',
               currentVariant.confirmBtn
             )}
           >
-            {isLoading ? 'Processing...' : confirmLabel}
+            {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            <span>{isLoading ? 'Processing...' : confirmLabel}</span>
           </button>
         </div>
       </div>

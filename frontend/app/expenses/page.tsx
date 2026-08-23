@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Skeleton, EmptyState, Badge } from '@/components/ui';
-import { TrendingDown } from 'lucide-react';
+import { TrendingDown, Loader2 } from 'lucide-react';
 
 export default function ExpensesPage() {
   const queryClient = useQueryClient();
@@ -192,9 +192,10 @@ export default function ExpensesPage() {
             <button 
               type="submit" 
               disabled={createMutation.isPending} 
-              className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all"
+              className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {createMutation.isPending ? 'Saving...' : 'Save Expense'}
+              {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              <span>{createMutation.isPending ? 'Saving...' : 'Save Expense'}</span>
             </button>
           </div>
         </form>
