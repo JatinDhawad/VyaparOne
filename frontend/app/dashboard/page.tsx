@@ -464,10 +464,10 @@ export default function DashboardPage() {
               {/* 4 Guided Step Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Step 1: Parties */}
-                <div className={`p-4 rounded-xl border transition-all flex flex-col justify-between space-y-3 ${
+                <div className={`p-4 rounded-xl border transition-all duration-150 flex flex-col justify-between space-y-3 ${
                   hasParties
                     ? 'bg-emerald-50/50 border-emerald-200/80 shadow-2xs'
-                    : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'
+                    : 'bg-white border-slate-200 hover:border-slate-300 hover:-translate-y-0.5 hover:shadow-card-hover'
                 }`}>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
@@ -502,10 +502,10 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Step 2: Products */}
-                <div className={`p-4 rounded-xl border transition-all flex flex-col justify-between space-y-3 ${
+                <div className={`p-4 rounded-xl border transition-all duration-150 flex flex-col justify-between space-y-3 ${
                   hasProducts
                     ? 'bg-emerald-50/50 border-emerald-200/80 shadow-2xs'
-                    : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'
+                    : 'bg-white border-slate-200 hover:border-slate-300 hover:-translate-y-0.5 hover:shadow-card-hover'
                 }`}>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
@@ -540,10 +540,10 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Step 3: Purchases */}
-                <div className={`p-4 rounded-xl border transition-all flex flex-col justify-between space-y-3 ${
+                <div className={`p-4 rounded-xl border transition-all duration-150 flex flex-col justify-between space-y-3 ${
                   hasPurchases
                     ? 'bg-emerald-50/50 border-emerald-200/80 shadow-2xs'
-                    : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'
+                    : 'bg-white border-slate-200 hover:border-slate-300 hover:-translate-y-0.5 hover:shadow-card-hover'
                 }`}>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
@@ -578,10 +578,10 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Step 4: Sales */}
-                <div className={`p-4 rounded-xl border transition-all flex flex-col justify-between space-y-3 ${
+                <div className={`p-4 rounded-xl border transition-all duration-150 flex flex-col justify-between space-y-3 ${
                   hasSales
                     ? 'bg-emerald-50/50 border-emerald-200/80 shadow-2xs'
-                    : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'
+                    : 'bg-white border-slate-200 hover:border-slate-300 hover:-translate-y-0.5 hover:shadow-card-hover'
                 }`}>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
