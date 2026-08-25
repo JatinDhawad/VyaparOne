@@ -52,40 +52,40 @@ export default function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/50 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-2xl flex flex-col overflow-hidden text-slate-900 animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-2xl flex flex-col overflow-hidden text-slate-900 animate-in zoom-in-95 duration-200">
         
         {/* Top Header Row with Close button */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-2">
-          <div className={cn('h-11 w-11 rounded-2xl border flex items-center justify-center shadow-2xs shrink-0', currentVariant.iconContainer)}>
-            <Icon className="h-5 w-5" />
+        <div className="flex items-center justify-between px-5 pt-4 pb-2">
+          <div className={cn('h-9 w-9 rounded-lg border flex items-center justify-center shadow-2xs shrink-0', currentVariant.iconContainer)}>
+            <Icon className="h-4 w-4" />
           </div>
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition-all"
+            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-all"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Dialog Content */}
-        <div className="px-6 py-3 space-y-2">
-          <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+        <div className="px-5 py-2 space-y-1.5">
+          <h3 className="text-base font-bold text-slate-900 tracking-tight">
             {title}
           </h3>
-          <div className="text-xs text-slate-500 font-medium leading-relaxed">
+          <div className="text-xs text-slate-500 font-normal leading-relaxed">
             {description}
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 px-6 py-5 bg-slate-50 border-t border-slate-100 mt-3">
+        <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 bg-slate-50 border-t border-slate-100 mt-2">
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-xl transition-colors"
+            className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-lg transition-colors border border-slate-200"
           >
             {cancelLabel}
           </button>
@@ -94,7 +94,7 @@ export default function ConfirmDialog({
             onClick={onConfirm}
             disabled={isLoading}
             className={cn(
-              'px-5 py-2.5 text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed',
+              'px-4 py-1.5 text-xs font-semibold rounded-lg shadow-xs transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed',
               currentVariant.confirmBtn
             )}
           >

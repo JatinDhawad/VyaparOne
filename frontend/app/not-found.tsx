@@ -13,31 +13,31 @@ export default function NotFound() {
       <div className="w-full max-w-lg relative z-10 text-center space-y-6">
         {/* Brand Logo Header */}
         <div>
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-500 shadow-xl shadow-indigo-500/20 mb-3 border border-indigo-200">
-            <Building2 className="h-9 w-9 text-white" />
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-500 shadow-lg shadow-indigo-500/20 mb-3 border border-indigo-200">
+            <Building2 className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Vyapar<span className="text-emerald-600">One</span> ERP
           </h1>
-          <p className="text-xs font-semibold text-slate-500 mt-0.5">
+          <p className="text-xs font-normal text-slate-500 mt-0.5">
             FMCG Trading, Landed Cost & Double-Entry Accounting
           </p>
         </div>
 
         {/* 404 Glass Card */}
-        <div className="bg-white p-8 sm:p-10 rounded-3xl border border-slate-200/90 shadow-xl space-y-6">
-          <div className="inline-flex items-center justify-center h-20 w-20 rounded-3xl bg-indigo-50 border border-indigo-100 text-indigo-600 shadow-inner">
-            <FileQuestion className="h-10 w-10 text-indigo-600" />
+        <div className="bg-white p-6 sm:p-8 rounded-xl border border-slate-200 shadow-xl space-y-5">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shadow-2xs">
+            <FileQuestion className="h-8 w-8 text-indigo-600" />
           </div>
 
-          <div className="space-y-2">
-            <div className="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
+          <div className="space-y-1.5">
+            <div className="inline-block px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
               404 — Page Not Found
             </div>
-            <h2 className="text-2xl font-black text-slate-900">
+            <h2 className="text-xl font-bold text-slate-900">
               Lost in the Ledger?
             </h2>
-            <p className="text-xs font-medium text-slate-500 max-w-sm mx-auto leading-relaxed">
+            <p className="text-xs font-normal text-slate-500 max-w-sm mx-auto leading-relaxed">
               The financial record, transaction view, or dashboard page you requested does not exist or has been relocated.
             </p>
           </div>

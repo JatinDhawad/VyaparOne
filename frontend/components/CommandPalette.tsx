@@ -225,12 +225,12 @@ export default function CommandPalette() {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-150">
       <div 
-        className="relative w-full max-w-xl bg-white rounded-3xl border border-slate-200 shadow-2xl flex flex-col overflow-hidden text-slate-900 animate-in zoom-in-95 duration-150"
+        className="relative w-full max-w-xl bg-white rounded-xl border border-slate-200 shadow-2xl flex flex-col overflow-hidden text-slate-900 animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50/60">
-          <Search className="h-5 w-5 text-slate-400 shrink-0" />
+        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 bg-slate-50/60">
+          <Search className="h-4.5 w-4.5 text-slate-400 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -241,12 +241,12 @@ export default function CommandPalette() {
             className="flex-1 bg-transparent border-0 outline-hidden text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:ring-0 p-0"
           />
           <div className="flex items-center gap-1.5">
-            <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-bold bg-white text-slate-500 border border-slate-200 rounded-lg shadow-2xs">
+            <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-bold bg-white text-slate-500 border border-slate-200 rounded-md shadow-2xs">
               ESC
             </kbd>
             <button
               onClick={closeCommand}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors"
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-md transition-colors"
               aria-label="Close command palette"
             >
               <X className="h-4 w-4" />
@@ -257,7 +257,7 @@ export default function CommandPalette() {
         {/* Results List */}
         <div 
           ref={listRef}
-          className="max-h-[60vh] overflow-y-auto p-3 space-y-1 divide-y divide-slate-100/60"
+          className="max-h-[380px] overflow-y-auto p-2 space-y-1 divide-y divide-slate-50"
         >
           {items.length === 0 ? (
             <div className="p-8 text-center space-y-1">
@@ -274,7 +274,7 @@ export default function CommandPalette() {
                 if (catItems.length === 0) return null;
 
                 return (
-                  <div key={cat} className="pt-2 first:pt-0 space-y-1">
+                  <div key={cat} className="pt-2 first:pt-0 space-y-0.5">
                     <div className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                       {cat}
                     </div>
@@ -291,9 +291,9 @@ export default function CommandPalette() {
                           onClick={item.onSelect}
                           onMouseEnter={() => setSelectedIndex(itemIdx)}
                           className={cn(
-                            'flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl cursor-pointer transition-all duration-150 border',
+                            'flex items-center justify-between gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all duration-150 border',
                             isSelected
-                              ? 'bg-indigo-50/90 border-indigo-200/80 text-indigo-950 shadow-2xs'
+                              ? 'bg-indigo-50/80 border-indigo-200/80 text-indigo-950 shadow-2xs'
                               : 'border-transparent hover:bg-slate-50 text-slate-700'
                           )}
                         >

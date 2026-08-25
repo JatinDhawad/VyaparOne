@@ -22,20 +22,20 @@ export default function EmptyState({
   return (
     <div
       className={cn(
-        'glass-card p-12 text-center rounded-3xl border border-slate-200/80 bg-white flex flex-col items-center justify-center space-y-4 max-w-md mx-auto my-6',
+        'glass-card p-8 text-center rounded-xl border border-slate-200 bg-white flex flex-col items-center justify-center space-y-3 max-w-md mx-auto my-4',
         className
       )}
     >
-      <div className="h-16 w-16 rounded-2xl bg-indigo-50/80 border border-indigo-100/80 flex items-center justify-center text-indigo-600 shadow-sm">
-        <Icon className="h-8 w-8" />
+      <div className="h-12 w-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs">
+        <Icon className="h-6 w-6" />
       </div>
 
-      <div className="space-y-1.5 max-w-sm">
-        <h4 className="text-base font-extrabold text-slate-900 tracking-tight">
+      <div className="space-y-1 max-w-sm">
+        <h4 className="text-sm font-bold text-slate-900 tracking-tight">
           {title}
         </h4>
         {description && (
-          <p className="text-xs text-slate-500 font-medium leading-relaxed">
+          <p className="text-xs text-slate-500 font-normal leading-relaxed">
             {description}
           </p>
         )}
@@ -45,9 +45,9 @@ export default function EmptyState({
         <button
           type="button"
           onClick={onAction}
-          className="mt-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-all flex items-center gap-2 active:scale-95"
+          className="mt-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-3.5 w-3.5" />
           <span>{actionLabel}</span>
         </button>
       )}

@@ -16,13 +16,13 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 md:p-6 bg-slate-950/50 backdrop-blur-md animate-in fade-in duration-200">
-      <div className={`relative w-full ${maxWidth} h-full sm:h-auto max-h-screen sm:max-h-[90vh] bg-white rounded-none sm:rounded-3xl border-0 sm:border border-slate-200 shadow-2xl flex flex-col overflow-hidden text-slate-900`}>
+      <div className={`relative w-full ${maxWidth} h-full sm:h-auto max-h-screen sm:max-h-[90vh] bg-white rounded-none sm:rounded-xl border-0 sm:border border-slate-200 shadow-2xl flex flex-col overflow-hidden text-slate-900`}>
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-4 sm:px-8 py-4 sm:py-5 border-b border-slate-100 bg-slate-50/90 backdrop-blur-md shrink-0">
-          <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight truncate pr-2">{title}</h3>
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50/90 backdrop-blur-md shrink-0">
+          <h3 className="text-lg font-bold text-slate-900 tracking-tight truncate pr-2">{title}</h3>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-200/60 transition-all shrink-0"
+            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-200/60 transition-all shrink-0"
             aria-label="Close modal"
           >
             <X className="h-5 w-5" />
@@ -30,7 +30,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
         </div>
 
         {/* Modal Body */}
-        <div className="p-4 sm:p-8 overflow-y-auto space-y-4 sm:space-y-6 flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
           {children}
         </div>
       </div>

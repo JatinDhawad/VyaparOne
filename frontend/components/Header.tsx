@@ -14,12 +14,12 @@ export default function Header({ title, subtitle, onActionClick, actionLabel }: 
   const { toggleMobile, openCommand } = useSidebarStore();
 
   return (
-    <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between sticky top-0 z-20 shadow-xs">
+    <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between sticky top-0 z-20 shadow-xs">
       <div className="flex items-center gap-3 min-w-0">
         {/* Mobile Hamburger Menu Button (< 768px) */}
         <button
           onClick={toggleMobile}
-          className="md:hidden p-2 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors shrink-0"
+          className="md:hidden p-1.5 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors shrink-0"
           title="Open Navigation Menu"
           aria-label="Open Navigation Menu"
         >
@@ -36,12 +36,12 @@ export default function Header({ title, subtitle, onActionClick, actionLabel }: 
         {/* Global Command Palette Trigger Button (Desktop & Tablet) */}
         <button
           onClick={openCommand}
-          className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 bg-slate-100/90 hover:bg-slate-200/70 border border-slate-200 text-slate-500 hover:text-slate-900 rounded-xl text-xs font-semibold transition-all shadow-2xs group"
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-100/90 hover:bg-slate-200/70 border border-slate-200 text-slate-500 hover:text-slate-900 rounded-lg text-xs font-medium transition-all shadow-2xs group"
           title="Search or jump to... (Cmd+K)"
         >
           <Search className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
-          <span className="text-slate-500 font-medium">Search or jump to...</span>
-          <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-bold bg-white text-slate-600 border border-slate-200 rounded-md shadow-2xs">
+          <span className="text-slate-500 font-normal">Search or jump to...</span>
+          <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-white text-slate-600 border border-slate-200 rounded-md shadow-2xs">
             <span className="text-xs">⌘</span>K
           </kbd>
         </button>
@@ -49,7 +49,7 @@ export default function Header({ title, subtitle, onActionClick, actionLabel }: 
         {/* Mobile Search Icon Button (< 640px) */}
         <button
           onClick={openCommand}
-          className="sm:hidden p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition-colors shrink-0"
+          className="sm:hidden p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-md transition-colors shrink-0"
           title="Search or jump to..."
           aria-label="Open Command Palette"
         >
@@ -69,9 +69,9 @@ export default function Header({ title, subtitle, onActionClick, actionLabel }: 
         )}
 
         {/* Live Status Badge */}
-        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-emerald-300 text-xs text-emerald-700">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-bold text-[11px]">System Online</span>
+        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-xs text-slate-700">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          <span className="font-semibold text-[11px] text-slate-600">Online</span>
         </div>
       </div>
     </header>
