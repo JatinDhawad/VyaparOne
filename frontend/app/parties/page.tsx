@@ -166,73 +166,73 @@ export default function PartiesPage() {
           actionLabel="Add New Party"
         />
 
-        <main className="p-4 sm:p-8 space-y-6 sm:space-y-8 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
           {/* Top Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="glass-card p-4 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[115px]">
               <span className="section-label">Total Directory</span>
-              <div className="mt-2">
+              <div className="mt-1.5">
                 {isLoading ? (
-                  <Skeleton className="h-8 w-28 rounded-md" />
+                  <Skeleton className="h-7 w-28 rounded-md" />
                 ) : (
                   <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
                     {parties.length} <span className="text-sm font-normal text-slate-500">Parties</span>
                   </h3>
                 )}
-                <p className="text-xs font-normal text-slate-500 mt-1">Active trading accounts</p>
+                <p className="text-xs font-normal text-slate-500 mt-0.5">Active trading accounts</p>
               </div>
             </div>
 
-            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
+            <div className="glass-card p-4 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[115px]">
               <span className="section-label">Customers (Buyers)</span>
-              <div className="mt-2">
+              <div className="mt-1.5">
                 {isLoading ? (
-                  <Skeleton className="h-8 w-28 rounded-md" />
+                  <Skeleton className="h-7 w-28 rounded-md" />
                 ) : (
                   <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
                     {customerCount} <span className="text-sm font-normal text-slate-500">Accounts</span>
                   </h3>
                 )}
-                <p className="text-xs font-normal text-slate-500 mt-1">Sales tax invoice buyers</p>
+                <p className="text-xs font-normal text-slate-500 mt-0.5">Sales tax invoice buyers</p>
               </div>
             </div>
 
-            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
+            <div className="glass-card p-4 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[115px]">
               <span className="section-label">Suppliers (Vendors)</span>
-              <div className="mt-2">
+              <div className="mt-1.5">
                 {isLoading ? (
-                  <Skeleton className="h-8 w-28 rounded-md" />
+                  <Skeleton className="h-7 w-28 rounded-md" />
                 ) : (
                   <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
                     {supplierCount} <span className="text-sm font-normal text-slate-500">Vendors</span>
                   </h3>
                 )}
-                <p className="text-xs font-normal text-slate-500 mt-1">Inbound stock manufacturers</p>
+                <p className="text-xs font-normal text-slate-500 mt-0.5">Inbound stock manufacturers</p>
               </div>
             </div>
           </div>
 
           {/* Controls Bar */}
-          <div className="glass-panel p-4 sm:p-5 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 border border-slate-200">
+          <div className="glass-panel p-3.5 sm:p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-3 border border-slate-200">
             <div className="relative w-full md:w-96">
-              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search parties by name, phone, or city..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full glass-input pl-10 pr-4 py-2 rounded-lg text-xs font-normal"
+                className="w-full glass-input pl-8.5 pr-3 py-1.5 rounded-lg text-xs font-normal"
               />
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
               <span className="section-label">Filter Type:</span>
-              <div className="flex gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 overflow-x-auto max-w-full">
+              <div className="flex gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 overflow-x-auto max-w-full">
                 {['', 'CUSTOMER', 'SUPPLIER', 'BOTH'].map((type) => (
                   <button
                     key={type}
                     onClick={() => setFilterType(type)}
-                    className={`px-3 sm:px-4 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap ${
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-all whitespace-nowrap ${
                       filterType === type 
                         ? 'bg-indigo-600 text-white shadow-xs' 
                         : 'text-slate-600 hover:text-slate-900'
@@ -246,10 +246,10 @@ export default function PartiesPage() {
           </div>
 
           {/* Party List Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {isLoading ? (
               [...Array(6)].map((_, i) => (
-                <Skeleton key={i} className="h-64 w-full rounded-3xl" />
+                <Skeleton key={i} className="h-60 w-full rounded-xl" />
               ))
             ) : filteredParties.length === 0 ? (
               <div className="col-span-full">
@@ -281,18 +281,18 @@ export default function PartiesPage() {
                       setViewingParty(party);
                       setPartyTab(isSupplier ? 'PURCHASES' : 'SALES');
                     }}
-                    className="glass-card p-6 rounded-3xl space-y-4 border-slate-200 hover:border-indigo-300 hover:shadow-xl transition-all duration-200 flex flex-col justify-between cursor-pointer group bg-white"
+                    className="glass-card p-4 rounded-xl space-y-3 border-slate-200 hover:border-indigo-300 hover:shadow-lg transition-all duration-200 flex flex-col justify-between cursor-pointer group bg-white"
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-extrabold text-slate-900 text-lg leading-snug group-hover:text-indigo-600 transition-colors">
+                          <div className="flex items-center gap-1.5">
+                            <h3 className="font-bold text-slate-900 text-base leading-snug group-hover:text-indigo-600 transition-colors">
                               {party.name}
                             </h3>
-                            <ArrowUpRight className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
-                          <div className="mt-1.5">
+                          <div className="mt-1">
                             <Badge
                               variant={party.party_type === 'SUPPLIER' ? 'warning' : party.party_type === 'CUSTOMER' ? 'success' : 'info'}
                               size="sm"
@@ -303,60 +303,60 @@ export default function PartiesPage() {
                         </div>
 
                         {/* Top Right Action Pill */}
-                        <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => {
                               setViewingParty(party);
                               setPartyTab(isSupplier ? 'PURCHASES' : 'SALES');
                             }}
-                            className="px-2.5 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-all flex items-center gap-1 shadow-2xs"
+                            className="px-2 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-md border border-indigo-200 transition-all flex items-center gap-1 shadow-2xs"
                             title="View all bills for this party"
                           >
-                            <FileText className="h-3.5 w-3.5" />
+                            <FileText className="h-3 w-3" />
                             <span>{billsCount} Bills</span>
                           </button>
                           {isAdmin && (
                             <button
                               onClick={() => handleOpenEditModal(party)}
-                              className="p-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200 transition-all flex items-center shadow-2xs"
+                              className="p-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md border border-slate-200 transition-all flex items-center shadow-2xs"
                               title="Edit Party Details"
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              <Pencil className="h-3 w-3" />
                             </button>
                           )}
                         </div>
                       </div>
 
-                      <div className="space-y-2 pt-3 border-t border-slate-100 text-xs text-slate-600">
+                      <div className="space-y-1.5 pt-2.5 border-t border-slate-100 text-xs text-slate-600">
                         {party.phone && (
-                          <div className="flex items-center gap-2.5">
-                            <Phone className="h-4 w-4 text-slate-400 shrink-0" />
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                             <span className="font-semibold text-slate-800">{party.phone}</span>
                           </div>
                         )}
                         {party.email && (
-                          <div className="flex items-center gap-2.5">
-                            <Mail className="h-4 w-4 text-slate-400 shrink-0" />
-                            <span className="truncate font-medium">{party.email}</span>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate font-normal">{party.email}</span>
                           </div>
                         )}
                         {party.city && (
-                          <div className="flex items-center gap-2.5">
-                            <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                            <span className="font-medium text-slate-700">{party.city}{party.state ? `, ${party.state}` : ''}</span>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                            <span className="font-normal text-slate-700">{party.city}{party.state ? `, ${party.state}` : ''}</span>
                           </div>
                         )}
                         {party.gstin && (
-                          <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 pt-1">
-                            <span className="font-bold">GSTIN:</span>
-                            <span className="text-slate-900 font-extrabold uppercase">{party.gstin}</span>
+                          <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500 pt-0.5">
+                            <span className="font-semibold">GSTIN:</span>
+                            <span className="text-slate-900 font-bold uppercase">{party.gstin}</span>
                           </div>
                         )}
                       </div>
                     </div>
 
                     {/* Outstanding Balance Badge */}
-                    <div className={`mt-1 p-3.5 rounded-2xl border flex items-center justify-between ${
+                    <div className={`mt-1 p-2.5 rounded-lg border flex items-center justify-between ${
                       isCleared
                         ? 'bg-slate-50 border-slate-200'
                         : isSupplier
@@ -364,18 +364,18 @@ export default function PartiesPage() {
                         : 'bg-emerald-50 border-emerald-200'
                     }`}>
                       <div className="flex flex-col">
-                        <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
+                        <span className={`section-label ${
                           isCleared ? 'text-slate-400' : isSupplier ? 'text-rose-600' : 'text-emerald-700'
                         }`}>
                           {isCleared ? 'All Settled' : isSupplier ? 'To Pay' : 'To Collect'}
                         </span>
-                        <span className={`text-base font-black mt-0.5 ${
+                        <span className={`text-sm font-bold mt-0.5 ${
                           isCleared ? 'text-slate-400' : isSupplier ? 'text-rose-800' : 'text-emerald-900'
                         }`}>
                           {isCleared ? '✓ No Dues' : `₹${Math.abs(balance).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
                         </span>
                       </div>
-                      <div className={`h-8 w-8 rounded-xl flex items-center justify-center text-sm ${
+                      <div className={`h-7 w-7 rounded-md flex items-center justify-center text-xs font-bold ${
                         isCleared ? 'bg-slate-100' : isSupplier ? 'bg-rose-100' : 'bg-emerald-100'
                       }`}>
                         {isCleared ? '✓' : isSupplier ? '↑' : '↓'}

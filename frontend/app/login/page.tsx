@@ -61,45 +61,45 @@ export default function LoginPage() {
         </div>
 
         {/* Login Glass Card */}
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl space-y-6">
+        <div className="bg-white p-6 sm:p-7 rounded-xl border border-slate-200 shadow-xl space-y-5">
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">Sign In to Workspace</h2>
             <p className="text-xs text-slate-500">Enter your operational credentials below</p>
           </div>
 
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
               {error}
             </div>
           )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Email Address</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+                <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@vyaparone.com"
-                  className="w-full glass-input pl-10 pr-4 py-2.5 rounded-xl text-sm"
+                  className="w-full glass-input pl-9 pr-3 py-2 rounded-lg text-xs"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Password</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full glass-input pl-10 pr-4 py-2.5 rounded-xl text-sm"
+                  placeholder="••••••••••••"
+                  className="w-full glass-input pl-9 pr-3 py-2 rounded-lg text-xs font-mono"
                 />
               </div>
             </div>
@@ -107,7 +107,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-lg shadow-xs transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
