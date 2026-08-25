@@ -428,83 +428,83 @@ export default function PurchasesPage() {
           actionLabel="New Purchase Entry"
         />
 
-        <main className="p-4 sm:p-8 space-y-6 sm:space-y-8 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
           {successMessage && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm font-bold shadow-sm flex items-center gap-3 animate-in fade-in duration-300">
-              <PackageCheck className="h-6 w-6 text-emerald-600 shrink-0" />
+            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold shadow-xs flex items-center gap-2 animate-in fade-in duration-300">
+              <PackageCheck className="h-5 w-5 text-emerald-600 shrink-0" />
               <span>{successMessage}</span>
             </div>
           )}
 
           {/* Top Metric Cards */}
           {/* Top 3 KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Billed Purchases</span>
-              <div className="mt-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="glass-card p-4 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[115px]">
+              <span className="section-label">Total Billed Purchases</span>
+              <div className="mt-1.5">
                 {isLoading ? (
-                  <Skeleton className="h-8 w-36 rounded-md" />
+                  <Skeleton className="h-7 w-36 rounded-md" />
                 ) : (
                   <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
                     ₹{formatCurrency(totalBilledPurchases)}
                   </h3>
                 )}
-                <p className="text-xs font-normal text-slate-500 mt-1">Official GST Vendor Invoices</p>
+                <p className="text-xs font-normal text-slate-500 mt-0.5">Official GST Vendor Invoices</p>
               </div>
             </div>
 
-            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Invoices</span>
-              <div className="mt-2">
+            <div className="glass-card p-4 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[115px]">
+              <span className="section-label">Total Invoices</span>
+              <div className="mt-1.5">
                 {isLoading ? (
-                  <Skeleton className="h-8 w-24 rounded-md" />
+                  <Skeleton className="h-7 w-24 rounded-md" />
                 ) : (
                   <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
                     {purchases.length} <span className="text-sm font-normal text-slate-500">Invoices</span>
                   </h3>
                 )}
-                <p className="text-xs font-normal text-slate-500 mt-1">Purchases Record</p>
+                <p className="text-xs font-normal text-slate-500 mt-0.5">Purchases Record</p>
               </div>
             </div>
 
-            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending Amount</span>
-              <div className="mt-2">
+            <div className="glass-card p-4 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[115px]">
+              <span className="section-label">Pending Amount</span>
+              <div className="mt-1.5">
                 {isLoading ? (
-                  <Skeleton className="h-8 w-36 rounded-md" />
+                  <Skeleton className="h-7 w-36 rounded-md" />
                 ) : (
                   <h3 className="text-2xl font-bold text-rose-700 tracking-tight">
                     ₹{formatCurrency(totalPendingOwed)}
                   </h3>
                 )}
-                <p className="text-xs font-normal text-rose-600 mt-1">Pending Supplier Payables</p>
+                <p className="text-xs font-normal text-rose-600 mt-0.5">Pending Supplier Payables</p>
               </div>
             </div>
           </div>
 
           {/* Table Panel */}
-          <div className="glass-panel p-6 rounded-3xl space-y-6 border border-slate-200">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="glass-panel p-3.5 sm:p-4 rounded-xl space-y-3 border border-slate-200">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
               <div className="relative w-full md:w-80">
-                <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Search invoice number or supplier..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full glass-input pl-11 pr-4 py-2.5 rounded-2xl text-xs font-medium"
+                  className="w-full glass-input pl-8.5 pr-3 py-1.5 rounded-lg text-xs font-normal"
                 />
               </div>
 
               {/* Status and Sort Controls */}
               <div className="flex items-center gap-2 flex-wrap w-full md:w-auto justify-between md:justify-end">
                 {/* Status Toggles */}
-                <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs">
+                <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
                   {(['ALL', 'PAID', 'PENDING'] as const).map((st) => (
                     <button
                       key={st}
                       onClick={() => setStatusFilter(st)}
-                      className={`px-2.5 py-1 font-bold rounded-lg text-[11px] transition-all ${
+                      className={`px-2.5 py-1 font-semibold rounded-md text-[11px] transition-all ${
                         statusFilter === st
                           ? 'bg-white text-indigo-700 shadow-2xs'
                           : 'text-slate-600 hover:text-slate-900'
@@ -517,14 +517,14 @@ export default function PurchasesPage() {
 
                 {/* Sort controls */}
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Sort:</span>
+                  <span className="section-label">Sort:</span>
                   {([['date','Date'],['invoice','Invoice #'],['billed','Billed'],['unbilled','Unbilled'],['payable','Payable'],['pending','Pending']] as const).map(([f, label]) => (
                     <button
                       key={f}
                       onClick={() => toggleSort(f)}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-extrabold border transition-all ${
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-all ${
                         sortField === f
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                           : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-700'
                       }`}
                     >
@@ -541,7 +541,7 @@ export default function PurchasesPage() {
             {/* Active Filter Chips */}
             {(searchTerm.trim() !== '' || statusFilter !== 'ALL' || sortField !== 'date' || sortDir !== 'desc') && (
               <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-slate-100 animate-in fade-in slide-in-from-top-1">
-                <span className="text-[11px] font-bold text-slate-400">Active Filters:</span>
+                <span className="section-label">Active:</span>
                 {searchTerm.trim() !== '' && (
                   <FilterChip
                     label="Search"
@@ -573,7 +573,7 @@ export default function PurchasesPage() {
                     setSortField('date');
                     setSortDir('desc');
                   }}
-                  className="text-xs font-bold text-slate-400 hover:text-rose-600 underline ml-1 transition-colors"
+                  className="text-xs font-semibold text-slate-400 hover:text-rose-600 underline ml-1 transition-colors"
                 >
                   Clear all
                 </button>
@@ -581,10 +581,10 @@ export default function PurchasesPage() {
             )}
 
             {/* New purchase button row */}
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-1">
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-all flex items-center gap-2"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1.5"
               >
                 <Plus className="h-4 w-4" />
                 New Purchase Entry
@@ -592,34 +592,34 @@ export default function PurchasesPage() {
             </div>
 
             {/* Purchase List Table */}
-            <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm max-h-[700px] overflow-y-auto overflow-x-auto">
+            <div className="rounded-xl overflow-hidden border border-slate-200 shadow-xs max-h-[700px] overflow-y-auto overflow-x-auto">
               <table className="w-full min-w-[780px] text-left text-xs">
                 <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-semibold tracking-wider">
                   <tr>
-                    <th className="p-4">Invoice #</th>
-                    <th className="p-4">Date</th>
-                    <th className="p-4">Supplier</th>
-                    <th className="p-4 text-right">Billed Total (₹)</th>
-                    <th className="p-4 text-right">Unbilled Amount (₹)</th>
-                    <th className="p-4 text-right">Total Payable (₹)</th>
-                    <th className="p-4 text-right">Amount Paid (₹)</th>
-                    <th className="p-4 text-right">Pending Balance (₹)</th>
-                    <th className="p-4 text-right">Details</th>
+                    <th className="px-3.5 py-2.5">Invoice #</th>
+                    <th className="px-3.5 py-2.5">Date</th>
+                    <th className="px-3.5 py-2.5">Supplier</th>
+                    <th className="px-3.5 py-2.5 text-right">Billed Total (₹)</th>
+                    <th className="px-3.5 py-2.5 text-right">Unbilled Amount (₹)</th>
+                    <th className="px-3.5 py-2.5 text-right">Total Payable (₹)</th>
+                    <th className="px-3.5 py-2.5 text-right">Amount Paid (₹)</th>
+                    <th className="px-3.5 py-2.5 text-right">Pending Balance (₹)</th>
+                    <th className="px-3.5 py-2.5 text-right">Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
                   {isLoading ? (
                     [...Array(5)].map((_, i) => (
                       <tr key={i} className="animate-pulse">
-                        <td className="p-4"><Skeleton className="h-5 w-24 rounded-lg" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-32 rounded-lg" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-5 w-24 rounded-lg ml-auto" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-5 w-24 rounded-lg ml-auto" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-6 w-16 rounded-xl ml-auto" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-8 w-24 rounded-xl ml-auto" /></td>
+                        <td className="px-3.5 py-2.5"><Skeleton className="h-4.5 w-24 rounded-md" /></td>
+                        <td className="px-3.5 py-2.5"><Skeleton className="h-4.5 w-20 rounded-md" /></td>
+                        <td className="px-3.5 py-2.5"><Skeleton className="h-4.5 w-32 rounded-md" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-4.5 w-24 rounded-md ml-auto" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-4.5 w-20 rounded-md ml-auto" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-4.5 w-24 rounded-md ml-auto" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-4.5 w-20 rounded-md ml-auto" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-5 w-16 rounded-md ml-auto" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-6 w-20 rounded-md ml-auto" /></td>
                       </tr>
                     ))
                   ) : sortedPurchases.length === 0 ? (
@@ -646,44 +646,44 @@ export default function PurchasesPage() {
                       return (
                         <tr 
                           key={p.id} 
-                          className="hover:bg-slate-50 transition-colors border-b border-slate-100"
+                          className="hover:bg-slate-50/80 transition-colors border-b border-slate-100"
                         >
-                          <td className="p-4 font-mono font-extrabold text-indigo-700 text-sm">{p.invoice_number}</td>
-                          <td className="p-4 font-medium text-slate-600">{p.invoice_date}</td>
-                          <td className="p-4 font-bold text-slate-900">{supplierName}</td>
-                          <td className="p-4 text-right font-extrabold text-indigo-950 text-sm">₹{formatCurrency(bTotal)}</td>
-                          <td className="p-4 text-right text-amber-800 font-bold">₹{formatCurrency(unbilled)}</td>
-                          <td className="p-4 text-right font-extrabold text-slate-900">₹{formatCurrency(payable)}</td>
-                          <td className="p-4 text-right text-emerald-700 font-extrabold">₹{formatCurrency(paid)}</td>
-                          <td className="p-4 text-right">
+                          <td className="px-3.5 py-2.5 font-mono font-bold text-indigo-700">{p.invoice_number}</td>
+                          <td className="px-3.5 py-2.5 font-medium text-slate-600">{p.invoice_date}</td>
+                          <td className="px-3.5 py-2.5 font-semibold text-slate-900">{supplierName}</td>
+                          <td className="px-3.5 py-2.5 text-right font-bold text-slate-900">₹{formatCurrency(bTotal)}</td>
+                          <td className="px-3.5 py-2.5 text-right text-amber-800 font-semibold">₹{formatCurrency(unbilled)}</td>
+                          <td className="px-3.5 py-2.5 text-right font-bold text-slate-900">₹{formatCurrency(payable)}</td>
+                          <td className="px-3.5 py-2.5 text-right text-emerald-700 font-semibold">₹{formatCurrency(paid)}</td>
+                          <td className="px-3.5 py-2.5 text-right">
                             <Badge variant={pending <= 0 ? 'success' : 'danger'} size="sm">
                               {pending <= 0 ? 'Paid' : `₹${formatCurrency(pending)}`}
                             </Badge>
                           </td>
-                          <td className="p-4 text-right">
+                          <td className="px-3.5 py-2.5 text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               {pending > 0 && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openPayModal(p); }}
-                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-extrabold text-xs transition-all inline-flex items-center gap-1.5 shadow-xs"
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-semibold text-xs transition-all inline-flex items-center gap-1 shadow-2xs"
                                   title="Record Part or Full Payment to Supplier"
                                 >
-                                  <CreditCard className="h-3.5 w-3.5" />
+                                  <CreditCard className="h-3 w-3" />
                                   Pay
                                 </button>
                               )}
                               <button 
                                 onClick={(e) => { e.stopPropagation(); setSelectedInvoiceForView(p); }} 
-                                className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-extrabold text-xs transition-colors inline-flex items-center gap-1.5 border border-indigo-200"
+                                className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md font-semibold text-xs transition-colors inline-flex items-center gap-1 border border-indigo-200"
                               >
-                                <Eye className="h-3.5 w-3.5" />
+                                <Eye className="h-3 w-3" />
                                 View
                               </button>
                               <button 
                                 onClick={(e) => { e.stopPropagation(); openEditInvoice(p); }} 
-                                className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl font-extrabold text-xs transition-colors inline-flex items-center gap-1.5 border border-amber-200"
+                                className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-md font-semibold text-xs transition-colors inline-flex items-center gap-1 border border-amber-200"
                               >
-                                <Pencil className="h-3.5 w-3.5" />
+                                <Pencil className="h-3 w-3" />
                                 Edit
                               </button>
                             </div>
