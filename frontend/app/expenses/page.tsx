@@ -71,27 +71,27 @@ export default function ExpensesPage() {
           actionLabel="Record Expense"
         />
 
-        <main className="p-4 sm:p-8 space-y-6 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
           <div className="glass-panel rounded-xl overflow-hidden border border-slate-200">
-            <div className="p-4 border-b border-slate-100 font-bold text-slate-900 text-sm">Expense Log</div>
+            <div className="px-3.5 py-2.5 border-b border-slate-100 font-bold text-slate-900 text-sm">Expense Log</div>
             <div className="max-h-[700px] overflow-y-auto overflow-x-auto">
               <table className="w-full min-w-[500px] text-left text-xs">
                 <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-semibold tracking-wider">
                   <tr>
-                    <th className="p-4">Date</th>
-                    <th className="p-4">Category</th>
-                    <th className="p-4">Mode</th>
-                    <th className="p-4 text-right">Amount (₹)</th>
+                    <th className="px-3.5 py-2.5">Date</th>
+                    <th className="px-3.5 py-2.5">Category</th>
+                    <th className="px-3.5 py-2.5">Mode</th>
+                    <th className="px-3.5 py-2.5 text-right">Amount (₹)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
                   {isLoading ? (
                     [...Array(5)].map((_, i) => (
                       <tr key={i} className="animate-pulse">
-                        <td className="p-4"><Skeleton className="h-5 w-24 rounded-lg" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-32 rounded-lg" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-16 rounded-lg" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
+                        <td className="px-3.5 py-2.5"><Skeleton className="h-4.5 w-24 rounded-md" /></td>
+                        <td className="px-3.5 py-2.5"><Skeleton className="h-4.5 w-32 rounded-md" /></td>
+                        <td className="px-3.5 py-2.5"><Skeleton className="h-4.5 w-16 rounded-md" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-4.5 w-20 rounded-md ml-auto" /></td>
                       </tr>
                     ))
                   ) : expenses.length === 0 ? (
@@ -108,15 +108,15 @@ export default function ExpensesPage() {
                     </tr>
                   ) : (
                     expenses.map((e: any) => (
-                      <tr key={e.id} className="hover:bg-slate-50 transition-colors border-b border-slate-100">
-                        <td className="p-4 font-medium">{e.expense_date}</td>
-                        <td className="p-4 font-bold text-slate-900">
+                      <tr key={e.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                        <td className="px-3.5 py-2.5 font-medium">{e.expense_date}</td>
+                        <td className="px-3.5 py-2.5 font-bold text-slate-900">
                           <Badge variant="neutral" size="sm">
                             {e.category}
                           </Badge>
                         </td>
-                        <td className="p-4 text-slate-600 font-medium">{e.payment_mode}</td>
-                        <td className="p-4 text-right font-extrabold text-rose-700">₹{formatCurrency(e.amount)}</td>
+                        <td className="px-3.5 py-2.5 text-slate-600 font-medium">{e.payment_mode}</td>
+                        <td className="px-3.5 py-2.5 text-right font-bold text-rose-700">₹{formatCurrency(e.amount)}</td>
                       </tr>
                     ))
                   )}
