@@ -28,6 +28,10 @@ const config: Config = {
         "section-label": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500" }],
         "body": ["14.5px", { lineHeight: "22px", fontWeight: "400" }],
       },
+      boxShadow: {
+        card: "0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 4px 14px -2px rgba(15, 23, 42, 0.04)",
+        "card-hover": "0 2px 6px 0 rgba(15, 23, 42, 0.08), 0 8px 24px -4px rgba(15, 23, 42, 0.06)",
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
