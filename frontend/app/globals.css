@@ -47,6 +47,27 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
 }
 
+/* ── Interactive Table Row Styling with Active/Hover Left-Border Accent ── */
+tr.table-row-interactive,
+tr.table-row-accent {
+  border-left: 3px solid transparent;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+tr.table-row-interactive:hover,
+tr.table-row-accent:hover {
+  border-left-color: #4f46e5;
+  background-color: #f8fafc;
+}
+
+tr.table-row-interactive.is-selected,
+tr.table-row-interactive.is-active,
+tr.table-row-accent.is-selected,
+tr.table-row-accent.is-active {
+  border-left-color: #4f46e5;
+  background-color: #eef2ff;
+}
+
 /* ── Typography Scale Utility Set ── */
 @layer utilities {
   .page-title {

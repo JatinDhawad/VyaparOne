@@ -114,13 +114,13 @@ export default function Sidebar() {
                   href={item.href}
                   onClick={closeMobile}
                   className={cn(
-                    'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150',
                     isActive
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                      ? 'bg-indigo-50 text-indigo-900 border-l-[3px] border-indigo-600 shadow-2xs font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border-l-[3px] border-transparent'
                   )}
                 >
-                  <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-white' : 'text-slate-500')} />
+                  <Icon className={cn('h-4.5 w-4.5 shrink-0', isActive ? 'text-indigo-600' : 'text-slate-500')} />
                   <span>{item.name}</span>
                 </Link>
               );
@@ -212,20 +212,20 @@ export default function Sidebar() {
                   <Link
                     href={item.href}
                     className={cn(
-                      'flex items-center rounded-xl text-sm font-semibold transition-all duration-200',
-                      isCollapsed ? 'justify-center p-3' : 'gap-3 px-3.5 py-2.5',
+                      'flex items-center rounded-lg text-sm font-semibold transition-all duration-150',
+                      isCollapsed ? 'justify-center p-3' : 'gap-3 px-3 py-2',
                       isActive
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                        ? 'bg-indigo-50 text-indigo-900 border-l-[3px] border-indigo-600 shadow-2xs font-semibold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border-l-[3px] border-transparent'
                     )}
                   >
-                    <Icon className={cn('h-5 w-5 shrink-0', isActive ? 'text-white' : 'text-slate-500')} />
+                    <Icon className={cn('h-4.5 w-4.5 shrink-0', isActive ? 'text-indigo-600' : 'text-slate-500')} />
                     {!isCollapsed && <span className="truncate">{item.name}</span>}
                   </Link>
 
                   {/* Tooltip on Hover (Shown only in Collapsed Mode) */}
                   {isCollapsed && (
-                    <span className="absolute left-full ml-3.5 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50">
+                    <span className="absolute left-full ml-3.5 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50">
                       {item.name}
                     </span>
                   )}

@@ -120,7 +120,7 @@ export default function PaymentsPage() {
                     </tr>
                   ) : (
                     payments.map((p: any) => (
-                      <tr key={p.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                      <tr key={p.id} className="table-row-interactive transition-colors border-b border-slate-100">
                         <td className="px-3.5 py-2.5 font-mono font-bold text-indigo-700">{p.voucher_number}</td>
                         <td className="px-3.5 py-2.5">
                           <Badge
