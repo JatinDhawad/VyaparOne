@@ -326,38 +326,38 @@ export default function SalesPage() {
         />
 
         {/* ── Invoice Table ────────────────────────────────────────────── */}
-        <main className="p-4 sm:p-8 space-y-6 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
           {deleteSuccessMessage && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-sm animate-in fade-in slide-in-from-top-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2 shadow-xs animate-in fade-in slide-in-from-top-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
               <span>{deleteSuccessMessage}</span>
             </div>
           )}
 
-          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200 space-y-4 p-4">
+          <div className="glass-panel rounded-xl overflow-hidden border border-slate-200 space-y-3 p-3.5 sm:p-4">
             {/* Search, Filter & Sort Controls */}
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
               {/* Search Bar */}
               <div className="relative w-full md:w-72">
-                <Search className="absolute left-3.5 top-3 h-3.5 w-3.5 text-slate-400" />
+                <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Search invoice, customer, city..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full glass-input pl-9 pr-3 py-2 rounded-xl text-xs font-medium"
+                  className="w-full glass-input pl-8.5 pr-3 py-1.5 rounded-lg text-xs font-normal"
                 />
               </div>
 
               {/* Status Filter and Sort Controls */}
               <div className="flex items-center gap-2 flex-wrap w-full md:w-auto justify-between md:justify-end">
                 {/* Status Toggles */}
-                <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs">
+                <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
                   {(['ALL', 'PAID', 'PENDING'] as const).map((st) => (
                     <button
                       key={st}
                       onClick={() => setStatusFilter(st)}
-                      className={`px-2.5 py-1 font-bold rounded-lg text-[11px] transition-all ${
+                      className={`px-2.5 py-1 font-semibold rounded-md text-[11px] transition-all ${
                         statusFilter === st
                           ? 'bg-white text-indigo-700 shadow-2xs'
                           : 'text-slate-600 hover:text-slate-900'
@@ -426,7 +426,7 @@ export default function SalesPage() {
                     setSortField('date');
                     setSortDir('desc');
                   }}
-                  className="text-xs font-bold text-slate-400 hover:text-rose-600 underline ml-1 transition-colors"
+                  className="text-xs font-semibold text-slate-400 hover:text-rose-600 underline ml-1 transition-colors"
                 >
                   Clear all
                 </button>
@@ -434,35 +434,35 @@ export default function SalesPage() {
             )}
           </div>
 
-          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-200">
+          <div className="glass-panel rounded-xl overflow-hidden border border-slate-200">
             <div className="max-h-[700px] overflow-y-auto overflow-x-auto">
               <table className="w-full min-w-[700px] text-left text-xs">
-                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-bold">
+                <thead className="sticky top-0 z-10 bg-slate-100/95 backdrop-blur-xs text-slate-500 border-b border-slate-200 uppercase text-[10px] font-semibold tracking-wider">
                   <tr>
-                    <th className="p-4">Invoice #</th>
-                    <th className="p-4">Date</th>
-                    <th className="p-4">Customer</th>
-                    <th className="p-4">Location</th>
-                    <th className="p-4 text-right">Grand Total (₹)</th>
-                    <th className="p-4 text-right">Paid (₹)</th>
-                    <th className="p-4 text-right">Pending (₹)</th>
-                    <th className="p-4 text-right">Net Profit (₹)</th>
-                    <th className="p-4 text-right">Actions</th>
+                    <th className="px-3.5 py-2.5">Invoice #</th>
+                    <th className="px-3.5 py-2.5">Date</th>
+                    <th className="px-3.5 py-2.5">Customer</th>
+                    <th className="px-3.5 py-2.5">Location</th>
+                    <th className="px-3.5 py-2.5 text-right">Grand Total (₹)</th>
+                    <th className="px-3.5 py-2.5 text-right">Paid (₹)</th>
+                    <th className="px-3.5 py-2.5 text-right">Pending (₹)</th>
+                    <th className="px-3.5 py-2.5 text-right">Net Profit (₹)</th>
+                    <th className="px-3.5 py-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
                   {isLoading ? (
                     [...Array(5)].map((_, i) => (
                       <tr key={i} className="animate-pulse">
-                        <td className="p-4"><Skeleton className="h-5 w-24 rounded-lg" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-32 rounded-lg" /></td>
-                        <td className="p-4"><Skeleton className="h-5 w-20 rounded-lg" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-5 w-24 rounded-lg ml-auto" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-6 w-16 rounded-xl ml-auto" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-5 w-20 rounded-lg ml-auto" /></td>
-                        <td className="p-4 text-right"><Skeleton className="h-8 w-20 rounded-xl ml-auto" /></td>
+                        <td className="px-3.5 py-2.5"><Skeleton className="h-4.5 w-24 rounded-md" /></td>
+                        <td className="px-3.5 py-2.5"><Skeleton className="h-4.5 w-20 rounded-md" /></td>
+                        <td className="px-3.5 py-2.5"><Skeleton className="h-4.5 w-32 rounded-md" /></td>
+                        <td className="px-3.5 py-2.5"><Skeleton className="h-4.5 w-20 rounded-md" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-4.5 w-24 rounded-md ml-auto" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-4.5 w-20 rounded-md ml-auto" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-5 w-16 rounded-md ml-auto" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-4.5 w-20 rounded-md ml-auto" /></td>
+                        <td className="px-3.5 py-2.5 text-right"><Skeleton className="h-6 w-20 rounded-md ml-auto" /></td>
                       </tr>
                     ))
                   ) : sales.length === 0 ? (
@@ -482,35 +482,35 @@ export default function SalesPage() {
                       const pending = parseFloat(s.pending_amount || 0);
 
                       return (
-                        <tr key={s.id} className="hover:bg-slate-50 transition-colors border-b border-slate-100">
-                          <td className="p-4 font-mono font-bold text-indigo-700">{s.invoice_number}</td>
-                          <td className="p-4 font-medium">{s.invoice_date}</td>
-                          <td className="p-4 font-semibold text-slate-900">{s.customer?.name || '—'}</td>
-                          <td className="p-4 text-slate-500">{s.location || '—'}</td>
-                          <td className="p-4 text-right font-bold text-slate-900">₹{formatCurrency(s.grand_total)}</td>
-                          <td className="p-4 text-right text-emerald-700 font-semibold">₹{formatCurrency(s.amount_paid)}</td>
-                          <td className="p-4 text-right">
+                        <tr key={s.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                          <td className="px-3.5 py-2.5 font-mono font-bold text-indigo-700">{s.invoice_number}</td>
+                          <td className="px-3.5 py-2.5 font-medium">{s.invoice_date}</td>
+                          <td className="px-3.5 py-2.5 font-semibold text-slate-900">{s.customer?.name || '—'}</td>
+                          <td className="px-3.5 py-2.5 text-slate-500">{s.location || '—'}</td>
+                          <td className="px-3.5 py-2.5 text-right font-bold text-slate-900">₹{formatCurrency(s.grand_total)}</td>
+                          <td className="px-3.5 py-2.5 text-right text-emerald-700 font-semibold">₹{formatCurrency(s.amount_paid)}</td>
+                          <td className="px-3.5 py-2.5 text-right">
                             <Badge variant={pending <= 0 ? 'success' : 'danger'} size="sm">
                               {pending <= 0 ? 'Paid' : `₹${formatCurrency(pending)}`}
                             </Badge>
                           </td>
-                          <td className="p-4 text-right text-emerald-700 font-bold">₹{formatCurrency(s.net_profit)}</td>
-                          <td className="p-4 text-right">
+                          <td className="px-3.5 py-2.5 text-right text-emerald-700 font-bold">₹{formatCurrency(s.net_profit)}</td>
+                          <td className="px-3.5 py-2.5 text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => openEditModal(s)}
-                                className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-extrabold text-xs border border-indigo-200 transition-all inline-flex items-center gap-1.5 shadow-2xs"
+                                className="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-semibold text-xs border border-indigo-200 transition-all inline-flex items-center gap-1 shadow-2xs"
                                 title="Edit Sales Bill"
                               >
-                                <Pencil className="h-3.5 w-3.5" />
+                                <Pencil className="h-3 w-3" />
                                 Edit
                               </button>
                               <button
                                 onClick={() => setDeleteInvoice(s)}
-                                className="p-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-xs border border-rose-200 transition-all inline-flex items-center shadow-2xs"
+                                className="p-1 rounded-md bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold text-xs border border-rose-200 transition-all inline-flex items-center shadow-2xs"
                                 title="Delete Sales Bill & Restore Stock"
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash2 className="h-3 w-3" />
                               </button>
                             </div>
                           </td>
