@@ -281,7 +281,7 @@ export default function PartiesPage() {
                       setViewingParty(party);
                       setPartyTab(isSupplier ? 'PURCHASES' : 'SALES');
                     }}
-                    className="glass-card p-4 rounded-xl space-y-3 border-slate-200 hover:border-indigo-300 hover:shadow-lg transition-all duration-200 flex flex-col justify-between cursor-pointer group bg-white"
+                    className="glass-card glass-card-interactive p-4 rounded-xl space-y-3 border border-slate-200 flex flex-col justify-between cursor-pointer group bg-white"
                   >
                     <div className="space-y-2.5">
                       <div className="flex items-start justify-between gap-3">

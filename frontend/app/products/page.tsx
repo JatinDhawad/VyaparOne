@@ -319,7 +319,7 @@ export default function ProductsPage() {
                 return (
                   <div
                     key={p.id}
-                    className="glass-card p-4 rounded-xl space-y-3 hover:shadow-lg hover:border-indigo-300 transition-all duration-200 border border-slate-200 bg-white flex flex-col justify-between"
+                    className="glass-card glass-card-interactive p-4 rounded-xl space-y-3 border border-slate-200 bg-white flex flex-col justify-between"
                   >
                     {/* Header */}
                     <div className="space-y-1.5">
