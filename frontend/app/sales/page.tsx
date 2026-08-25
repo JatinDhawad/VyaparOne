@@ -482,7 +482,7 @@ export default function SalesPage() {
                       const pending = parseFloat(s.pending_amount || 0);
 
                       return (
-                        <tr key={s.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                        <tr key={s.id} className="table-row-interactive transition-colors border-b border-slate-100">
                           <td className="px-3.5 py-2.5 font-mono font-bold text-indigo-700">{s.invoice_number}</td>
                           <td className="px-3.5 py-2.5 font-medium">{s.invoice_date}</td>
                           <td className="px-3.5 py-2.5 font-semibold text-slate-900">{s.customer?.name || '—'}</td>

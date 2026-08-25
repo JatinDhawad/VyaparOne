@@ -646,7 +646,7 @@ export default function PurchasesPage() {
                       return (
                         <tr 
                           key={p.id} 
-                          className="hover:bg-slate-50/80 transition-colors border-b border-slate-100"
+                          className="table-row-interactive transition-colors border-b border-slate-100"
                         >
                           <td className="px-3.5 py-2.5 font-mono font-bold text-indigo-700">{p.invoice_number}</td>
                           <td className="px-3.5 py-2.5 font-medium text-slate-600">{p.invoice_date}</td>

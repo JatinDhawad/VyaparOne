@@ -221,8 +221,8 @@ export default function DashboardPage() {
     const pay = parseFloat(summary?.total_payables || 0);
     if (rec === 0 && pay === 0) return [];
     return [
-      { name: 'Receivables (Owed to You)', value: rec, color: '#10b981' },
-      { name: 'Payables (You Owe)', value: pay, color: '#6366f1' },
+      { name: 'Receivables (Owed to You)', value: rec, color: '#059669' },
+      { name: 'Payables (You Owe)', value: pay, color: '#e11d48' },
     ];
   }, [summary]);
 
@@ -341,40 +341,48 @@ export default function DashboardPage() {
           {/* Top 4 KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Sales Card */}
-            <div className="glass-card p-4 rounded-xl border-slate-200 flex flex-col justify-between min-h-[115px] bg-white">
+            <div className="glass-card p-4 rounded-xl border-slate-200 flex flex-col justify-between min-h-[120px] bg-white">
               <span className="section-label">Total Sales</span>
               <div className="mt-1.5">
                 {isSummaryLoading ? (
-                  <Skeleton className="h-7 w-36 rounded-md" />
+                  <Skeleton className="h-8 w-36 rounded-md" />
                 ) : (
-                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-indigo-600 tracking-tight">
                     ₹{formatCurrency(summary?.total_sales)}
                   </h3>
                 )}
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="text-xs font-normal text-slate-500">Gross Turnover</span>
+                  {period !== 'all' && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      {PERIOD_OPTIONS.find(o => o.value === period)?.label}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Purchases Card — with billed/unbilled breakdown */}
-            <div className="glass-card p-5 rounded-xl border-slate-200 flex flex-col justify-between min-h-[125px] bg-white">
+            <div className="glass-card p-4 rounded-xl border-slate-200 flex flex-col justify-between min-h-[120px] bg-white">
               <span className="section-label">Total Purchases</span>
-              <div className="mt-2">
+              <div className="mt-1.5">
                 {isSummaryLoading ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Skeleton className="h-8 w-36 rounded-md" />
                     <Skeleton className="h-4 w-full rounded-md" />
                   </div>
                 ) : (
                   <>
-                    <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                       ₹{formatCurrency(summary?.total_purchases)}
                     </h3>
-                    <div className="mt-2 space-y-1 pt-2 border-t border-slate-100">
+                    <div className="mt-1.5 space-y-0.5 pt-1.5 border-t border-slate-100">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-normal text-slate-500">Billed (GST)</span>
                         <span className="font-semibold text-slate-900">₹{formatCurrency(summary?.total_billed_purchases)}</span>
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-normal text-amber-700">+ Unbilled (Non-GST)</span>
+                        <span className="font-normal text-amber-700">+ Unbilled</span>
                         <span className="font-semibold text-amber-800">₹{formatCurrency(summary?.total_unbilled_purchases)}</span>
                       </div>
                     </div>
@@ -384,30 +392,37 @@ export default function DashboardPage() {
             </div>
 
             {/* Net Profit Card */}
-            <div className="glass-card p-5 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[125px]">
+            <div className="glass-card p-4 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[120px]">
               <span className="section-label">Net Profit</span>
-              <div className="mt-2">
+              <div className="mt-1.5">
                 {isSummaryLoading ? (
                   <Skeleton className="h-8 w-36 rounded-md" />
                 ) : (
-                  <h3 className="text-2xl font-bold text-emerald-700 tracking-tight">
+                  <h3 className={`text-2xl sm:text-3xl font-bold tracking-tight ${(summary?.net_profit || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     ₹{formatCurrency(summary?.net_profit)}
                   </h3>
                 )}
+                <div className="flex items-center gap-1.5 mt-1 text-xs font-normal text-slate-500">
+                  <span>Margin:</span>
+                  <span className="font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200 text-[11px]">
+                    {summary?.profit_margin || '0.00'}%
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Operational Expenses Card */}
-            <div className="glass-card p-5 rounded-xl border-slate-200 flex flex-col justify-between min-h-[125px] bg-white">
+            <div className="glass-card p-4 rounded-xl border-slate-200 flex flex-col justify-between min-h-[120px] bg-white">
               <span className="section-label">Expenses</span>
-              <div className="mt-2">
+              <div className="mt-1.5">
                 {isSummaryLoading ? (
                   <Skeleton className="h-8 w-36 rounded-md" />
                 ) : (
-                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-rose-600 tracking-tight">
                     ₹{formatCurrency(summary?.total_operational_expenses)}
                   </h3>
                 )}
+                <p className="text-xs font-normal text-slate-500 mt-1">Store Logistics & Overheads</p>
               </div>
             </div>
           </div>
@@ -620,7 +635,7 @@ export default function DashboardPage() {
                     <span>Sales Revenue</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
                     <span>Purchase Cost</span>
                   </div>
                 </div>
@@ -640,12 +655,12 @@ export default function DashboardPage() {
                     <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
+                          <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.35} />
+                          <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.02} />
                         </linearGradient>
                         <linearGradient id="colorPurchases" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                          <stop offset="5%" stopColor="#059669" stopOpacity={0.35} />
+                          <stop offset="95%" stopColor="#059669" stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
@@ -670,8 +685,8 @@ export default function DashboardPage() {
                         type="monotone"
                         dataKey="sales"
                         name="Sales Revenue"
-                        stroke="#6366f1"
-                        strokeWidth={2}
+                        stroke="#4f46e5"
+                        strokeWidth={2.5}
                         fillOpacity={1}
                         fill="url(#colorSales)"
                       />
@@ -679,8 +694,8 @@ export default function DashboardPage() {
                         type="monotone"
                         dataKey="purchases"
                         name="Purchase Cost"
-                        stroke="#10b981"
-                        strokeWidth={2}
+                        stroke="#059669"
+                        strokeWidth={2.5}
                         fillOpacity={1}
                         fill="url(#colorPurchases)"
                       />
@@ -729,7 +744,7 @@ export default function DashboardPage() {
                     {/* Centered Total Legend */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       <span className="text-[10px] uppercase font-bold text-slate-400">Net Working</span>
-                      <span className="text-sm font-bold text-slate-900">₹{formatCompactCurrency(netDues)}</span>
+                      <span className="text-sm font-bold text-indigo-600">₹{formatCompactCurrency(netDues)}</span>
                     </div>
                   </>
                 )}
@@ -738,17 +753,17 @@ export default function DashboardPage() {
               {/* Donut Chart Legend Footer */}
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-600 shrink-0" />
                   <div>
                     <span className="text-slate-500 text-[10px] uppercase font-bold block">Receivable</span>
-                    <span className="font-bold text-slate-900">₹{formatCompactCurrency(summary?.total_receivables)}</span>
+                    <span className="font-bold text-emerald-700">₹{formatCompactCurrency(summary?.total_receivables)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rose-500 shrink-0" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-rose-600 shrink-0" />
                   <div>
                     <span className="text-slate-500 text-[10px] uppercase font-bold block">Payable</span>
-                    <span className="font-bold text-slate-900">₹{formatCompactCurrency(summary?.total_payables)}</span>
+                    <span className="font-bold text-rose-700">₹{formatCompactCurrency(summary?.total_payables)}</span>
                   </div>
                 </div>
               </div>

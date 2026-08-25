@@ -272,7 +272,7 @@ export default function ReportsPage() {
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
                         {statement.lines.map((line: any) => (
-                          <tr key={line.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                          <tr key={line.id} className="table-row-interactive transition-colors border-b border-slate-100">
                             <td className="px-3.5 py-2.5 font-medium">{line.transaction_date}</td>
                             <td className="px-3.5 py-2.5 font-mono font-bold text-indigo-700">{line.voucher_type}</td>
                             <td className="px-3.5 py-2.5 text-right text-emerald-700 font-semibold">
@@ -340,7 +340,7 @@ export default function ReportsPage() {
                             tickFormatter={(v) => '₹' + formatCompactCurrency(v)}
                           />
                           <RechartsTooltip content={<CustomReportTooltip />} />
-                          <Bar dataKey="balance" name="Outstanding Balance" fill="#10b981" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="balance" name="Outstanding Balance" fill="#059669" radius={[6, 6, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -425,7 +425,7 @@ export default function ReportsPage() {
                             tickFormatter={(v) => '₹' + formatCompactCurrency(v)}
                           />
                           <RechartsTooltip content={<CustomReportTooltip />} />
-                          <Bar dataKey="balance" name="Pending Payable" fill="#6366f1" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="balance" name="Pending Payable" fill="#4f46e5" radius={[6, 6, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -479,7 +479,7 @@ export default function ReportsPage() {
                         <span>Revenue</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        <span className="h-2 w-2 rounded-full bg-emerald-600" />
                         <span>Net Profit</span>
                       </div>
                     </div>
@@ -512,8 +512,8 @@ export default function ReportsPage() {
                           width={110}
                         />
                         <RechartsTooltip content={<CustomReportTooltip />} />
-                        <Bar dataKey="revenue" name="Total Revenue" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={10} />
-                        <Bar dataKey="netProfit" name="Net Profit" fill="#10b981" radius={[0, 4, 4, 0]} barSize={10} />
+                        <Bar dataKey="revenue" name="Total Revenue" fill="#4f46e5" radius={[0, 4, 4, 0]} barSize={10} />
+                        <Bar dataKey="netProfit" name="Net Profit" fill="#059669" radius={[0, 4, 4, 0]} barSize={10} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -559,7 +559,7 @@ export default function ReportsPage() {
                         <tr><td colSpan={5} className="p-6 text-center text-slate-500">No party sales recorded yet.</td></tr>
                       ) : (
                         partyProf?.parties?.map((pt: any) => (
-                          <tr key={pt.party_id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                          <tr key={pt.party_id} className="table-row-interactive transition-colors border-b border-slate-100">
                             <td className="px-3.5 py-2.5 font-semibold text-slate-900">{pt.party_name}</td>
                             <td className="px-3.5 py-2.5 text-right font-normal">₹{formatCurrency(pt.total_revenue)}</td>
                             <td className="px-3.5 py-2.5 text-right text-slate-500 font-normal">₹{formatCurrency(pt.total_cogs)}</td>

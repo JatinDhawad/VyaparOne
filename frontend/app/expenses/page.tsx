@@ -108,7 +108,7 @@ export default function ExpensesPage() {
                     </tr>
                   ) : (
                     expenses.map((e: any) => (
-                      <tr key={e.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                      <tr key={e.id} className="table-row-interactive transition-colors border-b border-slate-100">
                         <td className="px-3.5 py-2.5 font-medium">{e.expense_date}</td>
                         <td className="px-3.5 py-2.5 font-bold text-slate-900">
                           <Badge variant="neutral" size="sm">
