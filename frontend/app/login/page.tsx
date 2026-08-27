@@ -7,6 +7,27 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { toast } from 'sonner';
 
+// ---------------------------------------------------------------------------
+// DEMO MODE
+// This block is evaluated at build time by Next.js / the bundler.
+// When NEXT_PUBLIC_DEMO_MODE is not "true" (i.e. in production), the entire
+// if-branch is treated as dead code and tree-shaken out of the JS bundle,
+// so no credential strings are ever shipped to the browser.
+//
+// To enable locally: add NEXT_PUBLIC_DEMO_MODE=true to .env.local
+// NEVER set this in a production environment or in Vercel production env vars.
+// ---------------------------------------------------------------------------
+const IS_DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
+// Demo accounts are only defined when the build flag is active.
+// They do not exist as strings in non-demo builds.
+const DEMO_ACCOUNTS = IS_DEMO_MODE
+  ? [
+      { label: 'ADMIN', email: process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL ?? '', password: process.env.NEXT_PUBLIC_DEMO_ADMIN_PASS ?? '', accent: 'indigo' },
+      { label: 'BUSINESS OWNER', email: process.env.NEXT_PUBLIC_DEMO_OWNER_EMAIL ?? '', password: process.env.NEXT_PUBLIC_DEMO_OWNER_PASS ?? '', accent: 'emerald' },
+    ]
+  : [];
+
 export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -37,11 +58,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background Soft Gradients */}
@@ -57,7 +73,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
             Vyapar<span className="text-emerald-600">One</span> ERP
           </h1>
-          <p className="text-xs font-semibold text-slate-500 mt-1">FMCG Trading, Landed Cost & Double-Entry Accounting</p>
+          <p className="text-xs font-semibold text-slate-500 mt-1">FMCG Trading, Landed Cost &amp; Double-Entry Accounting</p>
         </div>
 
         {/* Login Glass Card */}
@@ -123,32 +139,28 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Launchers */}
-          <div className="pt-4 border-t border-slate-100">
-            <div className="flex items-center gap-1 text-[11px] font-extrabold text-indigo-600 uppercase tracking-wider mb-3">
-              <Sparkles className="h-3.5 w-3.5" />
-              Quick Demo Launcher
+          {/* Quick Demo Launcher — only rendered (and only compiled) in DEMO_MODE builds */}
+          {IS_DEMO_MODE && DEMO_ACCOUNTS.length > 0 && (
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-1 text-[11px] font-extrabold text-indigo-600 uppercase tracking-wider mb-3">
+                <Sparkles className="h-3.5 w-3.5" />
+                Quick Demo Launcher
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                {DEMO_ACCOUNTS.map((account) => (
+                  <button
+                    key={account.label}
+                    type="button"
+                    onClick={() => { setEmail(account.email); setPassword(account.password); }}
+                    className={`p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-${account.accent}-500/50 text-left transition-colors group`}
+                  >
+                    <div className={`text-xs font-extrabold text-slate-900 group-hover:text-${account.accent}-600`}>{account.label}</div>
+                    <div className="text-[10px] font-medium text-slate-500 truncate">{account.email}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin@vyaparone.com', 'adminpassword')}
-                className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-500/50 text-left transition-colors group"
-              >
-                <div className="text-xs font-extrabold text-slate-900 group-hover:text-indigo-600">ADMIN</div>
-                <div className="text-[10px] font-medium text-slate-500 truncate">admin@vyaparone.com</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('owner@vyaparone.com', 'owner1234')}
-                className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-500/50 text-left transition-colors group"
-              >
-                <div className="text-xs font-extrabold text-slate-900 group-hover:text-emerald-600">BUSINESS OWNER</div>
-                <div className="text-[10px] font-medium text-slate-500 truncate">owner@vyaparone.com</div>
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
