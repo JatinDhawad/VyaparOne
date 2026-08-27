@@ -49,6 +49,11 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
+          # Prepend the versioned bin directory so pg_dump 17.x takes precedence
+          # over any older binary that the runner's default PATH resolves first.
+          export PATH="/usr/lib/postgresql/17/bin:${PATH}"
+          pg_dump --version   # confirm 17.x is what actually runs
+
           TIMESTAMP=$(date -u '+%Y-%m-%d')
           FILENAME="vyaparone-db-backup-${TIMESTAMP}.sql"
 
