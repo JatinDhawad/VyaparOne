@@ -27,10 +27,23 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Install postgresql-client
+      - name: Install postgresql-client-17
         run: |
+          # Add the official PostgreSQL APT repository to get client tools that
+          # match the Supabase server version (17.x). Ubuntu's default repos
+          # only ship an older pg_dump which causes a server version mismatch.
           sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client
+          sudo apt-get install -y -qq curl ca-certificates
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt \
+            $(lsb_release -cs)-pgdg main" \
+            > /etc/apt/sources.list.d/pgdg.list'
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version   # confirm 17.x is on PATH
 
       - name: Run pg_dump
         env:
