@@ -1,0 +1,61 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# VyaparOne — Daily Database Backup
+#
+# Runs a pg_dump against the production Supabase database and uploads the
+# resulting .sql file as a GitHub Actions artifact (retained for 30 days).
+#
+# Prerequisites:
+#   • Set SUPABASE_DB_URL as a GitHub repository secret (Settings → Secrets →
+#     Actions). The value must be a full libpq connection string, e.g.:
+#       postgresql://user:password@host:5432/dbname
+#
+# Artifacts are available under the "Actions" tab for each workflow run.
+# No external storage (S3, GCS, etc.) is used.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Daily Database Backup
+
+on:
+  schedule:
+    - cron: '0 3 * * *'   # 03:00 UTC every day
+  workflow_dispatch:        # Allow manual trigger from the Actions tab
+
+jobs:
+  backup:
+    name: pg_dump → GitHub Artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install postgresql-client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+
+      - name: Run pg_dump
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          TIMESTAMP=$(date -u '+%Y-%m-%d')
+          FILENAME="vyaparone-db-backup-${TIMESTAMP}.sql"
+
+          echo "Starting backup: ${FILENAME}"
+          pg_dump \
+            --no-password \
+            --format=plain \
+            --no-owner \
+            --no-acl \
+            "${SUPABASE_DB_URL}" \
+            > "${FILENAME}"
+
+          echo "Backup complete. Size: $(du -sh ${FILENAME} | cut -f1)"
+          echo "BACKUP_FILE=${FILENAME}" >> "$GITHUB_ENV"
+          echo "BACKUP_DATE=${TIMESTAMP}" >> "$GITHUB_ENV"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vyaparone-db-backup-${{ env.BACKUP_DATE }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 30
+          if-no-files-found: error
