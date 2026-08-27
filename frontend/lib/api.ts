@@ -94,6 +94,8 @@ export const api = {
   getMe: () => fetchAPI<any>('/users/me'),
   getUsers: () => fetchAPI<any>('/users/'),
   createUser: (data: any) => fetchAPI<any>('/users/', { method: 'POST', body: JSON.stringify(data) }),
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    fetchAPI<{ message: string }>('/auth/change-password', { method: 'PATCH', body: JSON.stringify(data) }),
 
   // Master Data
   getCompanies: () => fetchAPI<any[]>('/companies/'),
