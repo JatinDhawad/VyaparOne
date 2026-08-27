@@ -43,22 +43,25 @@ jobs:
             > /etc/apt/sources.list.d/pgdg.list'
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client-17
-          pg_dump --version   # confirm 17.x is on PATH
+          # Persist the versioned bin dir for all subsequent steps via GITHUB_PATH.
+          # Without this, each step's shell inherits the runner's original PATH
+          # where the pre-installed older pg_dump appears first.
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+          /usr/lib/postgresql/17/bin/pg_dump --version   # confirm 17.x installed
 
       - name: Run pg_dump
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          # Prepend the versioned bin directory so pg_dump 17.x takes precedence
-          # over any older binary that the runner's default PATH resolves first.
-          export PATH="/usr/lib/postgresql/17/bin:${PATH}"
-          pg_dump --version   # confirm 17.x is what actually runs
+          # GITHUB_PATH set in the install step ensures pg_dump 17.x is first on PATH.
+          # We also call the full absolute path directly — zero ambiguity.
+          /usr/lib/postgresql/17/bin/pg_dump --version   # must print 17.x, not 16.x
 
           TIMESTAMP=$(date -u '+%Y-%m-%d')
           FILENAME="vyaparone-db-backup-${TIMESTAMP}.sql"
 
           echo "Starting backup: ${FILENAME}"
-          pg_dump \
+          /usr/lib/postgresql/17/bin/pg_dump \
             --no-password \
             --format=plain \
             --no-owner \
