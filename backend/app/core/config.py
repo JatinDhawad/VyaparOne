@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import validator
 from typing import List, Optional
 
 class Settings(BaseSettings):
@@ -7,9 +8,21 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # Security & Auth
-    SECRET_KEY: str = "SUPER_SECRET_CHANGE_THIS_IN_PRODUCTION_KEY_1234567890"
+    # No default value — must be set via environment variable (SECRET_KEY).
+    # The application will refuse to start if this is missing.
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 Days
+
+    @validator("SECRET_KEY")
+    def secret_key_must_be_set(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError(
+                "SECRET_KEY must be set via the SECRET_KEY environment variable. "
+                "Generate a strong random key (e.g. `openssl rand -hex 32`) and set it "
+                "before starting the application. Do not use a hardcoded or empty value."
+            )
+        return v
     
     # Database Configuration
     DATABASE_URL: str = "sqlite+aiosqlite:///./vyaparone.db" # Default fallback for local dev
