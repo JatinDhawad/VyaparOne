@@ -17,7 +17,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  KeyRound
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useSidebarStore } from '@/lib/sidebar-store';
@@ -138,6 +139,14 @@ export default function Sidebar() {
               <div className="text-xs font-bold text-slate-900 truncate">{user?.full_name || 'Admin User'}</div>
               <div className="text-[10px] font-medium text-slate-500 truncate">{user?.email || 'admin@vyaparone.com'}</div>
             </div>
+            <Link
+              href="/change-password"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+              title="Change Password"
+              onClick={closeMobile}
+            >
+              <KeyRound className="h-4 w-4" />
+            </Link>
             <button
               onClick={logout}
               className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
@@ -245,6 +254,14 @@ export default function Sidebar() {
               >
                 {user?.full_name?.charAt(0) || 'A'}
               </div>
+              <Link
+                href="/change-password"
+                className="p-2.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl border border-indigo-200 transition-colors"
+                title="Change Password"
+                aria-label="Change Password"
+              >
+                <KeyRound className="h-4 w-4" />
+              </Link>
               <button
                 onClick={logout}
                 className="p-2.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl border border-rose-200 transition-colors"
@@ -271,6 +288,13 @@ export default function Sidebar() {
                 </div>
               </div>
 
+              <Link
+                href="/change-password"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl border border-indigo-200 transition-colors"
+              >
+                <KeyRound className="h-3.5 w-3.5" />
+                Change Password
+              </Link>
               <button
                 onClick={logout}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl border border-rose-200 transition-colors"
