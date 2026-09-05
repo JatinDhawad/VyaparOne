@@ -118,22 +118,29 @@ async def get_ledger_statement(
 
 
 async def get_receivables_report(db: AsyncSession) -> ReceivablesReportResponse:
-    res = await db.execute(
-        select(Party, LedgerAccount)
-        .join(LedgerAccount, LedgerAccount.party_id == Party.id)
-        .where(
-            Party.is_active == True,
-            Party.party_type.in_(["CUSTOMER", "BOTH"])
-        )
+    from app.models.transactions import SalesInvoice
+    from sqlalchemy import func
+
+    # Get all customers
+    cust_res = await db.execute(
+        select(Party)
+        .where(Party.party_type.in_(["CUSTOMER", "BOTH"]))
     )
-    rows = res.all()
+    customers = cust_res.scalars().all()
+
     total_rec = Decimal("0.00")
     party_items = []
 
-    for party, account in rows:
-        bal = Decimal(str(account.current_balance or 0))
-        if bal > Decimal("0.00"):
-            total_rec += bal
+    for party in customers:
+        # Sum pending_amount from sales invoices for this customer
+        pending_res = await db.execute(
+            select(func.coalesce(func.sum(SalesInvoice.pending_amount), 0))
+            .where(SalesInvoice.customer_id == party.id)
+        )
+        pending = Decimal(str(pending_res.scalar()))
+
+        if pending > Decimal("0.00"):
+            total_rec += pending
             party_items.append(
                 OutstandingPartyItem(
                     party_id=party.id,
@@ -143,10 +150,13 @@ async def get_receivables_report(db: AsyncSession) -> ReceivablesReportResponse:
                     city=party.city,
                     credit_limit=Decimal(str(party.credit_limit or 0)),
                     credit_days=party.credit_days or 30,
-                    current_balance=bal,
-                    is_overdue=False  # can be extended based on invoice dates
+                    current_balance=round(pending, 2),
+                    is_overdue=False
                 )
             )
+
+    # Sort customers by highest outstanding balance first
+    party_items.sort(key=lambda p: p.current_balance, reverse=True)
 
     return ReceivablesReportResponse(
         total_receivables=round(total_rec, 2),
@@ -159,10 +169,10 @@ async def get_payables_report(db: AsyncSession) -> PayablesReportResponse:
     from app.models.transactions import PurchaseInvoice
     from sqlalchemy import func
 
-    # Get all active suppliers
+    # Get all suppliers
     sup_res = await db.execute(
         select(Party)
-        .where(Party.is_active == True, Party.party_type.in_(["SUPPLIER", "BOTH"]))
+        .where(Party.party_type.in_(["SUPPLIER", "BOTH"]))
     )
     suppliers = sup_res.scalars().all()
 
@@ -188,10 +198,12 @@ async def get_payables_report(db: AsyncSession) -> PayablesReportResponse:
                     city=party.city,
                     credit_limit=Decimal(str(party.credit_limit or 0)),
                     credit_days=party.credit_days or 30,
-                    current_balance=pending,
+                    current_balance=round(pending, 2),
                     is_overdue=False
                 )
             )
+
+    party_items.sort(key=lambda p: p.current_balance, reverse=True)
 
     return PayablesReportResponse(
         total_payables=round(total_pay, 2),
