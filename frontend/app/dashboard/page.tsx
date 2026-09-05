@@ -22,7 +22,10 @@ import {
   CheckCircle2,
   Filter,
   Users,
-  Sparkles
+  Sparkles,
+  Search,
+  ArrowUpDown,
+  X
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -45,6 +48,8 @@ import {
 
 type Period = '30d' | '90d' | '6m' | '1y' | 'all';
 type TxFilter = 'ALL' | 'SALES' | 'PURCHASES' | 'PAYMENTS';
+type TxSort = 'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc' | 'pending_desc';
+type TxDatePreset = 'all' | 'today' | '7d' | '30d' | 'this_month' | 'custom';
 
 const PERIOD_OPTIONS: { value: Period; label: string }[] = [
   { value: '30d', label: 'Last 30 Days' },
@@ -58,6 +63,11 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState<Period>('all');
   const [txFilter, setTxFilter] = useState<TxFilter>('ALL');
   const [txLimit, setTxLimit] = useState<number>(5);
+  const [txSort, setTxSort] = useState<TxSort>('date_desc');
+  const [txDatePreset, setTxDatePreset] = useState<TxDatePreset>('all');
+  const [txStartDate, setTxStartDate] = useState<string>('');
+  const [txEndDate, setTxEndDate] = useState<string>('');
+  const [txSearch, setTxSearch] = useState<string>('');
 
   const { data: summary, isLoading: isSummaryLoading } = useQuery({
     queryKey: ['dashboard-summary', period],
@@ -89,6 +99,15 @@ export default function DashboardPage() {
     queryFn: () => api.getParties(),
   });
 
+  // Fast party name lookup map
+  const partyMap = useMemo(() => {
+    const map = new Map<string, string>();
+    parties.forEach((p: any) => {
+      if (p.id && p.name) map.set(String(p.id), p.name);
+    });
+    return map;
+  }, [parties]);
+
   // ── First-Run Onboarding Step Completion ──────────────────────────────────
   const hasParties = parties.length > 0;
   const hasProducts = products.length > 0;
@@ -103,12 +122,14 @@ export default function DashboardPage() {
     const list: any[] = [];
 
     sales.forEach((s: any) => {
+      const partyTitle = s.customer?.name || (s.customer_id ? partyMap.get(String(s.customer_id)) : null) || 'Walk-in Customer';
       list.push({
         id: s.id,
         type: 'SALE',
         invoice_number: s.invoice_number,
         date: s.invoice_date,
-        party_name: s.customer?.name || 'Walk-in Customer',
+        party: partyTitle,
+        party_name: partyTitle,
         party_id: s.customer_id,
         location: s.location,
         amount: parseFloat(s.grand_total || 0),
@@ -120,12 +141,14 @@ export default function DashboardPage() {
     });
 
     purchases.forEach((p: any) => {
+      const partyTitle = p.supplier?.name || (p.supplier_id ? partyMap.get(String(p.supplier_id)) : null) || 'Supplier / Vendor';
       list.push({
         id: p.id,
         type: 'PURCHASE',
         invoice_number: p.invoice_number,
         date: p.invoice_date,
-        party_name: p.supplier?.name || 'Supplier / Vendor',
+        party: partyTitle,
+        party_name: partyTitle,
         party_id: p.supplier_id,
         location: null,
         amount: parseFloat(p.total_payable_amount || p.grand_total || 0),
@@ -137,12 +160,14 @@ export default function DashboardPage() {
     });
 
     payments.forEach((pm: any) => {
+      const partyTitle = pm.party?.name || (pm.party_id ? partyMap.get(String(pm.party_id)) : null) || 'Party Settlement';
       list.push({
         id: pm.id,
         type: pm.payment_type || 'PAYMENT',
         invoice_number: pm.voucher_number || pm.reference_number || 'VOUCHER',
         date: pm.payment_date,
-        party_name: pm.party?.name || 'Party Settlement',
+        party: partyTitle,
+        party_name: partyTitle,
         party_id: pm.party_id,
         location: null,
         amount: parseFloat(pm.amount || 0),
@@ -153,18 +178,86 @@ export default function DashboardPage() {
       });
     });
 
-    // Sort by date / created_at descending
+    // Sort by date / created_at descending by default
     return list.sort((a, b) => new Date(b.date || b.created_at).getTime() - new Date(a.date || a.created_at).getTime());
-  }, [sales, purchases, payments]);
+  }, [sales, purchases, payments, partyMap]);
 
   const filteredTransactions = useMemo(() => {
-    if (txFilter === 'SALES') return normalizedTransactions.filter(t => t.type === 'SALE');
-    if (txFilter === 'PURCHASES') return normalizedTransactions.filter(t => t.type === 'PURCHASE');
-    if (txFilter === 'PAYMENTS') return normalizedTransactions.filter(t => t.type === 'PAYMENT' || t.type === 'RECEIPT');
-    return normalizedTransactions;
-  }, [normalizedTransactions, txFilter]);
+    let list = [...normalizedTransactions];
 
-  const recentTransactions = filteredTransactions.slice(0, txLimit);
+    // 1. Filter by transaction type
+    if (txFilter === 'SALES') list = list.filter(t => t.type === 'SALE');
+    else if (txFilter === 'PURCHASES') list = list.filter(t => t.type === 'PURCHASE');
+    else if (txFilter === 'PAYMENTS') list = list.filter(t => t.type === 'PAYMENT' || t.type === 'RECEIPT');
+
+    // 2. Filter by search term (party name, invoice number, location)
+    if (txSearch.trim()) {
+      const q = txSearch.toLowerCase().trim();
+      list = list.filter(t => 
+        (t.party_name && t.party_name.toLowerCase().includes(q)) ||
+        (t.invoice_number && t.invoice_number.toLowerCase().includes(q)) ||
+        (t.location && t.location.toLowerCase().includes(q))
+      );
+    }
+
+    // 3. Filter by Date range
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    if (txDatePreset === 'today') {
+      list = list.filter(t => {
+        const d = (t.date || t.created_at || '').split('T')[0];
+        return d === todayStr;
+      });
+    } else if (txDatePreset === '7d') {
+      const cutoff = new Date(now.getTime() - 7 * 86400000).toISOString().split('T')[0];
+      list = list.filter(t => {
+        const d = (t.date || t.created_at || '').split('T')[0];
+        return d >= cutoff;
+      });
+    } else if (txDatePreset === '30d') {
+      const cutoff = new Date(now.getTime() - 30 * 86400000).toISOString().split('T')[0];
+      list = list.filter(t => {
+        const d = (t.date || t.created_at || '').split('T')[0];
+        return d >= cutoff;
+      });
+    } else if (txDatePreset === 'this_month') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      list = list.filter(t => {
+        const d = (t.date || t.created_at || '').split('T')[0];
+        return d >= firstDay;
+      });
+    } else if (txDatePreset === 'custom') {
+      if (txStartDate) {
+        list = list.filter(t => {
+          const d = (t.date || t.created_at || '').split('T')[0];
+          return d >= txStartDate;
+        });
+      }
+      if (txEndDate) {
+        list = list.filter(t => {
+          const d = (t.date || t.created_at || '').split('T')[0];
+          return d <= txEndDate;
+        });
+      }
+    }
+
+    // 4. Sorting
+    list.sort((a, b) => {
+      const timeA = new Date(a.date || a.created_at).getTime() || 0;
+      const timeB = new Date(b.date || b.created_at).getTime() || 0;
+      if (txSort === 'date_desc') return timeB - timeA;
+      if (txSort === 'date_asc') return timeA - timeB;
+      if (txSort === 'amount_desc') return b.amount - a.amount;
+      if (txSort === 'amount_asc') return a.amount - b.amount;
+      if (txSort === 'pending_desc') return b.pending - a.pending;
+      return timeB - timeA;
+    });
+
+    return list;
+  }, [normalizedTransactions, txFilter, txSearch, txDatePreset, txStartDate, txEndDate, txSort]);
+
+  const recentTransactions = txLimit > 0 ? filteredTransactions.slice(0, txLimit) : filteredTransactions;
   const isTxLoading = isSalesLoading || isPurchasesLoading;
 
   // ── Derived Time-Series Trend Chart Data ──────────────────────────────────
@@ -775,50 +868,138 @@ export default function DashboardPage() {
 
             {/* Left 2 Columns: Recent Transactions Activity Feed */}
             <div className="lg:col-span-2 glass-card p-6 rounded-xl border-slate-200 space-y-5 bg-white">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-none">Recent Transactions</h3>
-                  <p className="text-[11px] text-slate-500 font-normal mt-1">Live feed of your latest sales, purchases & receipts</p>
-                </div>
-
-                {/* Filters & Limit Selector */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
-                    {(['ALL', 'SALES', 'PURCHASES'] as TxFilter[]).map((f) => (
-                      <button
-                        key={f}
-                        onClick={() => setTxFilter(f)}
-                        className={`px-2.5 py-1 font-semibold rounded-md text-[11px] transition-all ${
-                          txFilter === f
-                            ? 'bg-white text-indigo-700 shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        {f === 'ALL' ? 'All' : f === 'SALES' ? 'Sales' : 'Purchases'}
-                      </button>
-                    ))}
+              <div className="flex flex-col gap-3 border-b border-slate-100 pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 leading-none">Recent Transactions</h3>
+                    <p className="text-[11px] text-slate-500 font-normal mt-1">Live feed of your latest sales, purchases & receipts</p>
                   </div>
 
-                  <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
-                    {[5, 10].map((lim) => (
-                      <button
-                        key={lim}
-                        onClick={() => setTxLimit(lim)}
-                        className={`px-2 py-1 font-semibold rounded-md text-[11px] transition-all ${
-                          txLimit === lim
-                            ? 'bg-indigo-600 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        {lim}
-                      </button>
-                    ))}
+                  {/* Filters & Limit Selector */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+                      {(['ALL', 'SALES', 'PURCHASES'] as TxFilter[]).map((f) => (
+                        <button
+                          key={f}
+                          onClick={() => setTxFilter(f)}
+                          className={`px-2.5 py-1 font-semibold rounded-md text-[11px] transition-all ${
+                            txFilter === f
+                              ? 'bg-white text-indigo-700 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          {f === 'ALL' ? 'All' : f === 'SALES' ? 'Sales' : 'Purchases'}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+                      {[5, 10, 25].map((lim) => (
+                        <button
+                          key={lim}
+                          onClick={() => setTxLimit(lim)}
+                          className={`px-2 py-1 font-semibold rounded-md text-[11px] transition-all ${
+                            txLimit === lim
+                              ? 'bg-indigo-600 text-white shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          {lim}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
+
+                {/* Filter Toolbar: Search, Sort By, and Date Range Filter */}
+                <div className="flex items-center gap-2.5 flex-wrap pt-1">
+                  {/* Search Input */}
+                  <div className="relative flex-1 min-w-[180px]">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search party or bill #..."
+                      value={txSearch}
+                      onChange={(e) => setTxSearch(e.target.value)}
+                      className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                    />
+                    {txSearch && (
+                      <button
+                        onClick={() => setTxSearch('')}
+                        className="absolute right-2 top-2 text-slate-400 hover:text-slate-600 text-xs"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Sort Selector */}
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs">
+                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <select
+                      value={txSort}
+                      onChange={(e) => setTxSort(e.target.value as TxSort)}
+                      className="bg-transparent text-xs text-slate-700 font-semibold focus:outline-none cursor-pointer"
+                    >
+                      <option value="date_desc">Newest Date</option>
+                      <option value="date_asc">Oldest Date</option>
+                      <option value="amount_desc">Highest Amount</option>
+                      <option value="amount_asc">Lowest Amount</option>
+                      <option value="pending_desc">Highest Due</option>
+                    </select>
+                  </div>
+
+                  {/* Date Range Selector */}
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs">
+                    <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <select
+                      value={txDatePreset}
+                      onChange={(e) => setTxDatePreset(e.target.value as TxDatePreset)}
+                      className="bg-transparent text-xs text-slate-700 font-semibold focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">All Dates</option>
+                      <option value="today">Today</option>
+                      <option value="7d">Last 7 Days</option>
+                      <option value="30d">Last 30 Days</option>
+                      <option value="this_month">This Month</option>
+                      <option value="custom">Custom Range...</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Custom Date Range Inline Inputs */}
+                {txDatePreset === 'custom' && (
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-indigo-50/60 border border-indigo-100 text-xs animate-in fade-in slide-in-from-top-1 flex-wrap">
+                    <span className="text-[11px] font-bold text-indigo-900 flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5 text-indigo-600" /> Date Range:
+                    </span>
+                    <input
+                      type="date"
+                      value={txStartDate}
+                      onChange={(e) => setTxStartDate(e.target.value)}
+                      className="bg-white border border-slate-200 rounded-md px-2 py-1 text-xs text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                    <span className="text-slate-400 text-xs font-semibold">to</span>
+                    <input
+                      type="date"
+                      value={txEndDate}
+                      onChange={(e) => setTxEndDate(e.target.value)}
+                      className="bg-white border border-slate-200 rounded-md px-2 py-1 text-xs text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                    {(txStartDate || txEndDate) && (
+                      <button
+                        onClick={() => { setTxStartDate(''); setTxEndDate(''); }}
+                        className="text-[11px] text-slate-500 hover:text-rose-600 font-semibold ml-auto transition-colors"
+                      >
+                        ✕ Clear Dates
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Active Transaction Filters */}
-              {(txFilter !== 'ALL' || txLimit !== 5) && (
+              {(txFilter !== 'ALL' || txLimit !== 5 || txSearch || txSort !== 'date_desc' || txDatePreset !== 'all' || txStartDate || txEndDate) && (
                 <div className="flex items-center gap-2 flex-wrap pb-1 animate-in fade-in slide-in-from-top-1">
                   <span className="text-[11px] font-semibold text-slate-400">Active:</span>
                   {txFilter !== 'ALL' && (
@@ -826,6 +1007,27 @@ export default function DashboardPage() {
                       label="Type"
                       value={txFilter === 'SALES' ? 'Sales' : 'Purchases'}
                       onRemove={() => setTxFilter('ALL')}
+                    />
+                  )}
+                  {txSearch && (
+                    <FilterChip
+                      label="Search"
+                      value={txSearch}
+                      onRemove={() => setTxSearch('')}
+                    />
+                  )}
+                  {txDatePreset !== 'all' && (
+                    <FilterChip
+                      label="Date"
+                      value={txDatePreset === 'custom' ? `${txStartDate || 'Any'} → ${txEndDate || 'Any'}` : txDatePreset}
+                      onRemove={() => { setTxDatePreset('all'); setTxStartDate(''); setTxEndDate(''); }}
+                    />
+                  )}
+                  {txSort !== 'date_desc' && (
+                    <FilterChip
+                      label="Sort"
+                      value={txSort === 'date_asc' ? 'Oldest First' : txSort === 'amount_desc' ? 'Highest Amount' : txSort === 'amount_asc' ? 'Lowest Amount' : 'Highest Due'}
+                      onRemove={() => setTxSort('date_desc')}
                     />
                   )}
                   {txLimit !== 5 && (
@@ -839,10 +1041,15 @@ export default function DashboardPage() {
                     onClick={() => {
                       setTxFilter('ALL');
                       setTxLimit(5);
+                      setTxSearch('');
+                      setTxSort('date_desc');
+                      setTxDatePreset('all');
+                      setTxStartDate('');
+                      setTxEndDate('');
                     }}
                     className="text-xs font-semibold text-slate-400 hover:text-rose-600 underline ml-1 transition-colors"
                   >
-                    Reset
+                    Reset All
                   </button>
                 </div>
               )}
@@ -856,7 +1063,7 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 ) : recentTransactions.length === 0 ? (
-                  <div className="py-12 text-center text-slate-400 text-xs">No transactions recorded yet.</div>
+                  <div className="py-12 text-center text-slate-400 text-xs">No transactions found matching your filters.</div>
                 ) : (
                   recentTransactions.map((tx) => {
                     const isSale = tx.type === 'SALE';
@@ -871,19 +1078,27 @@ export default function DashboardPage() {
                         {/* Details */}
                         <div className="flex items-center gap-3 min-w-0">
                           <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-slate-900 text-sm truncate">{tx.party}</span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-slate-900 text-sm truncate max-w-[200px] sm:max-w-[340px]">
+                                {tx.party_name || tx.party || 'Party'}
+                              </span>
                               <Badge
-                                variant={isSale ? 'info' : 'warning'}
+                                variant={isSale ? 'info' : isPurch ? 'warning' : 'success'}
                                 size="sm"
                               >
                                 {tx.type}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-slate-500 font-normal mt-0.5">
-                              <span>#{tx.invoice_number}</span>
+                              <span className="font-medium text-slate-600">#{tx.invoice_number}</span>
                               <span>•</span>
                               <span>{tx.date}</span>
+                              {tx.location && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-slate-400 truncate max-w-[120px]">{tx.location}</span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
