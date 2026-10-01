@@ -124,6 +124,22 @@ export default function PurchasesPage() {
     queryFn: () => api.getProducts(),
   });
 
+  // ── Last purchase price per product (from existing purchase history) ─────────
+  // purchases come newest-first from the API, so first occurrence per product
+  // = most recent price paid.
+  const lastPriceMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const purchase of purchases) {
+      for (const item of (purchase.items || [])) {
+        if (item.product_id && map[item.product_id] === undefined) {
+          const price = parseFloat(item.unit_purchase_price || 0);
+          if (price > 0) map[item.product_id] = price;
+        }
+      }
+    }
+    return map;
+  }, [purchases]);
+
   const createPurchaseMutation = useMutation({
     mutationFn: (data: any) => api.createPurchase(data),
     onSuccess: (res: any) => {
@@ -316,15 +332,22 @@ export default function PurchasesPage() {
     if (!prodId) {
       setProductName('');
       setHsnCode('');
-      setUnitPrice('4800.00');
+      setUnitPrice('');
       return;
     }
     const prod = products.find((p: any) => p.id === prodId);
     if (prod) {
       setProductName(prod.name);
       setHsnCode(prod.hsn_code || prod.sku);
-      setUnit(prod.unit || 'BAG');
-      setUnitPrice(parseFloat(prod.default_purchase_price || 0).toString());
+      // Always default to BAG — stock is stored/converted at bag level
+      setUnit('BAG');
+      // Pre-fill with last recorded purchase price, fall back to catalog default
+      const lastPrice = lastPriceMap[prodId];
+      setUnitPrice(
+        lastPrice
+          ? String(lastPrice)
+          : parseFloat(prod.default_purchase_price || 0).toString()
+      );
       setGstRate(parseFloat(prod.gst_rate || 0).toString());
     }
   };
@@ -1033,7 +1056,19 @@ export default function PurchasesPage() {
 
               <div className="col-span-6 md:col-span-2">
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Rate / Unit (₹)</label>
-                <input type="text" inputMode="decimal" placeholder="0.00" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} className="w-full glass-input p-3 rounded-2xl font-extrabold text-xs text-slate-900" />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={unitPrice}
+                  onChange={(e) => setUnitPrice(e.target.value)}
+                  className="w-full glass-input p-3 rounded-2xl font-extrabold text-xs text-slate-900"
+                />
+                {selectedProduct && lastPriceMap[selectedProduct] && (
+                  <p className="text-[10px] text-indigo-600 font-semibold mt-1">
+                    Last rate: ₹{lastPriceMap[selectedProduct].toFixed(2)} / BAG
+                  </p>
+                )}
               </div>
 
               <div className="col-span-6 md:col-span-1">
