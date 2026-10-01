@@ -138,8 +138,10 @@ async def create_purchase_invoice(
 
     net_subtotal = subtotal - total_discount
     grand_total = net_subtotal + total_tax  # Official Billed Tax Invoice Total (written on paper GST bill)
-    total_payable = grand_total + billed_expenses + unbilled_nongst  # Total Payable = Billed Total + Adjustments + Unbilled Non-GST
-    pending_amount = total_payable - amt_paid
+    total_payable_raw = grand_total + billed_expenses + unbilled_nongst
+    # Floor at zero — deductions cannot make a bill go negative
+    total_payable = max(Decimal("0.00"), total_payable_raw)
+    pending_amount = max(Decimal("0.00"), total_payable - amt_paid)
 
     # 2. Save Purchase Invoice
     db_invoice = PurchaseInvoice(
