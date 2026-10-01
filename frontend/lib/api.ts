@@ -125,6 +125,7 @@ export const api = {
   payPurchase: (id: string, data: any) => fetchAPI<any>(`/purchases/${id}/pay`, { method: 'POST', body: JSON.stringify(data) }),
   paySupplier: (supplierId: string, data: any) => fetchAPI<any>(`/purchases/supplier/${supplierId}/pay`, { method: 'POST', body: JSON.stringify(data) }),
   getSupplierSummary: (supplierId: string) => fetchAPI<any>(`/purchases/supplier/${supplierId}/summary`),
+  adjustPurchaseItems: (id: string, data: any) => fetchAPI<any>(`/purchases/${id}/adjust-items`, { method: 'POST', body: JSON.stringify(data) }),
   getSales: (customerId?: string) => fetchAPI<any[]>(customerId ? `/sales/?customer_id=${customerId}` : '/sales/'),
   createSale: (data: any) => fetchAPI<any>('/sales/', { method: 'POST', body: JSON.stringify(data) }),
   editSale: (id: string, data: any) => fetchAPI<any>(`/sales/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),

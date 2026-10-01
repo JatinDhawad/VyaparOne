@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.models.transactions import PurchaseInvoice, PurchaseItem
 from app.models.company import Product
 from app.models.user import User
-from app.schemas.transactions import PurchaseInvoiceCreate, PurchaseInvoiceResponse
+from app.schemas.transactions import PurchaseInvoiceCreate, PurchaseInvoiceResponse, PurchaseItemCreate
 from app.services.purchase_service import create_purchase_invoice
 from app.api.deps import get_current_active_user
 
@@ -290,16 +290,15 @@ async def get_purchase(
     return await _fetch_invoice(db, purchase_id)
 
 
-# ── Edit Purchase Bill (header-level fields only, no item re-processing) ────────
+# ── Edit Purchase Bill & Stock Adjustment ──────────────────────────────────────
 
 class PurchaseInvoiceEdit(BaseModel):
     """
     Editable fields on an existing purchase invoice.
-    Items and stock records are NOT re-processed to preserve data integrity.
-    Only financial adjustment fields and payment tracking are editable.
+    Can edit financial adjustments and optionally replace items / reconcile stock.
     """
     supplier_id: Optional[uuid.UUID] = None
-    invoice_date: Optional[str] = None
+    invoice_date: Optional[date] = None
     lr_charges: Optional[Decimal] = None
     local_freight: Optional[Decimal] = None
     salesman_expense: Optional[Decimal] = None
@@ -308,6 +307,7 @@ class PurchaseInvoiceEdit(BaseModel):
     unbilled_nongst_amount: Optional[Decimal] = None
     amount_paid: Optional[Decimal] = None
     notes: Optional[str] = None
+    items: Optional[List[PurchaseItemCreate]] = None
 
 
 @router.patch("/{purchase_id}", response_model=PurchaseInvoiceResponse)
@@ -318,10 +318,18 @@ async def edit_purchase(
     current_user: User = Depends(get_current_active_user),
 ):
     """
-    Edit header-level fields of an existing purchase invoice.
-    Stock levels and ledger entries are NOT recalculated — only financial
-    adjustment fields (LR, freight, scheme, payment) are updated.
+    Edit header-level fields and/or stock items on an existing purchase invoice.
+    If items are provided:
+    1. Reverses previous stock contributions for this bill.
+    2. Deletes previous PurchaseItem records.
+    3. Creates new PurchaseItem records and updates GodownStock (with bag-to-packet conversion).
+    4. Recalculates official billed grand total, deductions, total payable (floored at ₹0),
+       and distributes any excess credit to other pending bills (FIFO).
     """
+    from decimal import Decimal as D
+    from app.services.inventory_service import add_purchase_stock
+    from app.models.company import GodownStock
+
     result = await db.execute(
         select(PurchaseInvoice).where(PurchaseInvoice.id == purchase_id)
     )
@@ -329,15 +337,137 @@ async def edit_purchase(
     if not invoice:
         raise HTTPException(status_code=404, detail="Purchase invoice not found.")
 
-    update_data = edits.model_dump(exclude_unset=True)
+    # ── Item & Stock Re-processing (if items provided) ─────────────────────────
+    if edits.items is not None:
+        if not edits.items:
+            raise HTTPException(status_code=400, detail="At least one item is required.")
 
+        # 1. Reverse stock for existing items
+        existing_items_result = await db.execute(
+            select(PurchaseItem).where(PurchaseItem.purchase_invoice_id == purchase_id)
+        )
+        existing_items = existing_items_result.scalars().all()
+
+        for old_item in existing_items:
+            stock_result = await db.execute(
+                select(GodownStock).where(GodownStock.product_id == old_item.product_id)
+            )
+            stock = stock_result.scalars().first()
+            if stock:
+                prod_result = await db.execute(
+                    select(Product).where(Product.id == old_item.product_id)
+                )
+                prod = prod_result.scalars().first()
+                ppb = D(str(prod.packets_per_bag or 0)) if prod else D("0")
+
+                billed_qty = D(str(old_item.billed_quantity or 0))
+                free_qty = D(str(old_item.free_quantity or 0))
+                total_qty = billed_qty + free_qty
+
+                stock_qty_to_reverse = (total_qty * ppb) if ppb > 1 else total_qty
+                stock.current_stock = max(
+                    D("0.00"),
+                    D(str(stock.current_stock or 0)) - stock_qty_to_reverse
+                )
+
+            await db.delete(old_item)
+
+        await db.flush()
+
+        # 2. Add new items and increment stock
+        subtotal = D("0.00")
+        total_tax = D("0.00")
+        total_discount = D("0.00")
+
+        for item_in in edits.items:
+            product_id = item_in.product_id
+
+            if not product_id:
+                p_query = select(Product)
+                if item_in.hsn_code:
+                    p_query = p_query.where(Product.hsn_code == item_in.hsn_code)
+                if item_in.product_name:
+                    p_query = p_query.where(Product.name == item_in.product_name)
+                p_res = await db.execute(p_query)
+                existing_prod = p_res.scalars().first()
+                if existing_prod:
+                    product_id = existing_prod.id
+                else:
+                    new_product = Product(
+                        name=item_in.product_name or f"Product {item_in.hsn_code}",
+                        hsn_code=item_in.hsn_code or "21069030",
+                        sku=f"{item_in.hsn_code or 'UNK'}-{uuid.uuid4().hex[:4]}",
+                        unit=item_in.unit or "BAG",
+                        default_purchase_price=D(str(item_in.unit_purchase_price)),
+                        default_selling_price=D(str(item_in.unit_purchase_price)) * D("1.25"),
+                        gst_rate=D(str(item_in.gst_rate or 0)),
+                        min_stock_alert=0
+                    )
+                    db.add(new_product)
+                    await db.flush()
+                    product_id = new_product.id
+                    new_stock = GodownStock(product_id=product_id, current_stock=D("0.00"))
+                    db.add(new_stock)
+                    await db.flush()
+
+            billed_qty = D(str(item_in.billed_quantity))
+            free_qty = D(str(item_in.free_quantity or 0))
+            unit_price = D(str(item_in.unit_purchase_price))
+            disc_amt = D(str(item_in.discount_amount or 0))
+            gst_rate = D(str(item_in.gst_rate or 0))
+
+            total_qty = billed_qty + free_qty
+            line_subtotal = (billed_qty * unit_price) - disc_amt
+            effective_unit_cost = line_subtotal / total_qty if total_qty > 0 else unit_price
+            gst_amount = line_subtotal * (gst_rate / D("100.00"))
+            line_total = line_subtotal + gst_amount
+
+            subtotal += (billed_qty * unit_price)
+            total_discount += disc_amt
+            total_tax += gst_amount
+
+            new_item = PurchaseItem(
+                purchase_invoice_id=purchase_id,
+                product_id=product_id,
+                billed_quantity=billed_qty,
+                free_quantity=free_qty,
+                unit_purchase_price=unit_price,
+                discount_amount=disc_amt,
+                gst_rate=gst_rate,
+                gst_amount=gst_amount,
+                allocated_additional_cost=D("0.00"),
+                effective_unit_landed_cost=round(effective_unit_cost, 2),
+                line_total=round(line_total, 2),
+            )
+            db.add(new_item)
+
+            # Add stock with bag-to-packet conversion
+            prod_result = await db.execute(select(Product).where(Product.id == product_id))
+            prod = prod_result.scalars().first()
+            ppb = D(str(prod.packets_per_bag or 0)) if prod else D("0")
+
+            if ppb > 1:
+                stock_qty = total_qty * ppb
+                stock_cost = effective_unit_cost / ppb
+            else:
+                stock_qty = total_qty
+                stock_cost = effective_unit_cost
+
+            await add_purchase_stock(db, product_id, stock_qty, round(stock_cost, 2))
+
+        net_subtotal = subtotal - total_discount
+        invoice.subtotal = round(net_subtotal, 2)
+        invoice.tax_amount = round(total_tax, 2)
+        invoice.grand_total = round(net_subtotal + total_tax, 2)
+
+    # ── Update header fields if provided ──────────────────────────────────────
+    update_data = edits.model_dump(exclude_unset=True, exclude={"items"})
     for field, value in update_data.items():
         setattr(invoice, field, value)
 
-    # Recalculate total_payable_amount and pending_amount from current field values
-    from decimal import Decimal as D
-    subtotal = D(str(invoice.subtotal or 0))
-    tax = D(str(invoice.tax_amount or 0))
+    # ── Recalculate totals with floor at 0 and FIFO distribution ──────────────
+    subtotal_val = D(str(invoice.subtotal or 0))
+    tax_val = D(str(invoice.tax_amount or 0))
     lr = D(str(invoice.lr_charges or 0))
     lf = D(str(invoice.local_freight or 0))
     se = D(str(invoice.salesman_expense or 0))
@@ -346,14 +476,10 @@ async def edit_purchase(
     unbilled = D(str(invoice.unbilled_nongst_amount or 0))
     paid = D(str(invoice.amount_paid or 0))
 
-    grand = subtotal + tax
+    grand = subtotal_val + tax_val
     deductions = lr + lf + se + sm + dd
     total_payable_raw = grand - deductions + unbilled
 
-    # ── Floor at zero: deductions cannot make a bill go negative ──────────────
-    # If deductions exceed the bill total, this bill is fully settled at ₹0.
-    # The excess credit is distributed to the supplier's other oldest pending
-    # bills (FIFO) so the overpayment reduces the remaining balance.
     excess_credit = D("0.00")
     if total_payable_raw < D("0.00"):
         excess_credit = abs(total_payable_raw)
@@ -397,7 +523,6 @@ async def edit_purchase(
                 other_inv.amount_paid = round(D(str(other_inv.amount_paid or 0)) + applied, 2)
                 other_inv.pending_amount = round(max(D("0.00"), other_pending - applied), 2)
 
-                # Post ledger entry for the credit applied
                 ledger_entry = LedgerEntry(
                     transaction_date=date.today(),
                     voucher_type="PAYMENT",
@@ -420,7 +545,26 @@ async def edit_purchase(
     return await _fetch_invoice(db, purchase_id)
 
 
-# ── Record Part or Full Payment towards a Purchase Invoice ─────────────────────
+class AdjustItemsPayload(BaseModel):
+    items: List[PurchaseItemCreate]
+
+
+@router.post("/{purchase_id}/adjust-items", response_model=PurchaseInvoiceResponse)
+async def adjust_purchase_items(
+    purchase_id: uuid.UUID,
+    payload: AdjustItemsPayload,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Convenience endpoint to adjust items and stock on an existing purchase bill."""
+    return await edit_purchase(
+        purchase_id=purchase_id,
+        edits=PurchaseInvoiceEdit(items=payload.items),
+        db=db,
+        current_user=current_user,
+    )
+
+
 
 class PurchasePaymentIn(BaseModel):
     amount: Decimal
