@@ -23,7 +23,11 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Loader2
+  Loader2,
+  Banknote,
+  CheckCircle2,
+  ChevronDown,
+  AlertCircle
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -68,7 +72,22 @@ export default function PurchasesPage() {
       if (shouldOpen && suppId) {
         setIsModalOpen(true);
       }
+
+      // Handle lump-sum supplier pay from Parties page (supplierPayId param)
+      const supplierPayId = params.get('supplierPayId');
+      if (supplierPayId) {
+        setSpSupplierId(supplierPayId);
+        setSpAmount('');
+        setSpMode('CASH');
+        setSpDate(new Date().toISOString().split('T')[0]);
+        setSpRef('');
+        setSpRemarks('');
+        setSpError('');
+        setSpResult(null);
+        setSupplierPayModal(true);
+      }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Itemized Expenses & Deductions
@@ -212,6 +231,61 @@ export default function PurchasesPage() {
     setPayRef('');
     setPayRemarks('');
     setPayError('');
+  };
+
+  // ── Supplier Lump-Sum Payment State & Mutation ──────────────────────────────
+  const [supplierPayModal, setSupplierPayModal] = useState(false);
+  const [spSupplierId, setSpSupplierId] = useState('');
+  const [spAmount, setSpAmount] = useState('');
+  const [spMode, setSpMode] = useState('CASH');
+  const [spDate, setSpDate] = useState(new Date().toISOString().split('T')[0]);
+  const [spRef, setSpRef] = useState('');
+  const [spRemarks, setSpRemarks] = useState('');
+  const [spError, setSpError] = useState('');
+  const [spResult, setSpResult] = useState<any>(null);
+
+  const { data: supplierSummary, isLoading: isSummaryLoading } = useQuery({
+    queryKey: ['supplier-summary', spSupplierId],
+    queryFn: () => api.getSupplierSummary(spSupplierId),
+    enabled: !!spSupplierId && supplierPayModal,
+    staleTime: 0,
+  });
+
+  const supplierPayMutation = useMutation({
+    mutationFn: ({ supplierId, data }: { supplierId: string; data: any }) =>
+      api.paySupplier(supplierId, data),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['parties'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-summary', spSupplierId] });
+      setSpResult(res);
+    },
+    onError: (err: any) => {
+      const msg = err.message || 'Failed to record supplier payment.';
+      setSpError(msg);
+      toast.error(msg);
+    },
+  });
+
+  const openSupplierPayModal = (preSelectedSupplierId?: string) => {
+    setSpSupplierId(preSelectedSupplierId || '');
+    setSpAmount('');
+    setSpMode('CASH');
+    setSpDate(new Date().toISOString().split('T')[0]);
+    setSpRef('');
+    setSpRemarks('');
+    setSpError('');
+    setSpResult(null);
+    setSupplierPayModal(true);
+  };
+
+  const closeSupplierPayModal = () => {
+    setSupplierPayModal(false);
+    setSpResult(null);
+    setSpSupplierId('');
+    setSpAmount('');
+    setSpError('');
   };
 
   const resetForm = () => {
@@ -427,6 +501,17 @@ export default function PurchasesPage() {
           onActionClick={() => setIsModalOpen(true)}
           actionLabel="New Purchase Entry"
         />
+
+        {/* Pay Supplier (Lump-Sum) floating action */}
+        <div className="px-4 sm:px-6 pt-1 pb-0 flex justify-end">
+          <button
+            onClick={() => openSupplierPayModal()}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold text-xs rounded-xl shadow-md shadow-violet-500/20 transition-all"
+          >
+            <Banknote className="h-4 w-4" />
+            Pay Supplier (Lump Sum)
+          </button>
+        </div>
 
         <main className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
           {successMessage && (
@@ -1385,6 +1470,410 @@ export default function PurchasesPage() {
               </form>
             );
           })()}
+        </Modal>
+      )}
+
+      {/* ── Supplier Lump-Sum Payment Modal ─────────────────────────────────── */}
+      {supplierPayModal && (
+        <Modal
+          isOpen={supplierPayModal}
+          onClose={closeSupplierPayModal}
+          title="Pay Supplier — Lump Sum Transfer"
+          maxWidth="max-w-2xl"
+        >
+          {spResult ? (
+            // ─── Success Result Screen ────────────────────────────────────
+            <div className="space-y-5 text-xs">
+              <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
+                <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto" />
+                <h3 className="font-extrabold text-emerald-900 text-base">Payment Recorded Successfully!</h3>
+                <p className="text-emerald-700 font-medium">
+                  ₹{formatCurrency(spResult.total_paid)} distributed across {spResult.bills_settled + spResult.bills_partially_settled} bill(s).
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 rounded-xl bg-white border border-slate-200 text-center">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Paid</span>
+                  <span className="font-extrabold text-indigo-700 text-base">₹{formatCurrency(spResult.total_paid)}</span>
+                </div>
+                <div className="p-3 rounded-xl bg-white border border-emerald-200 text-center">
+                  <span className="text-[10px] font-bold text-emerald-600 uppercase block">Bills Fully Settled</span>
+                  <span className="font-extrabold text-emerald-700 text-base">{spResult.bills_settled}</span>
+                </div>
+                <div className="p-3 rounded-xl bg-white border border-amber-200 text-center">
+                  <span className="text-[10px] font-bold text-amber-600 uppercase block">Partially Settled</span>
+                  <span className="font-extrabold text-amber-700 text-base">{spResult.bills_partially_settled}</span>
+                </div>
+              </div>
+
+              {spResult.updated_invoices && spResult.updated_invoices.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Bills Updated</span>
+                  <div className="rounded-xl border border-slate-200 overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
+                        <tr>
+                          <th className="p-2.5 text-left">Invoice #</th>
+                          <th className="p-2.5 text-left">Date</th>
+                          <th className="p-2.5 text-right">Total Payable</th>
+                          <th className="p-2.5 text-right">Amount Paid</th>
+                          <th className="p-2.5 text-right">Remaining</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {spResult.updated_invoices.map((inv: any) => (
+                          <tr key={inv.id} className="bg-white">
+                            <td className="p-2.5 font-mono font-bold text-indigo-700">{inv.invoice_number}</td>
+                            <td className="p-2.5 text-slate-600">{inv.invoice_date}</td>
+                            <td className="p-2.5 text-right font-semibold">₹{formatCurrency(parseFloat(inv.total_payable_amount || 0))}</td>
+                            <td className="p-2.5 text-right font-bold text-emerald-700">₹{formatCurrency(parseFloat(inv.amount_paid || 0))}</td>
+                            <td className="p-2.5 text-right">
+                              {parseFloat(inv.pending_amount || 0) <= 0 ? (
+                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px]">✓ Settled</span>
+                              ) : (
+                                <span className="font-bold text-rose-600">₹{formatCurrency(parseFloat(inv.pending_amount || 0))}</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-1">
+                <button
+                  onClick={() => {
+                    setSpResult(null);
+                    setSpAmount('');
+                    setSpRef('');
+                    setSpRemarks('');
+                    setSpError('');
+                    queryClient.invalidateQueries({ queryKey: ['supplier-summary', spSupplierId] });
+                  }}
+                  className="px-4 py-2 font-bold text-indigo-600 hover:bg-indigo-50 rounded-xl border border-indigo-200 transition-colors"
+                >
+                  Pay More
+                </button>
+                <button
+                  onClick={closeSupplierPayModal}
+                  className="px-6 py-2 font-bold bg-slate-900 text-white rounded-xl hover:bg-slate-700 transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          ) : (
+            // ─── Payment Form ─────────────────────────────────────────────
+            <div className="space-y-5 text-xs">
+              {spError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-medium flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {spError}
+                </div>
+              )}
+
+              {/* Supplier Selector */}
+              <div>
+                <label className="font-extrabold text-slate-800 block mb-1.5">Select Supplier *</label>
+                <select
+                  value={spSupplierId}
+                  onChange={(e) => {
+                    setSpSupplierId(e.target.value);
+                    setSpAmount('');
+                    setSpError('');
+                  }}
+                  className="glass-input w-full p-3 rounded-xl bg-white font-bold text-slate-900"
+                  required
+                >
+                  <option value="">-- Choose a Supplier --</option>
+                  {suppliers.map((s: any) => (
+                    <option key={s.id} value={s.id}>{s.name}{s.city ? ` (${s.city})` : ''}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Supplier Outstanding Summary */}
+              {spSupplierId && (
+                <div>
+                  {isSummaryLoading ? (
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 animate-pulse">
+                      <div className="h-4 bg-slate-200 rounded w-1/2 mb-2"></div>
+                      <div className="h-6 bg-slate-200 rounded w-1/3"></div>
+                    </div>
+                  ) : supplierSummary ? (
+                    <div>
+                      {supplierSummary.pending_bills_count === 0 ? (
+                        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+                          <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                          <div>
+                            <p className="font-bold text-emerald-800">All bills are fully settled!</p>
+                            <p className="text-emerald-600 font-medium">No pending dues for this supplier.</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {/* Outstanding Summary Banner */}
+                          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-[10px] font-black text-rose-400 uppercase tracking-wider">Total Outstanding</span>
+                              <span className="font-extrabold text-rose-800 text-xl">₹{formatCurrency(supplierSummary.total_pending)}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div>
+                                <span className="text-[10px] text-slate-500 font-bold block">Total Invoices</span>
+                                <span className="font-bold text-slate-900">{supplierSummary.total_invoices}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-500 font-bold block">Pending Bills</span>
+                                <span className="font-bold text-rose-700">{supplierSummary.pending_bills_count}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-500 font-bold block">Already Paid</span>
+                                <span className="font-bold text-emerald-700">₹{formatCurrency(supplierSummary.total_paid)}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* FIFO Bill Breakdown */}
+                          <div>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1.5">Pending Bills (Payment will clear in order ↓)</span>
+                            <div className="rounded-xl border border-slate-200 overflow-hidden max-h-48 overflow-y-auto">
+                              <table className="w-full text-xs">
+                                <thead className="sticky top-0 bg-slate-100 text-slate-500 uppercase text-[10px] font-bold">
+                                  <tr>
+                                    <th className="p-2 text-left">Invoice #</th>
+                                    <th className="p-2 text-left">Date</th>
+                                    <th className="p-2 text-right">Pending</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 bg-white">
+                                  {supplierSummary.pending_bills.map((bill: any, idx: number) => (
+                                    <tr key={bill.id} className={idx === 0 ? 'bg-amber-50' : ''}>
+                                      <td className="p-2 font-mono font-bold text-indigo-700">
+                                        {idx === 0 && <span className="mr-1 text-amber-500">↑</span>}
+                                        {bill.invoice_number}
+                                      </td>
+                                      <td className="p-2 text-slate-500">{bill.invoice_date}</td>
+                                      <td className="p-2 text-right font-extrabold text-rose-700">₹{formatCurrency(bill.pending_amount)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              {/* Payment Form Fields — only show when there are pending bills */}
+              {spSupplierId && supplierSummary && supplierSummary.pending_bills_count > 0 && (
+                <>
+                  {/* Quick Preset Buttons */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase block">Quick Fill Presets</span>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setSpAmount(String(supplierSummary.total_pending))}
+                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-xl font-bold text-[11px] transition-all"
+                      >
+                        Full Outstanding: ₹{formatCurrency(supplierSummary.total_pending)}
+                      </button>
+                      {supplierSummary.pending_bills[0] && (
+                        <button
+                          type="button"
+                          onClick={() => setSpAmount(String(supplierSummary.pending_bills[0].pending_amount))}
+                          className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl font-bold text-[11px] transition-all"
+                        >
+                          Oldest Bill: ₹{formatCurrency(supplierSummary.pending_bills[0].pending_amount)}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setSpAmount(String(Math.round(supplierSummary.total_pending / 2)))}
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-[11px] transition-all"
+                      >
+                        50%: ₹{formatCurrency(Math.round(supplierSummary.total_pending / 2))}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-extrabold text-slate-900 block mb-1">Transfer Amount (₹) *</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        value={spAmount}
+                        onChange={(e) => setSpAmount(e.target.value)}
+                        className="glass-input w-full p-3 rounded-xl font-extrabold text-violet-800 text-base border-violet-300"
+                      />
+                      {spAmount && parseFloat(spAmount) > 0 && (
+                        <p className="text-[10px] text-slate-500 mt-1 font-medium">
+                          Will clear oldest bills first (FIFO order)
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Payment Mode</label>
+                      <select
+                        value={spMode}
+                        onChange={(e) => setSpMode(e.target.value)}
+                        className="glass-input w-full p-3 rounded-xl bg-white font-bold"
+                      >
+                        <option value="CASH">CASH</option>
+                        <option value="BANK">BANK / ONLINE</option>
+                        <option value="UPI">UPI / GPAY / PHONEPE</option>
+                        <option value="CHEQUE">CHEQUE</option>
+                        <option value="NEFT">NEFT / RTGS</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Transfer Date</label>
+                      <input
+                        type="date"
+                        value={spDate}
+                        onChange={(e) => setSpDate(e.target.value)}
+                        className="glass-input w-full p-3 rounded-xl font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Ref / UTR / Cheque # (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. UTR123456789"
+                        value={spRef}
+                        onChange={(e) => setSpRef(e.target.value)}
+                        className="glass-input w-full p-3 rounded-xl"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Remarks (Optional)</label>
+                    <textarea
+                      placeholder="e.g. October advance payment via HDFC"
+                      value={spRemarks}
+                      onChange={(e) => setSpRemarks(e.target.value)}
+                      rows={2}
+                      className="glass-input w-full p-3 rounded-xl resize-none"
+                    />
+                  </div>
+
+                  {/* Live Preview — how will this amount distribute? */}
+                  {spAmount && parseFloat(spAmount) > 0 && (() => {
+                    const entered = parseFloat(spAmount) || 0;
+                    let rem = entered;
+                    const preview: { invoice_number: string; applied: number; remaining: number }[] = [];
+                    for (const bill of (supplierSummary.pending_bills || [])) {
+                      if (rem <= 0) break;
+                      const pending = parseFloat(bill.pending_amount);
+                      const applied = Math.min(rem, pending);
+                      preview.push({
+                        invoice_number: bill.invoice_number,
+                        applied,
+                        remaining: Math.max(0, pending - applied),
+                      });
+                      rem -= applied;
+                    }
+                    const excess = rem;
+                    return (
+                      <div className="p-4 rounded-2xl bg-indigo-950 text-white space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300 block">Distribution Preview</span>
+                        <div className="space-y-1">
+                          {preview.map((p, i) => (
+                            <div key={i} className="flex justify-between items-center text-xs">
+                              <span className="text-slate-300 font-mono">Bill #{p.invoice_number}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-emerald-400 font-bold">−₹{formatCurrency(p.applied)}</span>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                  p.remaining <= 0 ? 'bg-emerald-800 text-emerald-200' : 'bg-amber-800 text-amber-200'
+                                }`}>
+                                  {p.remaining <= 0 ? '✓ Cleared' : `₹${formatCurrency(p.remaining)} left`}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                          {excess > 0 && (
+                            <div className="flex justify-between items-center text-xs border-t border-indigo-700 pt-1.5 mt-1">
+                              <span className="text-amber-300 font-medium">⚠ Excess (no more pending bills)</span>
+                              <span className="text-amber-300 font-bold">₹{formatCurrency(excess)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="flex justify-end gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={closeSupplierPayModal}
+                      className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={supplierPayMutation.isPending || !spSupplierId || !(parseFloat(spAmount) > 0)}
+                      onClick={() => {
+                        const amt = parseFloat(spAmount);
+                        if (!spSupplierId || amt <= 0) {
+                          setSpError('Please select a supplier and enter a valid amount.');
+                          return;
+                        }
+                        setSpError('');
+                        supplierPayMutation.mutate({
+                          supplierId: spSupplierId,
+                          data: {
+                            amount: amt,
+                            payment_mode: spMode,
+                            payment_date: spDate,
+                            reference_number: spRef || null,
+                            remarks: spRemarks || null,
+                          },
+                        });
+                      }}
+                      className="px-6 py-2.5 font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl shadow-md shadow-violet-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {supplierPayMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Banknote className="h-4 w-4" />
+                      )}
+                      <span>
+                        {supplierPayMutation.isPending
+                          ? 'Processing...'
+                          : `Confirm ₹${formatCurrency(parseFloat(spAmount) || 0)} Transfer`}
+                      </span>
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* If supplier selected but no pending bills */}
+              {spSupplierId && supplierSummary && supplierSummary.pending_bills_count === 0 && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={closeSupplierPayModal}
+                    className="px-6 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </Modal>
       )}
     </div>

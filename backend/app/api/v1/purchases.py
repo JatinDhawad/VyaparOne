@@ -20,6 +20,208 @@ from app.api.deps import get_current_active_user
 router = APIRouter(prefix="/purchases", tags=["Purchases"])
 
 
+# ── Supplier-Level Lump-Sum Payment ───────────────────────────────────────────
+
+class SupplierPaymentIn(BaseModel):
+    amount: Decimal
+    payment_mode: str = "CASH"   # CASH, BANK, UPI, CHEQUE, NEFT
+    payment_date: Optional[date] = None
+    reference_number: Optional[str] = None
+    remarks: Optional[str] = None
+
+
+class SupplierPaymentResult(BaseModel):
+    supplier_id: str
+    total_paid: float
+    bills_settled: int
+    bills_partially_settled: int
+    remaining_amount: float   # any excess after all bills are cleared
+    updated_invoices: List[PurchaseInvoiceResponse]
+
+
+@router.post(
+    "/supplier/{supplier_id}/pay",
+    response_model=SupplierPaymentResult,
+    status_code=status.HTTP_200_OK,
+)
+async def pay_supplier_lump_sum(
+    supplier_id: uuid.UUID,
+    payment_in: SupplierPaymentIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Record a lump-sum payment to a supplier without tying it to any specific bill.
+    The amount is automatically distributed across the supplier's oldest pending
+    bills in FIFO order (oldest invoice date first).
+
+    - Ledger entries are posted for every bill that gets settled (full or partial).
+    - Supplier ledger balance is updated accordingly.
+    - Any payment in excess of all outstanding dues is recorded but not applied.
+    """
+    pay_amt = Decimal(str(payment_in.amount or 0))
+    if pay_amt <= Decimal("0.00"):
+        raise HTTPException(status_code=400, detail="Payment amount must be greater than zero.")
+
+    # Fetch all pending bills for this supplier, oldest first (FIFO)
+    result = await db.execute(
+        select(PurchaseInvoice)
+        .options(
+            selectinload(PurchaseInvoice.items).selectinload(PurchaseItem.product).selectinload(Product.stock),
+            selectinload(PurchaseInvoice.supplier),
+        )
+        .where(
+            PurchaseInvoice.supplier_id == supplier_id,
+            PurchaseInvoice.pending_amount > 0,
+        )
+        .order_by(PurchaseInvoice.invoice_date.asc(), PurchaseInvoice.created_at.asc())
+    )
+    pending_invoices = result.scalars().all()
+
+    if not pending_invoices:
+        raise HTTPException(
+            status_code=400,
+            detail="This supplier has no pending bills. All dues are already settled.",
+        )
+
+    # Ledger helpers
+    from app.services.ledger_service import get_party_ledger_account, get_or_create_system_account
+    from app.models.ledger import LedgerEntry, AccountType
+
+    supplier_account = await get_party_ledger_account(db, supplier_id)
+    mode_str = (payment_in.payment_mode or "CASH").upper()
+    mode_acct_name = "Bank Account" if mode_str in ["BANK", "UPI", "CHEQUE", "NEFT"] else "Cash In Hand"
+    cash_account = await get_or_create_system_account(db, mode_acct_name, AccountType.ASSET.value)
+
+    tx_date = payment_in.payment_date or date.today()
+
+    remaining = pay_amt
+    bills_settled = 0
+    bills_partial = 0
+    updated_invoices = []
+
+    for invoice in pending_invoices:
+        if remaining <= Decimal("0.00"):
+            break
+
+        old_pending = Decimal(str(invoice.pending_amount or 0))
+        old_paid = Decimal(str(invoice.amount_paid or 0))
+
+        if old_pending <= Decimal("0.00"):
+            continue
+
+        # How much of this bill can we pay?
+        applied = min(remaining, old_pending)
+        new_paid = old_paid + applied
+        new_pending = max(Decimal("0.00"), old_pending - applied)
+
+        invoice.amount_paid = round(new_paid, 2)
+        invoice.pending_amount = round(new_pending, 2)
+
+        # Count statistics
+        if new_pending <= Decimal("0.00"):
+            bills_settled += 1
+        else:
+            bills_partial += 1
+
+        # Build narration
+        narration = (
+            f"Supplier payment (lump-sum) for Bill #{invoice.invoice_number} "
+            f"via {mode_str}"
+        )
+        if payment_in.reference_number:
+            narration += f" [Ref: {payment_in.reference_number}]"
+        if payment_in.remarks:
+            narration += f" - {payment_in.remarks}"
+
+        # Post ledger entry
+        entry = LedgerEntry(
+            transaction_date=tx_date,
+            voucher_type="PAYMENT",
+            reference_id=invoice.id,
+            debit_account_id=supplier_account.id,
+            credit_account_id=cash_account.id,
+            amount=applied,
+            narration=narration,
+            created_by=current_user.id,
+        )
+        db.add(entry)
+
+        # Update ledger running balances
+        supplier_account.current_balance = Decimal(str(supplier_account.current_balance or 0)) - applied
+        cash_account.current_balance = Decimal(str(cash_account.current_balance or 0)) - applied
+
+        remaining -= applied
+        updated_invoices.append(invoice)
+
+    await db.commit()
+
+    # Re-fetch updated invoices to return fresh data
+    updated_ids = [inv.id for inv in updated_invoices]
+    refreshed = []
+    for inv_id in updated_ids:
+        r = await db.execute(
+            select(PurchaseInvoice)
+            .options(
+                selectinload(PurchaseInvoice.items).selectinload(PurchaseItem.product).selectinload(Product.stock),
+                selectinload(PurchaseInvoice.supplier),
+            )
+            .where(PurchaseInvoice.id == inv_id)
+        )
+        refreshed.append(r.scalars().first())
+
+    total_applied = pay_amt - remaining
+
+    return SupplierPaymentResult(
+        supplier_id=str(supplier_id),
+        total_paid=float(total_applied),
+        bills_settled=bills_settled,
+        bills_partially_settled=bills_partial,
+        remaining_amount=float(remaining),
+        updated_invoices=[inv for inv in refreshed if inv],
+    )
+
+
+@router.get("/supplier/{supplier_id}/summary")
+async def get_supplier_summary(
+    supplier_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get total pending payables for a specific supplier."""
+    result = await db.execute(
+        select(PurchaseInvoice)
+        .where(PurchaseInvoice.supplier_id == supplier_id)
+        .order_by(PurchaseInvoice.invoice_date.asc())
+    )
+    invoices = result.scalars().all()
+
+    total_payable = sum(float(inv.total_payable_amount or 0) for inv in invoices)
+    total_paid = sum(float(inv.amount_paid or 0) for inv in invoices)
+    total_pending = sum(float(inv.pending_amount or 0) for inv in invoices)
+    pending_bills = [inv for inv in invoices if float(inv.pending_amount or 0) > 0]
+
+    return {
+        "supplier_id": str(supplier_id),
+        "total_invoices": len(invoices),
+        "total_payable": round(total_payable, 2),
+        "total_paid": round(total_paid, 2),
+        "total_pending": round(total_pending, 2),
+        "pending_bills_count": len(pending_bills),
+        "pending_bills": [
+            {
+                "id": str(inv.id),
+                "invoice_number": inv.invoice_number,
+                "invoice_date": str(inv.invoice_date),
+                "total_payable_amount": float(inv.total_payable_amount or 0),
+                "amount_paid": float(inv.amount_paid or 0),
+                "pending_amount": float(inv.pending_amount or 0),
+            }
+            for inv in pending_bills
+        ],
+    }
+
+
 # ── helpers ────────────────────────────────────────────────────────────────────
 
 async def _fetch_invoice(db: AsyncSession, purchase_id: uuid.UUID) -> PurchaseInvoice:
