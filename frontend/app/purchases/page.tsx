@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, 
   Trash2, 
+  Package,
   PackageCheck, 
   Receipt, 
   DollarSign, 
@@ -159,7 +160,9 @@ export default function PurchasesPage() {
     },
   });
 
-  // Edit purchase bill fields only (no stock re-processing)
+  // ── Edit Purchase Bill State & Handlers (Financials + Stock Items) ─────────
+  const [editTab, setEditTab]                 = useState<'items' | 'financials'>('items');
+  const [editItems, setEditItems]             = useState<any[]>([]);
   const [editLr, setEditLr]                   = useState('');
   const [editFreight, setEditFreight]         = useState('');
   const [editSalesmanExp, setEditSalesmanExp] = useState('');
@@ -169,8 +172,92 @@ export default function PurchasesPage() {
   const [editAmountPaid, setEditAmountPaid]   = useState('');
   const [editNotes, setEditNotes]             = useState('');
 
+  // Quick-add item state inside Edit modal
+  const [editAddProductId, setEditAddProductId]     = useState('');
+  const [editAddProductName, setEditAddProductName] = useState('');
+  const [editAddHsn, setEditAddHsn]                 = useState('');
+  const [editAddUnit, setEditAddUnit]               = useState('BAG');
+  const [editAddBilledQty, setEditAddBilledQty]     = useState('1');
+  const [editAddFreeQty, setEditAddFreeQty]         = useState('0');
+  const [editAddPrice, setEditAddPrice]             = useState('');
+  const [editAddGst, setEditAddGst]                 = useState('5.00');
+  const [editAddItemError, setEditAddItemError]     = useState('');
+
+  const handleEditProductSelect = (prodId: string) => {
+    setEditAddProductId(prodId);
+    setEditAddUnit('BAG');
+    const prod = products.find((p: any) => p.id === prodId);
+    if (prod) {
+      setEditAddProductName(prod.name || '');
+      setEditAddHsn(prod.hsn_code || '21069030');
+      const lastPrice = lastPriceMap[prodId] ?? parseFloat(prod.default_purchase_price || 0);
+      setEditAddPrice(lastPrice > 0 ? String(lastPrice) : '');
+      setEditAddGst(String(prod.gst_rate ?? '5.00'));
+    }
+  };
+
+  const handleAddEditItem = () => {
+    const qtyVal = parseFloat(editAddBilledQty) || 0;
+    const freeVal = parseFloat(editAddFreeQty) || 0;
+    const priceVal = parseFloat(editAddPrice) || 0;
+    const gstVal = parseFloat(editAddGst) || 0;
+
+    if (qtyVal <= 0) {
+      setEditAddItemError('Billed quantity must be greater than 0.');
+      return;
+    }
+    if (!editAddProductName && !editAddProductId) {
+      setEditAddItemError('Please select or specify a product.');
+      return;
+    }
+    setEditAddItemError('');
+
+    const prod = products.find((p: any) => p.id === editAddProductId);
+    const ppb = prod?.packets_per_bag || 1;
+
+    setEditItems((prev) => [
+      ...prev,
+      {
+        product_id: editAddProductId || null,
+        product_name: editAddProductName || prod?.name || `Item ${editAddHsn}`,
+        hsn_code: editAddHsn || prod?.hsn_code || '21069030',
+        unit: editAddUnit || 'BAG',
+        packets_per_bag: ppb,
+        billed_quantity: qtyVal,
+        free_quantity: freeVal,
+        unit_purchase_price: priceVal,
+        discount_amount: 0,
+        gst_rate: gstVal,
+      },
+    ]);
+
+    setEditAddProductId('');
+    setEditAddProductName('');
+    setEditAddHsn('');
+    setEditAddBilledQty('1');
+    setEditAddFreeQty('0');
+    setEditAddPrice('');
+  };
+
+  const handleUpdateEditItem = (index: number, field: string, value: any) => {
+    setEditItems((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  const handleRemoveEditItem = (index: number) => {
+    if (editItems.length <= 1) {
+      setEditError('A purchase bill must have at least one line item.');
+      return;
+    }
+    setEditItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const openEditInvoice = (inv: any) => {
     setEditInvoice(inv);
+    setEditTab('items');
     setEditLr(inv.lr_charges ? String(inv.lr_charges) : '');
     setEditFreight(inv.local_freight ? String(inv.local_freight) : '');
     setEditSalesmanExp(inv.salesman_expense ? String(inv.salesman_expense) : '');
@@ -180,12 +267,69 @@ export default function PurchasesPage() {
     setEditAmountPaid(inv.amount_paid ? String(inv.amount_paid) : '');
     setEditNotes(inv.notes || '');
     setEditError('');
+    setEditAddItemError('');
+
+    // Pre-populate items with packets_per_bag info
+    const loaded = (inv.items || []).map((it: any) => {
+      const prod = products.find((p: any) => p.id === it.product_id) || it.product;
+      return {
+        id: it.id,
+        product_id: it.product_id,
+        product_name: it.product?.name || prod?.name || it.product_name || `Item ${it.hsn_code || ''}`,
+        hsn_code: it.product?.hsn_code || prod?.hsn_code || it.hsn_code || '21069030',
+        unit: it.product?.unit || prod?.unit || it.unit || 'BAG',
+        packets_per_bag: prod?.packets_per_bag || it.product?.packets_per_bag || 1,
+        billed_quantity: parseFloat(it.billed_quantity || 0),
+        free_quantity: parseFloat(it.free_quantity || 0),
+        unit_purchase_price: parseFloat(it.unit_purchase_price || 0),
+        discount_amount: parseFloat(it.discount_amount || 0),
+        gst_rate: parseFloat(it.gst_rate || 0),
+      };
+    });
+    setEditItems(loaded);
   };
+
+  const editCalculatedSubtotal = useMemo(() => {
+    return editItems.reduce((sum, it) => {
+      const qty = parseFloat(it.billed_quantity) || 0;
+      const price = parseFloat(it.unit_purchase_price) || 0;
+      const disc = parseFloat(it.discount_amount) || 0;
+      return sum + (qty * price - disc);
+    }, 0);
+  }, [editItems]);
+
+  const editCalculatedTax = useMemo(() => {
+    return editItems.reduce((sum, it) => {
+      const qty = parseFloat(it.billed_quantity) || 0;
+      const price = parseFloat(it.unit_purchase_price) || 0;
+      const disc = parseFloat(it.discount_amount) || 0;
+      const taxable = qty * price - disc;
+      const rate = parseFloat(it.gst_rate) || 0;
+      return sum + taxable * (rate / 100);
+    }, 0);
+  }, [editItems]);
+
+  const editOfficialBilledTotal = editCalculatedSubtotal + editCalculatedTax;
+
+  const editDeductions =
+    (parseFloat(editLr) || 0) +
+    (parseFloat(editFreight) || 0) +
+    (parseFloat(editSalesmanExp) || 0) +
+    (parseFloat(editScheme) || 0) +
+    (parseFloat(editDiscount) || 0);
+
+  const editUnbilledVal = parseFloat(editUnbilled) || 0;
+  const editTotalPayableRaw = editOfficialBilledTotal - editDeductions + editUnbilledVal;
+  const editTotalPayable = Math.max(0, editTotalPayableRaw);
+  const editPaidVal = parseFloat(editAmountPaid) || 0;
+  const editPendingBalance = Math.max(0, editTotalPayable - editPaidVal);
+  const editExcessCredit = editTotalPayableRaw < 0 ? Math.abs(editTotalPayableRaw) : 0;
 
   const editMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => api.editPurchase(id, data),
     onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['parties'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       setEditInvoice(null);
@@ -1236,71 +1380,376 @@ export default function PurchasesPage() {
         </form>
       </Modal>
 
-      {/* ── Edit Purchase Bill Modal ─────────────────────────────────────────── */}
+      {/* ── Edit Purchase Bill Modal (Stock Items & Financials) ─────────────── */}
       {editInvoice && (
-        <Modal isOpen={!!editInvoice} onClose={() => setEditInvoice(null)} title={`Edit Purchase Bill — #${editInvoice.invoice_number}`}>
+        <Modal isOpen={!!editInvoice} onClose={() => setEditInvoice(null)} title={`Edit Purchase Bill — #${editInvoice.invoice_number}`} maxWidth="max-w-5xl">
           <div className="space-y-4 text-xs">
             {editError && <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl font-medium">{editError}</div>}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
-              <span className="text-[10px] font-black uppercase text-slate-400 block mb-2">⚠ Note: Stock levels and ledger entries are not changed. Only financial adjustment fields are editable.</span>
-              <div className="grid grid-cols-2 gap-2 font-medium text-slate-600">
+
+            {/* Header info bar */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-4 text-slate-700 font-medium">
                 <span>Supplier: <strong className="text-slate-900">{editInvoice.supplier?.name || '—'}</strong></span>
                 <span>Date: <strong className="text-slate-900">{editInvoice.invoice_date}</strong></span>
+                <span>Bill Mode: <strong className="text-slate-900">{editInvoice.billing_mode || 'TAX_INVOICE'}</strong></span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
+                <Package className="h-3.5 w-3.5 text-emerald-600" />
+                <span>Stock Auto-Reconciled on Save (Bags → Packets)</span>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">LR / Bilty Charges (₹)</label>
-                <input type="text" inputMode="decimal" placeholder="0" value={editLr} onChange={(e) => setEditLr(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
-              </div>
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">Local Freight (₹)</label>
-                <input type="text" inputMode="decimal" placeholder="0" value={editFreight} onChange={(e) => setEditFreight(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
-              </div>
-              <div>
-                <label className="font-bold text-emerald-700 block mb-1">Salesman Expense (₹) −</label>
-                <input type="text" inputMode="decimal" placeholder="0" value={editSalesmanExp} onChange={(e) => setEditSalesmanExp(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
-              </div>
-              <div>
-                <label className="font-bold text-emerald-700 block mb-1">Scheme Money (₹) −</label>
-                <input type="text" inputMode="decimal" placeholder="0" value={editScheme} onChange={(e) => setEditScheme(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
-              </div>
-              <div>
-                <label className="font-bold text-emerald-700 block mb-1">Discount Deduction (₹) −</label>
-                <input type="text" inputMode="decimal" placeholder="0" value={editDiscount} onChange={(e) => setEditDiscount(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
-              </div>
-              <div>
-                <label className="font-bold text-amber-800 block mb-1">Unbilled Non-GST (₹) +</label>
-                <input type="text" inputMode="decimal" placeholder="0" value={editUnbilled} onChange={(e) => setEditUnbilled(e.target.value)} className="glass-input w-full p-2.5 rounded-xl text-amber-950 font-bold" />
-              </div>
-            </div>
-            <div>
-              <label className="font-bold text-slate-800 block mb-1">Amount Paid (₹)</label>
-              <input type="text" inputMode="decimal" placeholder="0" value={editAmountPaid} onChange={(e) => setEditAmountPaid(e.target.value)} className="glass-input w-full p-2.5 rounded-xl text-emerald-800 font-extrabold" />
-            </div>
-            <div>
-              <label className="font-bold text-slate-600 block mb-1">Notes</label>
-              <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={2} className="glass-input w-full p-2.5 rounded-xl resize-none" />
-            </div>
-            <div className="flex justify-end gap-3 pt-1">
-              <button type="button" onClick={() => setEditInvoice(null)} className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+
+            {/* Tab navigation */}
+            <div className="flex border-b border-slate-200 gap-2">
               <button
                 type="button"
-                disabled={editMutation.isPending}
-                onClick={() => editMutation.mutate({ id: editInvoice.id, data: {
-                  lr_charges:              parseFloat(editLr) || 0,
-                  local_freight:           parseFloat(editFreight) || 0,
-                  salesman_expense:        parseFloat(editSalesmanExp) || 0,
-                  scheme_money:            parseFloat(editScheme) || 0,
-                  discount_deduction:      parseFloat(editDiscount) || 0,
-                  unbilled_nongst_amount:  parseFloat(editUnbilled) || 0,
-                  amount_paid:             parseFloat(editAmountPaid) || 0,
-                  notes: editNotes,
-                }})}
-                className="px-6 py-2 font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                onClick={() => setEditTab('items')}
+                className={`pb-2 px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 ${
+                  editTab === 'items'
+                    ? 'border-indigo-600 text-indigo-700'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Package className="h-4 w-4" />
+                <span>Stock & Line Items ({editItems.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditTab('financials')}
+                className={`pb-2 px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 ${
+                  editTab === 'financials'
+                    ? 'border-indigo-600 text-indigo-700'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <DollarSign className="h-4 w-4" />
+                <span>Deductions & Expenses</span>
+              </button>
+            </div>
+
+            {/* TAB 1: Stock & Items */}
+            {editTab === 'items' && (
+              <div className="space-y-4">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                      <tr>
+                        <th className="py-2.5 px-3">Product / SKU</th>
+                        <th className="py-2.5 px-2 text-center w-24">Billed Bags</th>
+                        <th className="py-2.5 px-2 text-center w-20">Free Bags</th>
+                        <th className="py-2.5 px-2 text-right w-28">Rate (₹/Bag)</th>
+                        <th className="py-2.5 px-2 text-center w-20">GST %</th>
+                        <th className="py-2.5 px-3 text-center">Godown Stock Impact</th>
+                        <th className="py-2.5 px-3 text-right">Line Total</th>
+                        <th className="py-2.5 px-2 text-center w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                      {editItems.map((item, idx) => {
+                        const bQty = parseFloat(item.billed_quantity) || 0;
+                        const fQty = parseFloat(item.free_quantity) || 0;
+                        const totalBags = bQty + fQty;
+                        const ppb = parseInt(item.packets_per_bag || 0) || 1;
+                        const totalPackets = ppb > 1 ? totalBags * ppb : totalBags;
+
+                        const price = parseFloat(item.unit_purchase_price) || 0;
+                        const disc = parseFloat(item.discount_amount) || 0;
+                        const gst = parseFloat(item.gst_rate) || 0;
+                        const taxable = bQty * price - disc;
+                        const lineTotal = taxable + taxable * (gst / 100);
+
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="py-2 px-3">
+                              <span className="font-bold text-slate-900 block">{item.product_name}</span>
+                              <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                                <span>HSN: {item.hsn_code || '—'}</span>
+                                {ppb > 1 && (
+                                  <span className="text-indigo-600 font-semibold bg-indigo-50 px-1.5 py-0.2 rounded">
+                                    1 bag = {ppb} pkts
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 px-2 text-center">
+                              <input
+                                type="number"
+                                step="any"
+                                min="0.01"
+                                value={item.billed_quantity}
+                                onChange={(e) => handleUpdateEditItem(idx, 'billed_quantity', e.target.value)}
+                                className="w-20 text-center font-bold glass-input py-1.5 px-2 rounded-lg border-slate-300 focus:border-indigo-500"
+                              />
+                            </td>
+                            <td className="py-2 px-2 text-center">
+                              <input
+                                type="number"
+                                step="any"
+                                min="0"
+                                value={item.free_quantity}
+                                onChange={(e) => handleUpdateEditItem(idx, 'free_quantity', e.target.value)}
+                                className="w-16 text-center glass-input py-1.5 px-2 rounded-lg border-slate-300 focus:border-indigo-500 text-slate-600"
+                              />
+                            </td>
+                            <td className="py-2 px-2 text-right">
+                              <input
+                                type="number"
+                                step="any"
+                                min="0"
+                                value={item.unit_purchase_price}
+                                onChange={(e) => handleUpdateEditItem(idx, 'unit_purchase_price', e.target.value)}
+                                className="w-24 text-right font-bold glass-input py-1.5 px-2 rounded-lg border-slate-300 focus:border-indigo-500 text-indigo-950"
+                              />
+                            </td>
+                            <td className="py-2 px-2 text-center">
+                              <select
+                                value={item.gst_rate}
+                                onChange={(e) => handleUpdateEditItem(idx, 'gst_rate', e.target.value)}
+                                className="glass-input py-1.5 px-2 rounded-lg text-xs font-semibold"
+                              >
+                                <option value="0">0%</option>
+                                <option value="5">5%</option>
+                                <option value="12">12%</option>
+                                <option value="18">18%</option>
+                                <option value="28">28%</option>
+                              </select>
+                            </td>
+                            <td className="py-2 px-3 text-center">
+                              <div className="inline-flex flex-col items-center">
+                                <span className="font-bold text-slate-800 text-[11px]">
+                                  {totalBags} {item.unit || 'BAG'}
+                                </span>
+                                {ppb > 1 && (
+                                  <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
+                                    +{totalPackets} pkts
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 px-3 text-right font-bold text-slate-900">
+                              ₹{lineTotal.toFixed(2)}
+                            </td>
+                            <td className="py-2 px-2 text-center">
+                              <button
+                                type="button"
+                                title="Remove item"
+                                disabled={editItems.length <= 1}
+                                onClick={() => handleRemoveEditItem(idx)}
+                                className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Quick Add Product Card */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                  <span className="text-[11px] font-bold text-slate-700 block mb-2 flex items-center gap-1.5">
+                    <Plus className="h-3.5 w-3.5 text-indigo-600" />
+                    Add Another Product / SKU to this Bill
+                  </span>
+
+                  {editAddItemError && (
+                    <div className="p-2 mb-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-[11px] font-medium">
+                      {editAddItemError}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-2.5 items-end">
+                    <div className="md:col-span-2">
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Select Product</label>
+                      <select
+                        value={editAddProductId}
+                        onChange={(e) => handleEditProductSelect(e.target.value)}
+                        className="glass-input w-full p-2 rounded-xl text-xs font-semibold"
+                      >
+                        <option value="">-- Choose Product --</option>
+                        {products.map((p: any) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} {p.sku ? `(${p.sku})` : ''} — GST {p.gst_rate}%
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Bags (Qty)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0.01"
+                        placeholder="1"
+                        value={editAddBilledQty}
+                        onChange={(e) => setEditAddBilledQty(e.target.value)}
+                        className="glass-input w-full p-2 rounded-xl text-xs font-bold text-center"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Free Bags</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="0"
+                        value={editAddFreeQty}
+                        onChange={(e) => setEditAddFreeQty(e.target.value)}
+                        className="glass-input w-full p-2 rounded-xl text-xs font-bold text-center"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">Rate (₹/Bag)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="0.00"
+                        value={editAddPrice}
+                        onChange={(e) => setEditAddPrice(e.target.value)}
+                        className="glass-input w-full p-2 rounded-xl text-xs font-bold text-right"
+                      />
+                    </div>
+
+                    <div>
+                      <button
+                        type="button"
+                        onClick={handleAddEditItem}
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Add Item</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: Deductions & Financials */}
+            {editTab === 'financials' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-600 block mb-1">LR / Bilty Charges (₹)</label>
+                    <input type="text" inputMode="decimal" placeholder="0" value={editLr} onChange={(e) => setEditLr(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-600 block mb-1">Local Freight (₹)</label>
+                    <input type="text" inputMode="decimal" placeholder="0" value={editFreight} onChange={(e) => setEditFreight(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
+                  </div>
+                  <div>
+                    <label className="font-bold text-emerald-700 block mb-1">Salesman Expense (₹) −</label>
+                    <input type="text" inputMode="decimal" placeholder="0" value={editSalesmanExp} onChange={(e) => setEditSalesmanExp(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
+                  </div>
+                  <div>
+                    <label className="font-bold text-emerald-700 block mb-1">Scheme Money (₹) −</label>
+                    <input type="text" inputMode="decimal" placeholder="0" value={editScheme} onChange={(e) => setEditScheme(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
+                  </div>
+                  <div>
+                    <label className="font-bold text-emerald-700 block mb-1">Discount Deduction (₹) −</label>
+                    <input type="text" inputMode="decimal" placeholder="0" value={editDiscount} onChange={(e) => setEditDiscount(e.target.value)} className="glass-input w-full p-2.5 rounded-xl" />
+                  </div>
+                  <div>
+                    <label className="font-bold text-amber-800 block mb-1">Unbilled Non-GST (₹) +</label>
+                    <input type="text" inputMode="decimal" placeholder="0" value={editUnbilled} onChange={(e) => setEditUnbilled(e.target.value)} className="glass-input w-full p-2.5 rounded-xl text-amber-950 font-bold" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">Amount Paid (₹)</label>
+                  <input type="text" inputMode="decimal" placeholder="0" value={editAmountPaid} onChange={(e) => setEditAmountPaid(e.target.value)} className="glass-input w-full p-2.5 rounded-xl text-emerald-800 font-extrabold" />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-600 block mb-1">Notes</label>
+                  <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={2} className="glass-input w-full p-2.5 rounded-xl resize-none" />
+                </div>
+              </div>
+            )}
+
+            {/* Live Financial Summary Card (Visible across both tabs) */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-50 via-indigo-50/30 to-slate-50 border border-slate-200 space-y-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[11px]">
+                <div className="p-2 rounded-xl bg-white border border-slate-100 shadow-2xs">
+                  <span className="text-slate-400 block text-[10px] font-bold">ITEMS SUBTOTAL</span>
+                  <span className="font-bold text-slate-800 text-xs">₹{editCalculatedSubtotal.toFixed(2)}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-white border border-slate-100 shadow-2xs">
+                  <span className="text-slate-400 block text-[10px] font-bold">GST TAX</span>
+                  <span className="font-bold text-slate-800 text-xs">₹{editCalculatedTax.toFixed(2)}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-white border border-slate-100 shadow-2xs">
+                  <span className="text-slate-400 block text-[10px] font-bold">BILLED TOTAL</span>
+                  <span className="font-bold text-indigo-900 text-xs">₹{editOfficialBilledTotal.toFixed(2)}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-white border border-slate-100 shadow-2xs">
+                  <span className="text-slate-400 block text-[10px] font-bold">DEDUCTIONS</span>
+                  <span className="font-bold text-emerald-700 text-xs">−₹{editDeductions.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between border-t border-slate-200 pt-2 px-1 text-xs">
+                <div className="flex items-center gap-4">
+                  <span>Net Payable: <strong className="text-slate-900 text-sm">₹{editTotalPayable.toFixed(2)}</strong></span>
+                  <span>Amount Paid: <strong className="text-emerald-700 text-sm">₹{editPaidVal.toFixed(2)}</strong></span>
+                </div>
+                <div>
+                  <span>Pending Balance: <strong className={`text-sm ${editPendingBalance > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>₹{editPendingBalance.toFixed(2)}</strong></span>
+                </div>
+              </div>
+
+              {editExcessCredit > 0 && (
+                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-medium flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span>Deductions exceed bill total by ₹{editExcessCredit.toFixed(2)}. This bill will be floored at ₹0 (fully paid), and the excess credit will automatically reduce your other oldest pending bills.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Modal actions */}
+            <div className="flex justify-end gap-3 pt-1">
+              <button type="button" onClick={() => setEditInvoice(null)} className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl">
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={editMutation.isPending || editItems.length === 0}
+                onClick={() =>
+                  editMutation.mutate({
+                    id: editInvoice.id,
+                    data: {
+                      lr_charges:             parseFloat(editLr) || 0,
+                      local_freight:          parseFloat(editFreight) || 0,
+                      salesman_expense:       parseFloat(editSalesmanExp) || 0,
+                      scheme_money:           parseFloat(editScheme) || 0,
+                      discount_deduction:     parseFloat(editDiscount) || 0,
+                      unbilled_nongst_amount: parseFloat(editUnbilled) || 0,
+                      amount_paid:            parseFloat(editAmountPaid) || 0,
+                      notes:                  editNotes,
+                      items: editItems.map((it) => ({
+                        product_id:          it.product_id || null,
+                        product_name:        it.product_name,
+                        hsn_code:            it.hsn_code,
+                        unit:                it.unit || 'BAG',
+                        billed_quantity:     parseFloat(it.billed_quantity) || 0,
+                        free_quantity:       parseFloat(it.free_quantity) || 0,
+                        unit_purchase_price: parseFloat(it.unit_purchase_price) || 0,
+                        discount_amount:     parseFloat(it.discount_amount) || 0,
+                        gst_rate:            parseFloat(it.gst_rate) || 0,
+                      })),
+                    },
+                  })
+                }
+                className="px-6 py-2 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {editMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                <span>{editMutation.isPending ? 'Saving...' : '✓ Save Changes'}</span>
+                <span>{editMutation.isPending ? 'Saving & Updating Stock...' : '✓ Save Changes & Update Stock'}</span>
               </button>
             </div>
           </div>
