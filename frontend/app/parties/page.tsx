@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Search, Phone, Mail, MapPin, Pencil, Users, Building2, UserCheck, 
   Plus, ShoppingCart, Receipt, FileText, ExternalLink, Calendar, 
-  DollarSign, Eye, ArrowUpRight, CheckCircle2, Clock, Loader2 
+  DollarSign, Eye, ArrowUpRight, CheckCircle2, Clock, Loader2, Banknote 
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -402,6 +402,16 @@ export default function PartiesPage() {
                         >
                           <Receipt className="h-3.5 w-3.5" />
                           <span>Purchase Bill</span>
+                        </Link>
+                      )}
+                      {(isSupplier || isBoth) && (
+                        <Link
+                          href={`/purchases?supplierPayId=${party.id}`}
+                          className="flex-1 py-2 px-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold text-[11px] rounded-lg shadow-xs transition-all flex items-center justify-center gap-1.5"
+                          title="Record a lump-sum payment to this supplier"
+                        >
+                          <Banknote className="h-3.5 w-3.5" />
+                          <span>Pay Supplier</span>
                         </Link>
                       )}
                     </div>
