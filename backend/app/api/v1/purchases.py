@@ -348,11 +348,73 @@ async def edit_purchase(
 
     grand = subtotal + tax
     deductions = lr + lf + se + sm + dd
-    total_payable = grand - deductions + unbilled
-    pending = total_payable - paid
+    total_payable_raw = grand - deductions + unbilled
+
+    # ── Floor at zero: deductions cannot make a bill go negative ──────────────
+    # If deductions exceed the bill total, this bill is fully settled at ₹0.
+    # The excess credit is distributed to the supplier's other oldest pending
+    # bills (FIFO) so the overpayment reduces the remaining balance.
+    excess_credit = D("0.00")
+    if total_payable_raw < D("0.00"):
+        excess_credit = abs(total_payable_raw)
+        total_payable_raw = D("0.00")
+
+    total_payable = total_payable_raw
+    pending = max(D("0.00"), total_payable - paid)
 
     invoice.total_payable_amount = round(total_payable, 2)
     invoice.pending_amount = round(pending, 2)
+
+    # ── Distribute excess credit to other pending bills (FIFO) ─────────────────
+    if excess_credit > D("0.00"):
+        from app.services.ledger_service import get_party_ledger_account, get_or_create_system_account
+        from app.models.ledger import LedgerEntry, AccountType
+
+        other_bills_result = await db.execute(
+            select(PurchaseInvoice)
+            .where(
+                PurchaseInvoice.supplier_id == invoice.supplier_id,
+                PurchaseInvoice.id != invoice.id,
+                PurchaseInvoice.pending_amount > 0,
+            )
+            .order_by(PurchaseInvoice.invoice_date.asc(), PurchaseInvoice.created_at.asc())
+        )
+        other_bills = other_bills_result.scalars().all()
+
+        if other_bills:
+            supplier_account = await get_party_ledger_account(db, invoice.supplier_id)
+            cash_account = await get_or_create_system_account(db, "Cash In Hand", AccountType.ASSET.value)
+            remaining_credit = excess_credit
+
+            for other_inv in other_bills:
+                if remaining_credit <= D("0.00"):
+                    break
+                other_pending = D(str(other_inv.pending_amount or 0))
+                if other_pending <= D("0.00"):
+                    continue
+
+                applied = min(remaining_credit, other_pending)
+                other_inv.amount_paid = round(D(str(other_inv.amount_paid or 0)) + applied, 2)
+                other_inv.pending_amount = round(max(D("0.00"), other_pending - applied), 2)
+
+                # Post ledger entry for the credit applied
+                ledger_entry = LedgerEntry(
+                    transaction_date=date.today(),
+                    voucher_type="PAYMENT",
+                    reference_id=other_inv.id,
+                    debit_account_id=supplier_account.id,
+                    credit_account_id=cash_account.id,
+                    amount=applied,
+                    narration=(
+                        f"Credit from excess deduction on Bill #{invoice.invoice_number} "
+                        f"applied to Bill #{other_inv.invoice_number}"
+                    ),
+                    created_by=current_user.id,
+                )
+                db.add(ledger_entry)
+                supplier_account.current_balance = D(str(supplier_account.current_balance or 0)) - applied
+                cash_account.current_balance = D(str(cash_account.current_balance or 0)) - applied
+                remaining_credit -= applied
 
     await db.commit()
     return await _fetch_invoice(db, purchase_id)

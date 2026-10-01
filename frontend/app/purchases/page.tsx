@@ -221,9 +221,9 @@ export default function PurchasesPage() {
     setPayInvoice(p);
     const bTotal = parseFloat(p.grand_total || 0);
     const unbilled = parseFloat(p.unbilled_nongst_amount || 0);
-    const payable = parseFloat(p.total_payable_amount || bTotal + unbilled);
+    const payable = Math.max(0, parseFloat(p.total_payable_amount || bTotal + unbilled));
     const paid = parseFloat(p.amount_paid || 0);
-    const pending = parseFloat(p.pending_amount || Math.max(0, payable - paid));
+    const pending = Math.max(0, parseFloat(p.pending_amount || Math.max(0, payable - paid)));
 
     setPayAmount(pending > 0 ? String(pending) : '');
     setPayMode('CASH');
@@ -438,10 +438,10 @@ export default function PurchasesPage() {
   const officialBilledTotal = calculatedSubtotal + calculatedTaxAmount;
 
   const unbilledPayable = parseFloat(unbilledNonGst) || 0;
-  const totalPayableAmount = officialBilledTotal + totalBilledExpenses + unbilledPayable;
+  const totalPayableAmount = Math.max(0, officialBilledTotal + totalBilledExpenses + unbilledPayable);
 
   const numPaid = parseFloat(amountPaid) || 0;
-  const pendingBalanceOwed = totalPayableAmount - numPaid;
+  const pendingBalanceOwed = Math.max(0, totalPayableAmount - numPaid);
 
   // Filtered + Sorted List
   const [sortField, setSortField] = useState<'date' | 'invoice' | 'billed' | 'unbilled' | 'payable' | 'pending'>('date');
@@ -456,9 +456,9 @@ export default function PurchasesPage() {
     return purchases.filter((p: any) => {
       const bTotal = parseFloat(p.grand_total || 0);
       const unbilled = parseFloat(p.unbilled_nongst_amount || 0);
-      const payable = parseFloat(p.total_payable_amount || bTotal + unbilled);
+      const payable = Math.max(0, parseFloat(p.total_payable_amount || bTotal + unbilled));
       const paid = parseFloat(p.amount_paid || 0);
-      const pending = parseFloat(p.pending_amount || payable - paid);
+      const pending = Math.max(0, parseFloat(p.pending_amount || Math.max(0, payable - paid)));
 
       if (statusFilter === 'PAID' && pending > 0) return false;
       if (statusFilter === 'PENDING' && pending <= 0) return false;
@@ -723,9 +723,9 @@ export default function PurchasesPage() {
                     sortedPurchases.map((p: any) => {
                       const bTotal = parseFloat(p.grand_total || 0);
                       const unbilled = parseFloat(p.unbilled_nongst_amount || 0);
-                      const payable = parseFloat(p.total_payable_amount || bTotal + unbilled);
+                      const payable = Math.max(0, parseFloat(p.total_payable_amount || bTotal + unbilled));
                       const paid = parseFloat(p.amount_paid || 0);
-                      const pending = parseFloat(p.pending_amount || payable - paid);
+                      const pending = Math.max(0, parseFloat(p.pending_amount || Math.max(0, payable - paid)));
                       const supplierName = p.supplier?.name || 'Vendor';
 
                       return (
