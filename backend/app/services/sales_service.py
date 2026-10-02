@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-from app.models.transactions import SalesInvoice, SalesItem
+from app.models.transactions import SalesInvoice, SalesItem, Payment
 from app.models.party import Party
 from app.schemas.transactions import SalesInvoiceCreate
 from app.services.inventory_service import deduct_sales_stock
@@ -149,6 +149,20 @@ async def create_sales_invoice(
         amount_paid=round(amount_paid, 2),
         payment_mode=invoice_in.payment_mode or "CASH"
     )
+
+    # Record in Payment table for Payments & Receipts tab
+    if amount_paid > 0:
+        db.add(Payment(
+            voucher_number=f"REC-{db_invoice.invoice_number}",
+            payment_type="RECEIPT",
+            party_id=invoice_in.customer_id,
+            amount=round(amount_paid, 2),
+            payment_mode=(invoice_in.payment_mode or "CASH").upper(),
+            reference_number=str(db_invoice.id),
+            payment_date=invoice_in.invoice_date,
+            remarks=f"Payment received for Sale Invoice #{db_invoice.invoice_number}",
+            created_by=created_by
+        ))
 
     await db.commit()
 
