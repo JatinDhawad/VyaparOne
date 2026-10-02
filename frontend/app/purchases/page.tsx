@@ -656,7 +656,10 @@ export default function PurchasesPage() {
   }, [filteredPurchases, sortField, sortDir]);
 
   // Overall Totals
-  const totalBilledPurchases = purchases.reduce((sum: number, p: any) => sum + parseFloat(p.grand_total || 0), 0);
+  const totalPurchases = purchases.reduce(
+    (sum: number, p: any) => sum + (parseFloat(p.grand_total || 0) + parseFloat(p.unbilled_nongst_amount || 0)),
+    0
+  );
   const totalPendingOwed = purchases.reduce((sum: number, p: any) => sum + parseFloat(p.pending_amount || 0), 0);
 
   return (
@@ -692,16 +695,16 @@ export default function PurchasesPage() {
           {/* Top 3 KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="glass-card p-4 rounded-xl border-slate-200 bg-white flex flex-col justify-between min-h-[115px]">
-              <span className="section-label">Total Billed Purchases</span>
+              <span className="section-label">Total Purchases</span>
               <div className="mt-1.5">
                 {isLoading ? (
                   <Skeleton className="h-7 w-36 rounded-md" />
                 ) : (
                   <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-                    ₹{formatCurrency(totalBilledPurchases)}
+                    ₹{formatCurrency(totalPurchases)}
                   </h3>
                 )}
-                <p className="text-xs font-normal text-slate-500 mt-0.5">Official GST Vendor Invoices</p>
+                <p className="text-xs font-normal text-slate-500 mt-0.5">All Inward Purchases</p>
               </div>
             </div>
 
