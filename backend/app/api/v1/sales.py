@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 import uuid
 
 from app.core.database import get_db
-from app.models.transactions import SalesInvoice
+from app.models.transactions import SalesInvoice, Payment
 from app.models.user import RoleName, User
 from app.schemas.transactions import SalesInvoiceCreate, SalesInvoiceResponse, SalesInvoiceEdit
 from app.services.sales_service import create_sales_invoice
@@ -178,6 +178,35 @@ async def edit_sales(
                 db.add(new_receipt)
         elif receipt_entry:
             await db.delete(receipt_entry)
+
+        # Sync Payment table record
+        pay_res = await db.execute(
+            select(Payment).where(
+                (Payment.reference_number == str(sales_id)) |
+                (Payment.voucher_number == f"REC-{invoice.invoice_number}")
+            )
+        )
+        pay_rec = pay_res.scalars().first()
+        if amount_paid > 0:
+            if pay_rec:
+                pay_rec.amount = amount_paid
+                pay_rec.payment_date = invoice.invoice_date
+                pay_rec.payment_mode = pm.upper()
+                pay_rec.party_id = invoice.customer_id
+            else:
+                db.add(Payment(
+                    voucher_number=f"REC-{invoice.invoice_number}",
+                    payment_type="RECEIPT",
+                    party_id=invoice.customer_id,
+                    amount=amount_paid,
+                    payment_mode=pm.upper(),
+                    reference_number=str(sales_id),
+                    payment_date=invoice.invoice_date,
+                    remarks=f"Payment received for Sale Invoice #{invoice.invoice_number}",
+                    created_by=current_user.id
+                ))
+        elif pay_rec:
+            await db.delete(pay_rec)
 
         # Reconcile customer ledger account balance
         dr_res = await db.execute(

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-from app.models.transactions import PurchaseInvoice, PurchaseItem
+from app.models.transactions import PurchaseInvoice, PurchaseItem, Payment
 from app.models.party import Party
 from app.models.company import Product, GodownStock
 from app.schemas.transactions import PurchaseInvoiceCreate
@@ -200,6 +200,20 @@ async def create_purchase_invoice(
         created_by=created_by,
         amount_paid=round(amt_paid, 2)
     )
+
+    # Record in Payment table for Payments & Receipts tab
+    if amt_paid > 0:
+        db.add(Payment(
+            voucher_number=f"PAY-{db_invoice.invoice_number}",
+            payment_type="PAYMENT",
+            party_id=invoice_in.supplier_id,
+            amount=round(amt_paid, 2),
+            payment_mode="CASH",
+            reference_number=str(db_invoice.id),
+            payment_date=invoice_in.invoice_date,
+            remarks=f"Payment for Purchase Bill #{db_invoice.invoice_number}",
+            created_by=created_by
+        ))
 
     try:
         await db.commit()

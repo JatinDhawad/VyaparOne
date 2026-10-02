@@ -130,8 +130,15 @@ export const api = {
   createSale: (data: any) => fetchAPI<any>('/sales/', { method: 'POST', body: JSON.stringify(data) }),
   editSale: (id: string, data: any) => fetchAPI<any>(`/sales/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteSale: (id: string) => fetchAPI<any>(`/sales/${id}`, { method: 'DELETE' }),
-  getPayments: () => fetchAPI<any[]>('/payments/'),
+  getPayments: (paymentType?: string, search?: string) => {
+    const params = new URLSearchParams();
+    if (paymentType && paymentType !== 'ALL') params.append('payment_type', paymentType);
+    if (search) params.append('search', search);
+    const qs = params.toString();
+    return fetchAPI<any[]>(qs ? `/payments/?${qs}` : '/payments/');
+  },
   createPayment: (data: any) => fetchAPI<any>('/payments/', { method: 'POST', body: JSON.stringify(data) }),
+  syncPayments: () => fetchAPI<any>('/payments/sync', { method: 'POST' }),
   getExpenses: () => fetchAPI<any[]>('/expenses/'),
   createExpense: (data: any) => fetchAPI<any>('/expenses/', { method: 'POST', body: JSON.stringify(data) }),
 

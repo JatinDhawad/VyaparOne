@@ -9,7 +9,7 @@ from decimal import Decimal
 import uuid
 
 from app.core.database import get_db
-from app.models.transactions import PurchaseInvoice, PurchaseItem
+from app.models.transactions import PurchaseInvoice, PurchaseItem, Payment
 from app.models.company import Product
 from app.models.user import User
 from app.schemas.transactions import PurchaseInvoiceCreate, PurchaseInvoiceResponse, PurchaseItemCreate
@@ -153,6 +153,19 @@ async def pay_supplier_lump_sum(
 
         remaining -= applied
         updated_invoices.append(invoice)
+
+    if pay_amt - remaining > 0:
+        db.add(Payment(
+            voucher_number=f"PAY-SUP-{uuid.uuid4().hex[:6].upper()}",
+            payment_type="PAYMENT",
+            party_id=supplier_id,
+            amount=pay_amt - remaining,
+            payment_mode=mode_str,
+            reference_number=payment_in.reference_number,
+            payment_date=tx_date,
+            remarks=f"Supplier lump-sum payment ({mode_str}) — settled {len(updated_invoices)} bills",
+            created_by=current_user.id
+        ))
 
     await db.commit()
 
@@ -628,6 +641,19 @@ async def record_purchase_payment(
         created_by=current_user.id
     )
     db.add(entry_payment)
+
+    # Record in Payment table for Payments & Receipts tab
+    db.add(Payment(
+        voucher_number=f"PAY-{invoice.invoice_number}-{uuid.uuid4().hex[:4].upper()}",
+        payment_type="PAYMENT",
+        party_id=invoice.supplier_id,
+        amount=pay_amt,
+        payment_mode=mode_str,
+        reference_number=str(invoice.id),
+        payment_date=tx_date,
+        remarks=narration,
+        created_by=current_user.id
+    ))
 
     # Update ledger balances
     supplier_account.current_balance = Decimal(str(supplier_account.current_balance or 0)) - pay_amt

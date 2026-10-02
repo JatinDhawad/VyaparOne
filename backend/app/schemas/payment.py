@@ -4,6 +4,8 @@ import uuid
 from datetime import datetime, date
 from decimal import Decimal
 
+from app.schemas.party import PartyResponse
+
 
 class PaymentCreate(BaseModel):
     voucher_number: str
@@ -15,11 +17,13 @@ class PaymentCreate(BaseModel):
     payment_date: date
     remarks: Optional[str] = None
 
+
 class PaymentResponse(BaseModel):
     id: uuid.UUID
     voucher_number: str
     payment_type: str
     party_id: Optional[uuid.UUID] = None
+    party: Optional[PartyResponse] = None
     amount: Decimal
     payment_mode: str
     reference_number: Optional[str] = None
@@ -30,3 +34,12 @@ class PaymentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PaymentSyncResult(BaseModel):
+    status: str
+    synced_sales_receipts: int
+    synced_purchase_payments: int
+    synced_ledger_payments: int
+    total_synced: int
+    message: str

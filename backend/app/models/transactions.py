@@ -160,6 +160,8 @@ class Payment(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
+    party: Mapped[Optional["Party"]] = relationship("Party", foreign_keys=[party_id], lazy="selectin")
+
 
 class Expense(Base):
     __tablename__ = "expenses"
