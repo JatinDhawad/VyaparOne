@@ -1,1 +1,0 @@
-# VyaparOne Backend Package
