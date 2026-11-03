@@ -2,9 +2,10 @@
 
 import './globals.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
 import CommandPalette from '@/components/CommandPalette';
+import { useAuthStore } from '@/lib/auth-store';
 
 export default function RootLayout({
   children,
@@ -19,6 +20,10 @@ export default function RootLayout({
       },
     },
   }));
+
+  useEffect(() => {
+    useAuthStore.getState().hydrate();
+  }, []);
 
   return (
     <html lang="en">

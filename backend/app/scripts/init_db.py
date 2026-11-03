@@ -82,12 +82,6 @@ async def seed_data():
         # rather than silently using a hardcoded insecure value.
         import os as _os
         _seed_password = _os.environ.get("ADMIN_SEED_PASSWORD", "").strip()
-        if not _seed_password:
-            raise ValueError(
-                "ADMIN_SEED_PASSWORD environment variable is not set. "
-                "Set it before running the seed script, e.g.: "
-                "ADMIN_SEED_PASSWORD=<strong-password> python -m app.scripts.init_db"
-            )
 
         result = await session.execute(select(User).where(User.email == admin_email))
         admin_user = result.scalars().first()
@@ -96,6 +90,12 @@ async def seed_data():
         admin_role = role_result.scalars().first()
 
         if not admin_user:
+            if not _seed_password:
+                raise ValueError(
+                    "ADMIN_SEED_PASSWORD environment variable is not set, and no admin user exists yet. "
+                    "Set it before first start, e.g.: "
+                    "ADMIN_SEED_PASSWORD=<strong-password> python -m app.scripts.init_db"
+                )
             if admin_role:
                 new_admin = User(
                     email=admin_email,
@@ -108,10 +108,9 @@ async def seed_data():
                 await session.commit()
                 logger.info("Default admin user created.")
         else:
-            admin_user.password_hash = get_password_hash(_seed_password)
-            admin_user.is_active = True
-            await session.commit()
-            logger.info("Default admin user password updated via ADMIN_SEED_PASSWORD.")
+            # Never touch an existing admin's password or active flag: this runs on every
+            # startup, and overwriting here would silently undo passwords changed in the app.
+            logger.info("Default admin user already exists; leaving it unchanged.")
 
         # 3. Auto-backfill missing POS payment receipts & reconcile ledger balances
         try:

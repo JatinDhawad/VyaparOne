@@ -18,11 +18,23 @@ interface AuthState {
   user: User | null;
   setAuth: (token: string, user: User) => void;
   logout: () => void;
+  hydrate: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  token: typeof window !== 'undefined' ? localStorage.getItem('vyaparone_token') : null,
-  user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('vyaparone_user') || 'null') : null,
+  // Start empty so the first client render matches the server HTML; hydrate() fills these in after mount.
+  token: null,
+  user: null,
+
+  hydrate: () => {
+    try {
+      const token = localStorage.getItem('vyaparone_token');
+      const user = JSON.parse(localStorage.getItem('vyaparone_user') || 'null');
+      set({ token, user });
+    } catch {
+      set({ token: null, user: null });
+    }
+  },
 
   setAuth: (token: string, user: User) => {
     if (typeof window !== 'undefined') {

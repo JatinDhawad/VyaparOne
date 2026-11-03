@@ -9,6 +9,7 @@ from sqlalchemy import func, or_, and_
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 
+from app.core.config import settings
 from app.models.ledger import LedgerAccount, LedgerEntry, AccountType
 from app.models.party import Party
 from app.models.company import Product, GodownStock
@@ -20,6 +21,63 @@ from app.schemas.reports import (
     ProductProfitabilityResponse, ProductProfitabilityItem,
     GSTSummaryResponse, DashboardSummaryResponse
 )
+
+
+def _invoice_cost(pinv) -> Decimal:
+    """What a purchase bill really costs the business.
+
+    total_payable_amount = billed total + unbilled (cash) amount - deductions such as
+    scheme money and discounts, i.e. the money actually owed to the supplier. GST is part
+    of it; if purchase GST is claimed back as Input Tax Credit
+    (settings.INPUT_GST_CLAIMED_AS_ITC) that GST is not a cost, so it is taken out.
+    """
+    payable = pinv.total_payable_amount
+    if payable is None:
+        payable = Decimal(str(pinv.grand_total or 0)) + Decimal(str(pinv.unbilled_nongst_amount or 0))
+    cost = Decimal(str(payable))
+    if settings.INPUT_GST_CLAIMED_AS_ITC:
+        cost -= Decimal(str(pinv.tax_amount or 0))
+    return max(cost, Decimal("0"))
+
+
+async def _product_cost_per_packet(db: AsyncSession) -> dict:
+    """Average cost per packet for each product, from ALL purchase bills (all-time).
+
+    Each bill's real cost is shared between its lines in proportion to line value, then
+    divided by the packets bought (bags x packets_per_bag). Used by the dashboard and the
+    product and customer profitability reports so they always agree.
+    """
+    from app.models.transactions import PurchaseItem
+
+    rows = (await db.execute(
+        select(PurchaseItem, PurchaseInvoice)
+        .join(PurchaseInvoice, PurchaseInvoice.id == PurchaseItem.purchase_invoice_id)
+    )).all()
+
+    bill_lines = {}
+    for pitem, pinv in rows:
+        bill_lines[pinv.id] = bill_lines.get(pinv.id, Decimal("0")) + Decimal(str(pitem.line_total or 0))
+
+    totals = {}  # product_id -> [bags, cost]
+    for pitem, pinv in rows:
+        pid = str(pitem.product_id)
+        lines = bill_lines.get(pinv.id, Decimal("0"))
+        share = (Decimal(str(pitem.line_total or 0)) / lines) if lines > 0 else Decimal("0")
+        bags = Decimal(str(pitem.billed_quantity or 0)) + Decimal(str(pitem.free_quantity or 0))
+        t = totals.setdefault(pid, [Decimal("0"), Decimal("0")])
+        t[0] += bags
+        t[1] += _invoice_cost(pinv) * share
+
+    products = {str(p.id): p for p in (await db.execute(select(Product))).scalars().all()}
+    per_packet = {}
+    for pid, (bags, cost) in totals.items():
+        prod = products.get(pid)
+        ppb = int(prod.packets_per_bag) if prod and prod.packets_per_bag else 1
+        pkts = bags * ppb
+        if pkts <= 0:
+            pkts = bags
+        per_packet[pid] = cost / pkts if pkts > 0 else Decimal("0")
+    return per_packet
 
 
 async def get_ledger_statement(
@@ -226,6 +284,7 @@ async def get_party_profitability(
     res = await db.execute(query)
     invoices = res.scalars().all()
 
+    cost_per_pkt = await _product_cost_per_packet(db)
     party_map = {}
     for inv in invoices:
         pid = inv.customer_id
@@ -237,9 +296,12 @@ async def get_party_profitability(
                 "net_profit": Decimal("0.00")
             }
         
-        rev = Decimal(str(inv.subtotal or 0)) - Decimal(str(inv.discount_amount or 0))
-        cogs = Decimal(str(inv.total_cost_of_goods or 0))
-        np = Decimal(str(inv.net_profit or 0))
+        rev = Decimal("0")
+        cogs = Decimal("0")
+        for it in inv.items:
+            rev += Decimal(str(it.line_total or 0)) - Decimal(str(it.gst_amount or 0))
+            cogs += cost_per_pkt.get(str(it.product_id), Decimal("0")) * Decimal(str(it.quantity or 0))
+        np = rev - cogs - Decimal(str(inv.salesman_commission or 0))
 
         party_map[pid]["invoices"] += 1
         party_map[pid]["revenue"] += rev
@@ -289,69 +351,9 @@ async def get_product_profitability(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None
 ) -> ProductProfitabilityResponse:
-    from app.models.transactions import PurchaseItem
-
-    # ── Step 1: Build per-product purchase cost from ACTUAL invoices ──────────
-    # For each product, sum the total actual money paid (billed line_total + proportional unbilled)
-    # across ALL purchase invoices (not filtered by date — cost base is all-time)
-    pur_items_res = await db.execute(
-        select(PurchaseItem, PurchaseInvoice)
-        .join(PurchaseInvoice, PurchaseInvoice.id == PurchaseItem.purchase_invoice_id)
-    )
-    pur_rows = pur_items_res.all()
-
-    # Build: product_id -> {total_bags, total_billed_cost, invoice_id set}
-    # Also need unbilled amount per invoice to allocate to products on that invoice
-    prod_purchase = {}   # product_id -> {bags, billed_cost, inv_ids: {inv_id}}
-    inv_billed = {}      # invoice_id -> total billed line_total for that invoice
-
-    for pitem, pinv in pur_rows:
-        pid = pitem.product_id
-        inv_id = pinv.id
-        bags = Decimal(str(pitem.billed_quantity or 0)) + Decimal(str(pitem.free_quantity or 0))
-        billed_cost = Decimal(str(pitem.line_total or 0))  # includes GST + additional costs
-
-        if pid not in prod_purchase:
-            prod_purchase[pid] = {"bags": Decimal("0"), "billed_cost": Decimal("0"), "inv_product_cost": {}}
-        prod_purchase[pid]["bags"] += bags
-        prod_purchase[pid]["billed_cost"] += billed_cost
-
-        # Track per-invoice billed cost per product for unbilled allocation
-        inv_id_str = str(inv_id)
-        if inv_id_str not in prod_purchase[pid]["inv_product_cost"]:
-            prod_purchase[pid]["inv_product_cost"][inv_id_str] = Decimal("0")
-        prod_purchase[pid]["inv_product_cost"][inv_id_str] += billed_cost
-
-        if inv_id_str not in inv_billed:
-            inv_billed[inv_id_str] = {"total_billed": Decimal("0"), "unbilled": Decimal(str(pinv.unbilled_nongst_amount or 0))}
-        inv_billed[inv_id_str]["total_billed"] += billed_cost
-
-    # Add proportional share of unbilled_nongst_amount per product per invoice
-    for pid, pdata in prod_purchase.items():
-        unbilled_share = Decimal("0")
-        for inv_id_str, product_billed in pdata["inv_product_cost"].items():
-            inv_data = inv_billed.get(inv_id_str, {})
-            inv_total_billed = inv_data.get("total_billed", Decimal("1"))
-            inv_unbilled = inv_data.get("unbilled", Decimal("0"))
-            if inv_total_billed > 0:
-                share = (product_billed / inv_total_billed) * inv_unbilled
-                unbilled_share += share
-        pdata["total_actual_cost"] = pdata["billed_cost"] + unbilled_share
-
-    # ── Step 2: Get packets_per_bag for each product ───────────────────────────
-    prod_res = await db.execute(select(Product).options())
+    prod_cost_per_pkt = await _product_cost_per_packet(db)
+    prod_res = await db.execute(select(Product))
     all_products = {str(p.id): p for p in prod_res.scalars().all()}
-
-    # ── Step 3: Compute actual cost per PACKET for each product ───────────────
-    # cost_per_pkt = total_actual_cost / (bags × packets_per_bag)
-    prod_cost_per_pkt = {}
-    for pid_str, pdata in prod_purchase.items():
-        prod = all_products.get(pid_str)
-        pkts_per_bag = int(prod.packets_per_bag) if prod and prod.packets_per_bag else 1
-        total_pkts = pdata["bags"] * pkts_per_bag  # if 0, treat as 1 bag=1 unit
-        if total_pkts <= 0:
-            total_pkts = pdata["bags"]  # bag-level product, no unpack
-        prod_cost_per_pkt[pid_str] = pdata["total_actual_cost"] / total_pkts if total_pkts > 0 else Decimal("0")
 
     # ── Step 4: Sum sales revenue and qty sold per product ────────────────────
     sal_query = select(SalesItem, SalesInvoice).join(SalesInvoice, SalesInvoice.id == SalesItem.sales_invoice_id)
@@ -494,58 +496,10 @@ async def get_dashboard_summary(db: AsyncSession, period: Optional[str] = None) 
 
     tot_sales = sum(Decimal(str(i.subtotal or 0)) for i in sales_invs)  # gross goods amount before deductions
 
-    # ── Recalculate profit using ACTUAL purchase cost vs actual sale revenue ──
-    # Same method as product profitability: don't use stored net_profit (stale average cost)
-    from app.models.transactions import PurchaseItem, SalesItem
-
-    # Build per-product actual cost from ALL purchases (all-time, regardless of period)
-    pur_rows_res = await db.execute(
-        select(PurchaseItem, PurchaseInvoice)
-        .join(PurchaseInvoice, PurchaseInvoice.id == PurchaseItem.purchase_invoice_id)
-    )
-    pur_rows = pur_rows_res.all()
-
-    prod_purchase = {}
-    inv_billed = {}
-    for pitem, pinv in pur_rows:
-        pid = str(pitem.product_id)
-        inv_id = str(pinv.id)
-        bags = Decimal(str(pitem.billed_quantity or 0)) + Decimal(str(pitem.free_quantity or 0))
-        billed_cost = Decimal(str(pitem.line_total or 0))
-        if pid not in prod_purchase:
-            prod_purchase[pid] = {"bags": Decimal("0"), "billed_cost": Decimal("0"), "inv_product_cost": {}}
-        prod_purchase[pid]["bags"] += bags
-        prod_purchase[pid]["billed_cost"] += billed_cost
-        if inv_id not in prod_purchase[pid]["inv_product_cost"]:
-            prod_purchase[pid]["inv_product_cost"][inv_id] = Decimal("0")
-        prod_purchase[pid]["inv_product_cost"][inv_id] += billed_cost
-        if inv_id not in inv_billed:
-            inv_billed[inv_id] = {"total_billed": Decimal("0"), "unbilled": Decimal(str(pinv.unbilled_nongst_amount or 0))}
-        inv_billed[inv_id]["total_billed"] += billed_cost
-
-    # Add proportional unbilled share
-    for pid, pdata in prod_purchase.items():
-        unbilled_share = Decimal("0")
-        for inv_id, product_billed in pdata["inv_product_cost"].items():
-            inv_data = inv_billed.get(inv_id, {})
-            inv_total = inv_data.get("total_billed", Decimal("1"))
-            inv_unbilled = inv_data.get("unbilled", Decimal("0"))
-            if inv_total > 0:
-                unbilled_share += (product_billed / inv_total) * inv_unbilled
-        pdata["total_actual_cost"] = pdata["billed_cost"] + unbilled_share
-
-    # Get packets_per_bag for each product
-    prod_res_all = await db.execute(select(Product))
-    all_products = {str(p.id): p for p in prod_res_all.scalars().all()}
-
-    prod_cost_per_pkt = {}
-    for pid, pdata in prod_purchase.items():
-        prod = all_products.get(pid)
-        pkts_per_bag = int(prod.packets_per_bag) if prod and prod.packets_per_bag else 1
-        total_pkts = pdata["bags"] * pkts_per_bag
-        if total_pkts <= 0:
-            total_pkts = pdata["bags"]
-        prod_cost_per_pkt[pid] = pdata["total_actual_cost"] / total_pkts if total_pkts > 0 else Decimal("0")
+    # Profit uses the real cost of purchases (see _invoice_cost), not the stored per-invoice
+    # profit, which was based on an older average cost.
+    from app.models.transactions import SalesItem
+    prod_cost_per_pkt = await _product_cost_per_packet(db)
 
     # Sum sales items for the period
     si_query = select(SalesItem, SalesInvoice).join(SalesInvoice, SalesInvoice.id == SalesItem.sales_invoice_id)
@@ -564,8 +518,11 @@ async def get_dashboard_summary(db: AsyncSession, period: Optional[str] = None) 
         tot_revenue += rev
         tot_cogs += cogs
 
-    tot_net_profit = tot_revenue - tot_cogs
-    tot_gross_profit = tot_net_profit  # before expenses
+    tot_gross_profit = tot_revenue - tot_cogs  # goods margin, before commission and expenses
+    # Salesman commission is a cost of the sale; sales_service already deducts it per invoice,
+    # so the dashboard must too or the two views disagree.
+    tot_commission = sum(Decimal(str(i.salesman_commission or 0)) for i in sales_invs)
+    tot_net_profit = tot_gross_profit - tot_commission
 
 
     # 2. Purchases — billed (grand_total) + unbilled (unbilled_nongst_amount)
@@ -588,6 +545,7 @@ async def get_dashboard_summary(db: AsyncSession, period: Optional[str] = None) 
     tot_expenses = sum(Decimal(str(e.amount or 0)) for e in expenses)
 
     overall_net_profit = tot_net_profit - tot_expenses
+    profit_margin = (overall_net_profit / tot_revenue * Decimal("100")) if tot_revenue > 0 else Decimal("0")
 
     # 4. Receivables & Payables (always all-time — reflects current outstanding)
     rec_rep = await get_receivables_report(db)
@@ -615,6 +573,7 @@ async def get_dashboard_summary(db: AsyncSession, period: Optional[str] = None) 
         total_unbilled_purchases=round(tot_unbilled_purchases, 2),
         gross_profit=round(tot_gross_profit, 2),
         net_profit=round(overall_net_profit, 2),
+        profit_margin=round(profit_margin, 2),
         total_operational_expenses=round(tot_expenses, 2),
         total_receivables=round(rec_rep.total_receivables, 2),
         total_payables=round(pay_rep.total_payables, 2),

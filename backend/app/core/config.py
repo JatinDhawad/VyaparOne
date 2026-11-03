@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 Days
 
+    # Accounting policy: the app does not track GST returns (a CA handles them), so GST paid
+    # on purchases is treated as part of the cost of goods. Set INPUT_GST_CLAIMED_AS_ITC=true
+    # only if purchase GST is claimed back and should be left out of cost.
+    INPUT_GST_CLAIMED_AS_ITC: bool = False
+
     @validator("SECRET_KEY")
     def secret_key_must_be_set(cls, v: str) -> str:
         if not v or not v.strip():
@@ -37,10 +42,12 @@ class Settings(BaseSettings):
         return url
     
     # CORS Configuration
+    # Exact origins only (no wildcards). Override in production with a JSON list, e.g.
+    # CORS_ORIGINS='["https://your-app.vercel.app","https://your-custom-domain.com"]'
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://*.vercel.app",
+        "https://vyapar-one-beta.vercel.app",
     ]
 
     class Config:

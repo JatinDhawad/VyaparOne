@@ -110,6 +110,7 @@ class DashboardSummaryResponse(BaseModel):
     total_unbilled_purchases: Decimal = Decimal("0.00")
     gross_profit: Decimal
     net_profit: Decimal
+    profit_margin: Decimal = Decimal("0.00")  # net profit as % of net sales revenue (ex-GST)
     total_operational_expenses: Decimal
     total_receivables: Decimal
     total_payables: Decimal

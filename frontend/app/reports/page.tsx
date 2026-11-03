@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FileText, CreditCard, Landmark, TrendingUp, BarChart3, Users } from 'lucide-react';
+import { FileText, CreditCard, TrendingUp, BarChart3, Users } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { api } from '@/lib/api';
@@ -21,7 +21,7 @@ import {
 } from 'recharts';
 
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<'LEDGER' | 'RECEIVABLES' | 'PAYABLES' | 'PROFITABILITY' | 'GST'>('LEDGER');
+  const [activeTab, setActiveTab] = useState<'LEDGER' | 'RECEIVABLES' | 'PAYABLES' | 'PROFITABILITY'>('LEDGER');
   const [selectedAccountId, setSelectedAccountId] = useState('');
 
   const { data: accounts = [], isLoading: isAccountsLoading } = useQuery({
@@ -51,12 +51,6 @@ export default function ReportsPage() {
     queryKey: ['report-party-prof'],
     queryFn: () => api.getPartyProfitability(),
     enabled: activeTab === 'PROFITABILITY',
-  });
-
-  const { data: gst, isLoading: isGstLoading } = useQuery({
-    queryKey: ['report-gst'],
-    queryFn: () => api.getGSTSummary(),
-    enabled: activeTab === 'GST',
   });
 
   // ── Derived Chart Datasets ───────────────────────────────────────────────
@@ -100,28 +94,6 @@ export default function ReportsPage() {
       }));
   }, [partyProf]);
 
-  // 4. GST Summary Comparison
-  const gstChartData = useMemo(() => {
-    if (!gst) return [];
-    return [
-      {
-        name: 'Output GST (Sales)',
-        amount: parseFloat(gst.output_gst_amount || 0),
-        fill: '#6366f1',
-      },
-      {
-        name: 'Input Credit (Purchases)',
-        amount: parseFloat(gst.input_gst_amount || 0),
-        fill: '#10b981',
-      },
-      {
-        name: 'Net Liability',
-        amount: Math.max(0, parseFloat(gst.net_gst_payable || 0)),
-        fill: '#f59e0b',
-      },
-    ];
-  }, [gst]);
-
   // ── Custom Tooltips ───────────────────────────────────────────────────────
   const CustomReportTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -160,7 +132,6 @@ export default function ReportsPage() {
                 { id: 'RECEIVABLES', label: 'Customer Receivables', icon: CreditCard },
                 { id: 'PAYABLES', label: 'Supplier Payables', icon: CreditCard },
                 { id: 'PROFITABILITY', label: 'Profitability & Margins', icon: TrendingUp },
-                { id: 'GST', label: 'GST Tax Return', icon: Landmark },
               ].map((t) => {
                 const Icon = t.icon;
                 const isActive = activeTab === t.id;
@@ -191,8 +162,7 @@ export default function ReportsPage() {
                     value={
                       activeTab === 'RECEIVABLES' ? 'Customer Receivables' :
                       activeTab === 'PAYABLES' ? 'Supplier Payables' :
-                      activeTab === 'PROFITABILITY' ? 'Profitability & Margins' :
-                      'GST Tax Return'
+                      'Profitability & Margins'
                     }
                     onRemove={() => setActiveTab('LEDGER')}
                   />
@@ -572,80 +542,6 @@ export default function ReportsPage() {
                   </table>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* TAB 5: GST RETURN SUMMARY */}
-          {activeTab === 'GST' && (
-            <div className="space-y-4">
-              {isGstLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-28 w-full rounded-xl" />
-                  ))}
-                </div>
-              ) : gst ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="glass-card p-4 rounded-xl border-slate-200 bg-white">
-                      <span className="section-label block text-slate-500">Output GST (Sales)</span>
-                      <h3 className="text-2xl font-bold text-slate-900 mt-1.5">₹{formatCurrency(gst.output_gst_amount)}</h3>
-                      <p className="text-xs font-normal text-slate-500 mt-0.5">Taxable: ₹{formatCurrency(gst.sales_taxable_amount)}</p>
-                    </div>
-
-                    <div className="glass-card p-4 rounded-xl border-slate-200 bg-white">
-                      <span className="section-label block text-slate-500">Input Tax Credit (ITC)</span>
-                      <h3 className="text-2xl font-bold text-slate-900 mt-1.5">₹{formatCurrency(gst.input_gst_amount)}</h3>
-                      <p className="text-xs font-normal text-slate-500 mt-0.5">Taxable: ₹{formatCurrency(gst.purchase_taxable_amount)}</p>
-                    </div>
-
-                    <div className="glass-card p-4 rounded-xl border-slate-200 bg-white">
-                      <span className="section-label block text-slate-500">Net GST Liability</span>
-                      <h3 className="text-2xl font-bold text-amber-800 mt-1.5">₹{formatCurrency(gst.net_gst_payable)}</h3>
-                      <p className="text-xs font-normal text-slate-500 mt-0.5">Output GST minus Input Tax Credit</p>
-                    </div>
-                  </div>
-
-                  {/* GST Tax Comparison Bar Chart */}
-                  <div className="glass-card p-4 rounded-xl border border-slate-200 bg-white space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                      <div>
-                        <h4 className="font-bold text-slate-900 text-sm">GST Tax Settlement Summary</h4>
-                        <p className="text-xs text-slate-500 font-normal mt-0.5">Comparison of tax collected on sales vs input tax credit paid on inward purchases</p>
-                      </div>
-                    </div>
-
-                    <div className="h-[220px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={gstChartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                          <XAxis
-                            dataKey="name"
-                            stroke="#94a3b8"
-                            fontSize={11}
-                            fontWeight="600"
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis
-                            stroke="#94a3b8"
-                            fontSize={11}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(v) => '₹' + formatCompactCurrency(v)}
-                          />
-                          <RechartsTooltip content={<CustomReportTooltip />} />
-                          <Bar dataKey="amount" name="Amount" radius={[6, 6, 0, 0]} barSize={40}>
-                            {gstChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </>
-              ) : null}
             </div>
           )}
         </main>

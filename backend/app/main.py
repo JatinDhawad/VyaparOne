@@ -3,10 +3,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from contextlib import asynccontextmanager
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1.router import api_router
+from app.api.deps import require_role
+from app.models.user import RoleName, User
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -52,21 +54,20 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Global unhandled error: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc) or "Internal server error"},
+        content={"detail": "Internal server error"},
     )
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=False,  # auth uses a bearer token header, not cookies
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 @app.get("/api/v1/health")
 async def health_check():
-    import traceback
     try:
         from app.scripts.init_db import engine
         from sqlalchemy import text
@@ -74,56 +75,17 @@ async def health_check():
             await conn.execute(text("SELECT 1"))
         return {"status": "ok", "database": "connected"}
     except Exception as e:
-        return {"status": "error", "database": str(e), "traceback": traceback.format_exc()}
-
-@app.get("/api/v1/debug_init_db")
-async def debug_init_db():
-    import traceback
-    import io
-    import sys
-    
-    old_stderr = sys.stderr
-    new_stderr = io.StringIO()
-    sys.stderr = new_stderr
-    
-    try:
-        from app.scripts.init_db import init_db, seed_data
-        from app.core.database import Base
-        tables = list(Base.metadata.tables.keys())
-        await init_db()
-        await seed_data()
-        output = new_stderr.getvalue()
-        sys.stderr = old_stderr
-        return {"status": "ok", "message": "Database initialized successfully", "tables": tables, "stderr": output}
-    except Exception as e:
-        import os
-        from app.core.database import Base
-        tables = list(Base.metadata.tables.keys())
-        db_url = os.getenv("DATABASE_URL", "NOT_SET")
-        output = new_stderr.getvalue()
-        sys.stderr = old_stderr
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc(), "tables": tables, "stderr": output, "db_url": db_url}
-
-@app.get("/api/v1/debug_tables")
-async def debug_tables():
-    try:
-        from app.scripts.init_db import engine
-        from sqlalchemy import text
-        async with engine.connect() as conn:
-            result = await conn.execute(text("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'"))
-            tables_in_db = [row[0] for row in result.fetchall()]
-        return {"status": "ok", "tables_in_db": tables_in_db}
-    except Exception as e:
-        import traceback
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+        logger.error("Health check database error", exc_info=True)
+        return {"status": "error", "database": "unavailable"}
 
 @app.post("/api/v1/admin/reconcile_balances")
-async def reconcile_balances():
+async def reconcile_balances(
+    current_user: User = Depends(require_role([RoleName.ADMIN])),
+):
     """
     Recomputes all LedgerAccount current_balances from actual LedgerEntries.
     Fixes stale balances caused by partial wipes (invoices deleted but ledger entries kept).
     """
-    import traceback
     try:
         from app.scripts.init_db import engine, AsyncSessionLocal
         from app.models.ledger import LedgerAccount, LedgerEntry
@@ -172,7 +134,8 @@ async def reconcile_balances():
 
         return {"status": "ok", "reconciled": updated}
     except Exception as e:
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+        logger.error("reconcile_balances failed", exc_info=True)
+        return {"status": "error", "message": "Reconciliation failed"}
 
 @app.get("/")
 async def root():

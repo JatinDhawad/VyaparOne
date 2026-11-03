@@ -269,7 +269,7 @@ export default function DashboardPage() {
     else if (period === '6m') cutoff = now.getTime() - 180 * 86400000;
     else if (period === '1y') cutoff = now.getTime() - 365 * 86400000;
 
-    const dateMap: Record<string, { date: string; label: string; rawDate: Date; sales: number; purchases: number }> = {};
+    const dateMap: Record<string, { date: string; ts: number; label: string; rawDate: Date; sales: number; purchases: number }> = {};
 
     sales.forEach((s: any) => {
       const d = new Date(s.invoice_date || s.created_at);
@@ -279,6 +279,7 @@ export default function DashboardPage() {
       if (!dateMap[key]) {
         dateMap[key] = {
           date: key,
+          ts: new Date(key).getTime(),
           label: d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
           rawDate: d,
           sales: 0,
@@ -296,6 +297,7 @@ export default function DashboardPage() {
       if (!dateMap[key]) {
         dateMap[key] = {
           date: key,
+          ts: new Date(key).getTime(),
           label: d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
           rawDate: d,
           sales: 0,
@@ -327,7 +329,9 @@ export default function DashboardPage() {
     if (active && payload && payload.length) {
       return (
         <div className="glass-card p-3 rounded-2xl border border-slate-200/80 shadow-xl bg-white/95 backdrop-blur-md text-xs space-y-1.5 min-w-[170px]">
-          <p className="font-extrabold text-slate-900 border-b border-slate-100 pb-1">{label}</p>
+          <p className="font-extrabold text-slate-900 border-b border-slate-100 pb-1">
+            {typeof label === 'number' ? new Date(label).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : label}
+          </p>
           {payload.map((entry: any) => (
             <div key={entry.dataKey} className="flex items-center justify-between gap-3">
               <span className="flex items-center gap-1.5 text-slate-600 font-semibold">
@@ -758,7 +762,11 @@ export default function DashboardPage() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                       <XAxis
-                        dataKey="label"
+                        dataKey="ts"
+                        type="number"
+                        scale="time"
+                        domain={['dataMin', 'dataMax']}
+                        tickFormatter={(v) => new Date(v).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
                         stroke="#94a3b8"
                         fontSize={11}
                         tickLine={false}
@@ -1174,7 +1182,7 @@ export default function DashboardPage() {
                           <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
                             <span className="text-[11px] text-slate-500 font-normal">Available Stock</span>
                             <div className="text-right">
-                              <span className="font-bold text-slate-900 text-sm">{stock.toLocaleString()} {prod.unit}</span>
+                              <span className="font-bold text-slate-900 text-sm">{stock.toLocaleString('en-IN')} {ppb > 1 ? 'PKT' : prod.unit}</span>
                               {bags && (
                                 <span className="text-[10px] font-normal text-slate-500 block">({bags} Bags)</span>
                               )}

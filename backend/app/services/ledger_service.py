@@ -4,6 +4,7 @@ import uuid
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.exc import IntegrityError
 
 from app.models.ledger import LedgerAccount, LedgerEntry, AccountType
 
@@ -61,8 +62,19 @@ async def get_party_ledger_account(
             party_id=party_id,
             current_balance=Decimal("0.00")
         )
-        db.add(account)
-        await db.flush()
+        try:
+            # Savepoint: if another request created this party's account first, the unique
+            # constraint rejects ours and we fall back to the existing one.
+            async with db.begin_nested():
+                db.add(account)
+                await db.flush()
+        except IntegrityError:
+            result = await db.execute(
+                select(LedgerAccount).where(LedgerAccount.party_id == party_id)
+            )
+            account = result.scalars().first()
+            if account is None:
+                raise
     return account
 
 

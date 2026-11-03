@@ -2,19 +2,22 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/lib/auth-store';
 
 export default function Home() {
   const router = useRouter();
-  const token = useAuthStore((state) => state.token);
 
   useEffect(() => {
+    // Read straight from storage: the store is only filled in after the first render.
+    let token: string | null = null;
+    try {
+      token = localStorage.getItem('vyaparone_token');
+    } catch {}
     if (token) {
       router.push('/dashboard');
     } else {
       router.push('/login');
     }
-  }, [token, router]);
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">

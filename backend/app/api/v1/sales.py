@@ -11,6 +11,7 @@ from app.models.user import RoleName, User
 from app.schemas.transactions import SalesInvoiceCreate, SalesInvoiceResponse, SalesInvoiceEdit
 from app.services.sales_service import create_sales_invoice
 from app.api.deps import get_current_active_user, require_role
+from app.services.audit_service import record_audit, snapshot, SALES_AUDIT_FIELDS
 
 router = APIRouter(prefix="/sales", tags=["Sales"])
 
@@ -28,6 +29,10 @@ async def create_sales(
     """
     try:
         invoice = await create_sales_invoice(db, invoice_in, created_by=current_user.id)
+        await record_audit(
+            db, user_id=current_user.id, action="CREATE_SALES_INVOICE", table_name="sales_invoices",
+            record_id=invoice.id, new_data=snapshot(invoice, SALES_AUDIT_FIELDS),
+        )
         return invoice
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -96,6 +101,7 @@ async def edit_sales(
         raise HTTPException(status_code=404, detail="Sales invoice not found.")
 
     update_data = edits.model_dump(exclude_unset=True)
+    old_snapshot = snapshot(invoice, SALES_AUDIT_FIELDS)
 
     for field, value in update_data.items():
         setattr(invoice, field, value)
@@ -220,6 +226,10 @@ async def edit_sales(
         import logging
         logging.getLogger(__name__).warning(f"Ledger sync warning on sales edit: {e}")
 
+    await record_audit(
+        db, user_id=current_user.id, action="EDIT_SALES_INVOICE", table_name="sales_invoices",
+        record_id=sales_id, old_data=old_snapshot, new_data=snapshot(invoice, SALES_AUDIT_FIELDS),
+    )
     await db.commit()
 
     # Return refreshed invoice
@@ -260,6 +270,7 @@ async def delete_sales(
         raise HTTPException(status_code=404, detail="Sales invoice not found.")
 
     invoice_number = invoice.invoice_number
+    old_snapshot = snapshot(invoice, SALES_AUDIT_FIELDS)
 
     # 1. Restore inventory stock for each item
     from decimal import Decimal
@@ -309,6 +320,10 @@ async def delete_sales(
         logging.getLogger(__name__).warning(f"Ledger sync warning on sales deletion: {e}")
 
     # 4. Delete sales invoice (items cascade deleted)
+    await record_audit(
+        db, user_id=current_user.id, action="DELETE_SALES_INVOICE", table_name="sales_invoices",
+        record_id=sales_id, old_data=old_snapshot,
+    )
     await db.delete(invoice)
     await db.commit()
 

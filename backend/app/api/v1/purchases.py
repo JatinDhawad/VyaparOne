@@ -15,6 +15,7 @@ from app.models.user import User
 from app.schemas.transactions import PurchaseInvoiceCreate, PurchaseInvoiceResponse, PurchaseItemCreate
 from app.services.purchase_service import create_purchase_invoice
 from app.api.deps import get_current_active_user
+from app.services.audit_service import record_audit, snapshot, PURCHASE_AUDIT_FIELDS
 
 
 router = APIRouter(prefix="/purchases", tags=["Purchases"])
@@ -264,6 +265,10 @@ async def create_purchase(
     """Create a new purchase invoice. All authenticated users."""
     try:
         invoice = await create_purchase_invoice(db, invoice_in, created_by=current_user.id)
+        await record_audit(
+            db, user_id=current_user.id, action="CREATE_PURCHASE_INVOICE", table_name="purchase_invoices",
+            record_id=invoice.id, new_data=snapshot(invoice, PURCHASE_AUDIT_FIELDS),
+        )
         return await _fetch_invoice(db, invoice.id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -349,6 +354,7 @@ async def edit_purchase(
     invoice = result.scalars().first()
     if not invoice:
         raise HTTPException(status_code=404, detail="Purchase invoice not found.")
+    old_snapshot = snapshot(invoice, PURCHASE_AUDIT_FIELDS)
 
     # ── Item & Stock Re-processing (if items provided) ─────────────────────────
     if edits.items is not None:
@@ -554,6 +560,11 @@ async def edit_purchase(
                 cash_account.current_balance = D(str(cash_account.current_balance or 0)) - applied
                 remaining_credit -= applied
 
+    await record_audit(
+        db, user_id=current_user.id, action="EDIT_PURCHASE_INVOICE", table_name="purchase_invoices",
+        record_id=purchase_id, old_data=old_snapshot,
+        new_data=snapshot(await db.get(PurchaseInvoice, purchase_id), PURCHASE_AUDIT_FIELDS),
+    )
     await db.commit()
     return await _fetch_invoice(db, purchase_id)
 

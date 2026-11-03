@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import String, ForeignKey, DateTime, Numeric, Date, func
+from sqlalchemy import String, ForeignKey, DateTime, Numeric, Date, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
@@ -21,6 +21,7 @@ class LedgerAccount(Base):
     Every Party (Supplier/Customer), Cash, Bank, and Operational Expense gets an account.
     """
     __tablename__ = "ledger_accounts"
+    __table_args__ = (UniqueConstraint("party_id", name="uq_ledger_accounts_party_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -7,19 +7,33 @@ from app.core.security import verify_password, create_access_token, get_password
 from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse, ChangePasswordRequest, MessageResponse
 from app.api.deps import get_current_active_user
+from app.core.login_throttle import ip_account_throttle, account_throttle, client_ip
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login", response_model=TokenResponse)
 @router.post("/login/", response_model=TokenResponse)
-async def login(credentials: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(request: Request, credentials: LoginRequest, db: AsyncSession = Depends(get_db)):
     """
     Authenticate user via email and password, returning a JWT Access Token.
     """
+    email_key = credentials.email.strip().lower()
+    ip_key = f"{client_ip(request)}|{email_key}"
+
+    wait = max(ip_account_throttle.retry_after(ip_key), account_throttle.retry_after(email_key))
+    if wait:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed login attempts. Please try again later.",
+            headers={"Retry-After": str(wait)},
+        )
+
     result = await db.execute(select(User).where(User.email == credentials.email))
     user = result.scalars().first()
     
     if not user or not verify_password(credentials.password, user.password_hash):
+        ip_account_throttle.record(ip_key)
+        account_throttle.record(email_key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -32,6 +46,7 @@ async def login(credentials: LoginRequest, db: AsyncSession = Depends(get_db)):
             detail="User account is deactivated",
         )
         
+    ip_account_throttle.clear(ip_key)
     access_token = create_access_token(subject=user.id)
     return TokenResponse(access_token=access_token, token_type="bearer")
 
